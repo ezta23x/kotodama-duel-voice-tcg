@@ -4,11 +4,18 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>言霊デュエル（言灵对决）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;800&family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@700&family=Shippori+Mincho:wght@700;800&display=swap" />
 <style>
   /* =========================================================================
      1. 经典暖木酒馆与羊皮纸桌游色系（明亮温润、低饱和、高可读 60-30-10）
      ========================================================================= */
   :root {
+    --font-ja: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "BIZ UDPGothic", "Meiryo", "Yu Gothic UI", sans-serif;
+    --font-zh: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+    --font-display-ja: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", "Noto Sans JP", serif;
+    --font-display-zh: "Noto Serif SC", "Songti SC", "STSong", "Noto Sans SC", serif;
     --wood-1: #6b4b30;
     --wood-2: #4f3520;
     --wood-bar-1: #5c3f27;
@@ -57,7 +64,7 @@
   }
 
   body {
-    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-family: var(--font-ja);
     color: var(--ink);
     background:
       radial-gradient(circle at 30% 20%, rgba(255, 224, 168, 0.14), transparent 55%),
@@ -66,6 +73,42 @@
     display: flex;
     justify-content: center;
     align-items: stretch;
+  }
+
+  /* 中日双语分轨默认字体：避免日文字体抢渲染简体中文汉字导致字形混杂 */
+  :lang(zh-CN),
+  .lang-zh,
+  .zh-inline,
+  .zh-sub,
+  .zh-line,
+  .btn-zh,
+  .pile-zh,
+  .bubble-zh,
+  .pending-zh,
+  .live-tip-zh,
+  .guide-zh,
+  .log-zh,
+  .desc-zh,
+  .pt-zh,
+  .tb-zh,
+  .pile-chip-zh,
+  .drop-slot-zh,
+  .landscape-title-zh,
+  #rulesModalListZh,
+  #gameOverTitleZh,
+  #gameOverDescZh {
+    font-family: var(--font-zh);
+  }
+
+  .brand-title,
+  .turn-banner .tb-ja,
+  #gameOverTitleJa {
+    font-family: var(--font-display-ja);
+  }
+  .brand-title .zh-inline,
+  .turn-banner .tb-zh,
+  #gameOverTitleZh {
+    font-family: var(--font-display-zh);
   }
 
   .table-shell {
@@ -2027,8 +2070,8 @@
   <div class="landscape-card">
     <svg class="landscape-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h1.5C23.44 4.84 18.29 0 12 0l-.66.03 3.81 3.81 1.33-1.32zm-6.25-.77c-.59-.59-1.54-.59-2.12 0L1.75 8.11c-.59.59-.59 1.54 0 2.12l12.02 12.02c.59.59 1.54.59 2.12 0l6.36-6.36c.59-.59.59-1.54 0-2.12L10.23 1.75zm4.6 19.44L2.81 9.17l6.36-6.36 12.02 12.02-6.36 6.36zm-7.31.29C4.25 19.94 1.91 16.76 1.55 13H.05C.56 19.16 5.71 24 12 24l.66-.03-3.81-3.81-1.33 1.32z"/></svg>
     <div class="landscape-title-ja">横画面でプレイしてください</div>
-    <div class="landscape-title-zh">请切换横屏游玩</div>
-    <p class="landscape-desc">画面幅を広げるか、端末を横向きにしてお楽しみください。<br>（请拉宽浏览器窗口，或将设备旋转至横屏后继续对战）</p>
+    <div class="landscape-title-zh" lang="zh-CN">请切换横屏游玩</div>
+    <p class="landscape-desc">画面幅を広げるか、端末を横向きにしてお楽しみください。<br><span class="zh-inline" lang="zh-CN">（请拉宽浏览器窗口，或将设备旋转至横屏后继续对战）</span></p>
   </div>
 </div>
 
@@ -2036,7 +2079,7 @@
   <!-- 顶部状态与快捷入口栏 -->
   <header class="topbar">
     <div class="brand">
-      <span class="brand-title">言霊デュエル（言灵对决）</span>
+      <span class="brand-title">言霊デュエル<span class="zh-inline" lang="zh-CN">（言灵对决）</span></span>
       <span class="turn-pill" id="turnBadge">ターン 1：あなたの番（第 1 回合：你的回合）</span>
     </div>
     <div class="top-actions">
@@ -2272,7 +2315,7 @@
         <h3>日本語ルール</h3>
         <ul class="rules-list" id="rulesModalListJa"></ul>
       </div>
-      <div class="rules-block">
+      <div class="rules-block" lang="zh-CN">
         <h3>中文规则</h3>
         <ul class="rules-list" id="rulesModalListZh"></ul>
       </div>
@@ -2295,7 +2338,7 @@
   <div class="modal-box" style="max-width:460px;text-align:center;">
     <h2 id="gameOverTitleJa" style="margin:0 0 6px;">勝利！</h2>
     <p id="gameOverDescJa" style="font-size:13px;line-height:1.6;margin:0 0 12px;"></p>
-    <div style="border-top:1px dashed #d5c7ad;padding-top:10px;margin-bottom:16px;">
+    <div lang="zh-CN" style="border-top:1px dashed #d5c7ad;padding-top:10px;margin-bottom:16px;">
       <div id="gameOverTitleZh" style="font-size:15px;font-weight:700;color:var(--ink-sub);margin-bottom:4px;">你赢了！</div>
       <p id="gameOverDescZh" style="font-size:12.5px;color:var(--ink-sub);line-height:1.6;margin:0;"></p>
     </div>
@@ -2432,21 +2475,21 @@
 <div class="modal-backdrop" id="dataLoadModal">
   <div class="modal-box" style="max-width:460px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <div style="font-size:16px;font-weight:900;">gamedata.json を読み込む<span style="display:block;font-size:11px;font-weight:600;color:var(--ink-sub);margin-top:2px;">加载游戏数据文件（gamedata.json）</span></div>
+      <div style="font-size:16px;font-weight:900;">gamedata.json を読み込む<span class="zh-inline" lang="zh-CN" style="display:block;font-size:11px;font-weight:600;color:var(--ink-sub);margin-top:2px;">加载游戏数据文件（gamedata.json）</span></div>
     </div>
     <p style="font-size:12px;line-height:1.65;color:var(--ink);margin:0 0 10px;">
       ブラウザのセキュリティ制限（<code>file://</code>）により、ローカルの <strong>gamedata.json</strong> を自動読込できませんでした。<br/>
       下のボタンから同フォルダ内の <strong>gamedata.json</strong> を選択してください（次回からは自動読込されます）。
     </p>
-    <p style="font-size:11.5px;line-height:1.6;color:var(--ink-sub);margin:0 0 12px;">
+    <p lang="zh-CN" style="font-size:11.5px;line-height:1.6;color:var(--ink-sub);margin:0 0 12px;">
       由于浏览器本地 <code>file://</code> 安全限制，无法自动读取同目录的 <strong>gamedata.json</strong>。请点击下方选择同目录的 <strong>gamedata.json</strong>（选择一次后会缓存），或直接运行 <code>start.command</code>（Mac/Linux）/ <code>start.bat</code>（Windows）自动启动。
     </p>
     <div class="dropzone" id="dataLoadDropzone" style="padding:14px;">
       <label class="btn-sm primary" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
-        gamedata.json を選択（选择文件）
+        gamedata.json を選択<span class="zh-inline" lang="zh-CN">（选择文件）</span>
         <input type="file" id="dataLoadFileInput" accept=".json" style="display:none;" />
       </label>
-      <div style="margin-top:6px;font-size:11px;color:var(--ink-sub);">またはここにファイルをドロップ（或直接拖拽至此）</div>
+      <div style="margin-top:6px;font-size:11px;color:var(--ink-sub);">またはここにファイルをドロップ<span class="zh-inline" lang="zh-CN">（或直接拖拽至此）</span></div>
     </div>
   </div>
 </div>

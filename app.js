@@ -5418,7 +5418,7 @@
         .map((e) => `
           <div class="log-entry">
             <div class="log-ja">${escapeHtml(e.ja)}</div>
-            <div class="log-zh">（${escapeHtml(e.zh)}）</div>
+            <div class="log-zh" lang="zh-CN">（${escapeHtml(e.zh)}）</div>
           </div>
         `)
         .join("");
@@ -5510,7 +5510,7 @@
         zh = `对手获得 ${count} 张奖赏卡！（对手进度 ${takenTotal}/${TOTAL_PRIZES}）`;
       }
       el.className = "prize-toast" + (isEnemy ? " enemy" : "");
-      el.innerHTML = `<div class="pt-ja">${escapeHtml(ja)}</div><div class="pt-zh">${escapeHtml(zh)}</div>`;
+      el.innerHTML = `<div class="pt-ja">${escapeHtml(ja)}</div><div class="pt-zh" lang="zh-CN">${escapeHtml(zh)}</div>`;
       void el.offsetWidth;
       el.classList.add("show");
       this._prizeToastTimer = setTimeout(() => el.classList.remove("show"), 2800);
@@ -5522,7 +5522,7 @@
       if (!el) return;
       clearTimeout(this._bannerTimer);
       el.className = "turn-banner" + (isEnemy ? " enemy" : "");
-      el.innerHTML = `<div class="tb-ja">${escapeHtml(ja)}</div><div class="tb-zh">${escapeHtml(zh)}</div>`;
+      el.innerHTML = `<div class="tb-ja">${escapeHtml(ja)}</div><div class="tb-zh" lang="zh-CN">${escapeHtml(zh)}</div>`;
       void el.offsetWidth;
       el.classList.add("show");
       this._bannerTimer = setTimeout(() => el.classList.remove("show"), 1150);
@@ -5533,7 +5533,7 @@
       const el = $("saveToast");
       if (!el) return;
       clearTimeout(this._toastTimer);
-      el.innerHTML = `${SVG_ICONS.check}${escapeHtml(ja)}${zh ? `（${escapeHtml(zh)}）` : ""}`;
+      el.innerHTML = `${SVG_ICONS.check}${escapeHtml(ja)}${zh ? `<span class="zh-inline" lang="zh-CN">（${escapeHtml(zh)}）</span>` : ""}`;
       el.classList.add("show");
       this._toastTimer = setTimeout(() => el.classList.remove("show"), 2000);
     },
@@ -5592,7 +5592,7 @@
                ${canDirectClick ? 'title="クリックで発動（点击直接发动）"' : ""}>
             <div class="skill-left">
               ${costPips}
-              <span class="skill-name">${escapeHtml(sk.name_ja)}（${escapeHtml(sk.name_zh)}）</span>
+              <span class="skill-name">${escapeHtml(sk.name_ja)}<span class="zh-inline" lang="zh-CN">（${escapeHtml(sk.name_zh)}）</span></span>
               ${targetTag}${effectTag}
             </div>
             <span class="skill-right">
@@ -5666,7 +5666,7 @@
               ${mon.skills.map((sk) => `
                 <div class="skill-line">
                   <div class="skill-left">
-                    <span class="skill-name">${escapeHtml(sk.name_ja)}（${escapeHtml(sk.name_zh)}）</span>
+                    <span class="skill-name">${escapeHtml(sk.name_ja)}<span class="zh-inline" lang="zh-CN">（${escapeHtml(sk.name_zh)}）</span></span>
                     ${sk.target === "enemy_any" ? `<span class="skill-tag snipe">${SVG_ICONS.snipe}狙撃</span>` : '<span class="skill-tag normal">通常·前</span>'}
                   </div>
                   <span class="skill-dmg">${sk.damage}</span>
@@ -5738,16 +5738,16 @@
             const effHtml = (gVal > 0 ? `<span class="skill-tag guard">被ダメ-${gVal}</span>` : "")
               + (dVal > 0 ? `<span class="skill-tag guard">エネ-${dVal}</span>` : "");
             const desc = isSnipe
-              ? "狙撃ワザ：相手バトル場・ベンチどちらも可（ベンチは弱点なし）<br>定点狙击：可打对手战斗区或备战区任意怪兽（对备战区不计弱点）"
+              ? '狙撃ワザ：相手バトル場・ベンチどちらも可（ベンチは弱点なし）<br><span class="zh-inline" lang="zh-CN">定点狙击：可打对手战斗区或备战区任意怪兽（对备战区不计弱点）</span>'
               : (gVal > 0
-                ? `通常ワザ：相手バトル場のみ（次の相手ターン被ダメ-${gVal}）<br>普通攻击：仅打对手战斗区，发动后下回合受击 -${gVal}`
+                ? `通常ワザ：相手バトル場のみ（次の相手ターン被ダメ-${gVal}）<br><span class="zh-inline" lang="zh-CN">普通攻击：仅打对手战斗区，发动后下回合受击 -${gVal}</span>`
                 : (dVal > 0
-                  ? `通常ワザ：相手バトル場のみ（発動後自身のエネルギーを${dVal}枚トラッシュ）<br>普通攻击：仅打对手战斗区，发动后弃置自身 ${dVal} 张能量`
-                  : "通常ワザ：相手バトル場のみ（弱点+20）<br>普通攻击：仅打对手战斗区（计算弱点 +20）"));
+                  ? `通常ワザ：相手バトル場のみ（発動後自身のエネルギーを${dVal}枚トラッシュ）<br><span class="zh-inline" lang="zh-CN">普通攻击：仅打对手战斗区，发动后弃置自身 ${dVal} 张能量</span>`
+                  : '通常ワザ：相手バトル場のみ（弱点+20）<br><span class="zh-inline" lang="zh-CN">普通攻击：仅打对手战斗区（计算弱点 +20）</span>'));
             return `
               <div class="codex-skill-row">
                 <div class="codex-skill-top">
-                  <div class="skill-left">${pips}<span class="skill-name">${escapeHtml(sk.name_ja)}（${escapeHtml(sk.name_zh)}）</span>${tagHtml}${effHtml}</div>
+                  <div class="skill-left">${pips}<span class="skill-name">${escapeHtml(sk.name_ja)}<span class="zh-inline" lang="zh-CN">（${escapeHtml(sk.name_zh)}）</span></span>${tagHtml}${effHtml}</div>
                   <span class="skill-dmg">${sk.damage}</span>
                 </div>
                 <div class="codex-skill-desc">${desc}</div>
@@ -6046,11 +6046,11 @@
 
       const badge = $("turnBadge");
       badge.className = "turn-pill" + (s.currentPlayer === "enemy" ? " enemy-turn" : "");
-      badge.textContent = s.phase === "setup"
-        ? "対戦準備：先発モンスターを選択（开局准备：选择首发怪兽）"
+      badge.innerHTML = s.phase === "setup"
+        ? '対戦準備：先発モンスターを選択<span class="zh-inline" lang="zh-CN">（开局准备：选择首发怪兽）</span>'
         : (s.currentPlayer === "player"
-          ? `ターン ${s.turn}：あなたの番（第 ${s.turn} 回合：你的回合）`
-          : `ターン ${s.turn}：相手レンの番（第 ${s.turn} 回合：对手回合）`);
+          ? `ターン ${s.turn}：あなたの番<span class="zh-inline" lang="zh-CN">（第 ${s.turn} 回合：你的回合）</span>`
+          : `ターン ${s.turn}：相手レンの番<span class="zh-inline" lang="zh-CN">（第 ${s.turn} 回合：对手回合）</span>`);
 
       const limBox = $("turnLimits");
       if (limBox) {
@@ -6058,9 +6058,9 @@
         const limE = $("limitEnergy");
         const limS = $("limitSupporter");
         const limR = $("limitRetreat");
-        if (limE) { limE.className = "limit-pill" + (s.energyUsedThisTurn ? " used" : ""); limE.innerHTML = `${SVG_ICONS.boost}${s.energyUsedThisTurn ? "エネ 0/1（已贴能）" : "エネ 1/1（贴能）"}`; }
-        if (limS) { limS.className = "limit-pill" + (s.supporterUsedThisTurn ? " used" : ""); limS.innerHTML = `${SVG_ICONS.starChip}${s.supporterUsedThisTurn ? "サポート 0/1（已用）" : "サポート 1/1（支援）"}`; }
-        if (limR) { limR.className = "limit-pill" + (s.retreatedThisTurn ? " used" : ""); limR.innerHTML = `${SVG_ICONS.swapChip}${s.retreatedThisTurn ? "交代 0/1（已撤退）" : "交代 1/1（撤退）"}`; }
+        if (limE) { limE.className = "limit-pill" + (s.energyUsedThisTurn ? " used" : ""); limE.innerHTML = `${SVG_ICONS.boost}${s.energyUsedThisTurn ? 'エネ 0/1<span class="zh-inline" lang="zh-CN">（已贴能）</span>' : 'エネ 1/1<span class="zh-inline" lang="zh-CN">（贴能）</span>'}`; }
+        if (limS) { limS.className = "limit-pill" + (s.supporterUsedThisTurn ? " used" : ""); limS.innerHTML = `${SVG_ICONS.starChip}${s.supporterUsedThisTurn ? 'サポート 0/1<span class="zh-inline" lang="zh-CN">（已用）</span>' : 'サポート 1/1<span class="zh-inline" lang="zh-CN">（支援）</span>'}`; }
+        if (limR) { limR.className = "limit-pill" + (s.retreatedThisTurn ? " used" : ""); limR.innerHTML = `${SVG_ICONS.swapChip}${s.retreatedThisTurn ? '交代 0/1<span class="zh-inline" lang="zh-CN">（已撤退）</span>' : '交代 1/1<span class="zh-inline" lang="zh-CN">（撤退）</span>'}`; }
       }
 
       const prizeIdx = Array.from({ length: TOTAL_PRIZES }, (_, i) => i);
@@ -6106,25 +6106,25 @@
 
       const eAct = $("enemyActiveSlot");
       eAct.className = "slot-box active-slot" + (pendingEnemy ? " highlight-enemy" : "");
-      eAct.innerHTML = `<span class="slot-tag">相手バトル場（对手战斗区）</span>` +
-        (s.enemy.active ? this.renderMonsterCard(s.enemy.active, "enemy_active") : `<div class="slot-empty">${s.phase === "setup" ? "裏向き待機中（对手暗置首发中）" : "空き（空位）"}</div>`);
+      eAct.innerHTML = `<span class="slot-tag">相手バトル場<span class="zh-inline" lang="zh-CN">（对手战斗区）</span></span>` +
+        (s.enemy.active ? this.renderMonsterCard(s.enemy.active, "enemy_active") : `<div class="slot-empty">${s.phase === "setup" ? '裏向き待機中<span class="zh-inline" lang="zh-CN">（对手暗置首发中）</span>' : '空き<span class="zh-inline" lang="zh-CN">（空位）</span>'}</div>`);
 
       const pAct = $("playerActiveSlot");
       pAct.className = "slot-box active-slot" + (needAllyTarget || s.phase === "setup" ? " highlight-ally" : "");
-      pAct.innerHTML = `<span class="slot-tag">バトル場（己方战斗区）</span>` +
-        (s.player.active ? this.renderMonsterCard(s.player.active, "player_active") : `<div class="slot-empty">${s.phase === "setup" ? "手札から1体選択（请从手牌选择首发）" : "空き（空位）"}</div>`);
+      pAct.innerHTML = `<span class="slot-tag">バトル場<span class="zh-inline" lang="zh-CN">（己方战斗区）</span></span>` +
+        (s.player.active ? this.renderMonsterCard(s.player.active, "player_active") : `<div class="slot-empty">${s.phase === "setup" ? '手札から1体選択<span class="zh-inline" lang="zh-CN">（请从手牌选择首发）</span>' : '空き<span class="zh-inline" lang="zh-CN">（空位）</span>'}</div>`);
 
       $("enemyBenchRow").innerHTML = s.enemy.bench.map((inst, i) => `
         <div class="slot-box ${(needEnemyBench || pendingEnemy) && inst ? "highlight-enemy" : ""}" data-slot-box="enemy_bench_${i}">
-          <span class="slot-tag">相手ベンチ ${POS_JA[i]}（对手备战 ${POS_ZH[i]}）</span>
-          ${inst ? this.renderMonsterCard(inst, `enemy_bench_${i}`) : `<div class="slot-empty">空き（空位）</div>`}
+          <span class="slot-tag">相手ベンチ ${POS_JA[i]}<span class="zh-inline" lang="zh-CN">（对手备战 ${POS_ZH[i]}）</span></span>
+          ${inst ? this.renderMonsterCard(inst, `enemy_bench_${i}`) : '<div class="slot-empty">空き<span class="zh-inline" lang="zh-CN">（空位）</span></div>'}
         </div>
       `).join("");
 
       $("playerBenchRow").innerHTML = s.player.bench.map((inst, i) => `
         <div class="slot-box ${(needAllyTarget || pendingAlly) && inst ? "highlight-ally" : ""}" data-slot-box="player_bench_${i}">
-          <span class="slot-tag">ベンチ ${POS_JA[i]}（己方备战 ${POS_ZH[i]}）</span>
-          ${inst ? this.renderMonsterCard(inst, `player_bench_${i}`) : `<div class="slot-empty">空き（空位）</div>`}
+          <span class="slot-tag">ベンチ ${POS_JA[i]}<span class="zh-inline" lang="zh-CN">（己方备战 ${POS_ZH[i]}）</span></span>
+          ${inst ? this.renderMonsterCard(inst, `player_bench_${i}`) : '<div class="slot-empty">空き<span class="zh-inline" lang="zh-CN">（空位）</span></div>'}
         </div>
       `).join("");
 
@@ -6134,9 +6134,9 @@
       });
 
       $("playerHand").innerHTML = s.player.hand.map((id, idx) => this.renderHandCard(id, idx)).join("");
-      $("handSelectionHint").textContent = s.phase === "setup"
-        ? "先発モンスターをクリック（点击绿色高亮怪兽作为首发）"
-        : (selCardId ? "対象をクリック（点击高亮目标使用，再点手牌取消）" : "");
+      $("handSelectionHint").innerHTML = s.phase === "setup"
+        ? '先発モンスターをクリック<span class="zh-inline" lang="zh-CN">（点击绿色高亮怪兽作为首发）</span>'
+        : (selCardId ? '対象をクリック<span class="zh-inline" lang="zh-CN">（点击高亮目标使用，再点手牌取消）</span>' : "");
 
       const bar = $("pendingBar");
       if (s.pending) {
