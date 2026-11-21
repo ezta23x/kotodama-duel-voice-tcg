@@ -2183,8 +2183,10 @@
   #btnFullscreen { display: none; }
   body.is-mobile #btnFullscreen { display: inline-flex; }
 
-  #resetConfirmModal { z-index: 210; }
-  #resetConfirmModal .modal-box { max-width: 400px; text-align: center; }
+  #resetConfirmModal,
+  #endTurnConfirmModal { z-index: 210; }
+  #resetConfirmModal .modal-box,
+  #endTurnConfirmModal .modal-box { max-width: 420px; text-align: center; }
   .reset-confirm-icon {
     width: 42px;
     height: 42px;
@@ -2192,6 +2194,35 @@
     fill: #9a6822;
     display: block;
   }
+  .endturn-hints-list {
+    margin: 10px 0 0;
+    padding: 9px 12px;
+    list-style: none;
+    text-align: left;
+    background: linear-gradient(180deg, #f6edd9 0%, #efe2c6 100%);
+    border: 1px solid #cfb88e;
+    border-radius: 10px;
+    box-shadow: inset 0 1px 3px rgba(84, 56, 24, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .endturn-hints-list:empty { display: none; }
+  .endturn-hints-list li {
+    position: relative;
+    padding-left: 14px;
+    line-height: 1.45;
+  }
+  .endturn-hints-list li::before {
+    content: "•";
+    position: absolute;
+    left: 2px;
+    top: 0;
+    color: #9a6822;
+    font-weight: 800;
+  }
+  .endturn-hint-ja { font-size: 11.5px; font-weight: 700; color: var(--ink); }
+  .endturn-hint-zh { font-size: 11px; color: var(--ink-sub); margin-top: 1px; }
   .reset-confirm-actions {
     display: flex;
     gap: 10px;
@@ -2361,6 +2392,15 @@
       padding: 12px 14px;
       -webkit-overflow-scrolling: touch;
     }
+    .reset-confirm-icon,
+    .mobile-fs-icon { width: 32px; height: 32px; margin-bottom: 5px; }
+    .mobile-fs-title-ja { font-size: 14.5px; }
+    .mobile-fs-title-zh { font-size: 13px; margin-bottom: 6px; }
+    .mobile-fs-desc-ja,
+    .mobile-fs-desc-zh { font-size: 11px; line-height: 1.45; }
+    .endturn-hints-list { margin-top: 7px; padding: 7px 10px; gap: 4px; }
+    .reset-confirm-actions { margin-top: 10px; padding-top: 9px; }
+    .reset-confirm-actions .btn-sm { padding: 6px 12px; font-size: 12px; min-width: 112px; }
     .rules-grid { gap: 8px; }
     .rules-list { font-size: 11.5px; line-height: 1.5; }
   }
@@ -2673,15 +2713,26 @@
     }
     .reset-confirm-actions {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 8px;
     }
     .reset-confirm-actions .btn-sm {
       min-width: 0;
       width: 100%;
       min-height: 40px;
-      padding: 8px 6px;
-      font-size: 12px;
+      padding: 7px 6px;
+      font-size: 11.5px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      white-space: normal;
+      text-align: center;
+      line-height: 1.25;
+    }
+    .reset-confirm-actions .btn-sm .zh-inline {
+      font-size: 10.5px;
+      white-space: nowrap;
     }
   }
   /* 5 柱实时声波条与实时斩杀/威胁 HUD 样式 */
@@ -3125,6 +3176,22 @@
     <div class="reset-confirm-actions">
       <button type="button" class="btn-sm" id="btnCancelReset">キャンセル<span class="zh-inline" lang="zh-CN">（取消）</span></button>
       <button type="button" class="btn-sm danger" id="btnConfirmReset">再戦する<span class="zh-inline" lang="zh-CN">（确认重开）</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ターン終了（结束回合）智能防误触二次确认弹窗 -->
+<div class="modal-backdrop" id="endTurnConfirmModal" role="dialog" aria-modal="true" aria-labelledby="endTurnConfirmTitleJa">
+  <div class="modal-box">
+    <svg class="reset-confirm-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18l8.5-6L6 6v12zm10-12v12h2V6h-2z"/></svg>
+    <h2 class="mobile-fs-title-ja" id="endTurnConfirmTitleJa">ターンを終了しますか？</h2>
+    <div class="mobile-fs-title-zh" lang="zh-CN">确定要结束本回合吗？</div>
+    <p class="mobile-fs-desc-ja" id="endTurnConfirmSubJa" style="text-align:center;">このターン、まだ実行できる操作が残っています。</p>
+    <p class="mobile-fs-desc-zh" id="endTurnConfirmSubZh" lang="zh-CN" style="text-align:center;margin-bottom:0;">本回合仍有以下可用操作尚未执行：</p>
+    <ul class="endturn-hints-list" id="endTurnHintsList"></ul>
+    <div class="reset-confirm-actions">
+      <button type="button" class="btn-sm" id="btnCancelEndTurn">戻る<span class="zh-inline" lang="zh-CN">（返回操作）</span></button>
+      <button type="button" class="btn-sm primary" id="btnConfirmEndTurn">このまま終了<span class="zh-inline" lang="zh-CN">（确认结束）</span></button>
     </div>
   </div>
 </div>
