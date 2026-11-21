@@ -1,0 +1,2460 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>言霊デュエル（言灵对决）</title>
+<style>
+  /* =========================================================================
+     1. 经典暖木酒馆与羊皮纸桌游色系（明亮温润、低饱和、高可读 60-30-10）
+     ========================================================================= */
+  :root {
+    --wood-1: #6b4b30;
+    --wood-2: #4f3520;
+    --wood-bar-1: #5c3f27;
+    --wood-bar-2: #462f1c;
+    --mat-center: #ecdbb8;
+    --mat-mid: #e0c99d;
+    --mat-edge: #cfb382;
+    --mat-slot: rgba(112, 79, 41, 0.1);
+    --panel-bg: #f4ebd8;
+    --panel-card: #fbf7ed;
+    --panel-inset: #eadcc0;
+    --panel-border: #bfa378;
+    --card-bg: #fdfaf2;
+    --card-border: #c5ad85;
+    --ink: #2f2115;
+    --ink-sub: #6b5642;
+    --ink-light: #fbf3e2;
+    --ink-muted: #7d664f;
+    --gold: #c6922c;
+    --gold-deep: #9c6f1c;
+    --gold-soft: rgba(184, 134, 44, 0.72);
+    --fire: #bd4f3b;
+    --fire-tint: #f7e4dc;
+    --water: #3d76a6;
+    --water-tint: #e4eef5;
+    --thunder: #b3831e;
+    --thunder-tint: #f7edd2;
+    --item: #3b7c5e;
+    --item-tint: #e5f0e9;
+    --supporter: #745694;
+    --supporter-tint: #eee7f4;
+    --danger: #b8453a;
+    --ok: #2f7a53;
+    --ok-soft: #3f9468;
+    --shadow: 0 3px 9px rgba(64, 42, 20, 0.18);
+  }
+
+  * { box-sizing: border-box; }
+
+  /* 桌面端锁定 100dvh 全视口自适应，确保手牌与底部语音区完整可见 */
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(circle at 30% 20%, rgba(255, 224, 168, 0.14), transparent 55%),
+      linear-gradient(155deg, var(--wood-1) 0%, var(--wood-2) 100%);
+    padding: 7px 10px;
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+  }
+
+  .table-shell {
+    width: 100%;
+    max-width: 1500px;
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  /* =========================================================================
+     2. 顶部暖木古铜边框栏
+     ========================================================================= */
+  .topbar {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 14px;
+    background: linear-gradient(180deg, var(--wood-bar-1) 0%, var(--wood-bar-2) 100%);
+    border: 1.5px solid #9e7c49;
+    border-radius: 11px;
+    color: var(--ink-light);
+    box-shadow: 0 4px 12px rgba(34, 20, 9, 0.34), inset 0 1px 0 rgba(255, 236, 198, 0.16);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .brand-title {
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: #fdf4df;
+    text-shadow: 0 1px 2px rgba(24, 13, 5, 0.45);
+  }
+  .turn-pill {
+    padding: 3px 12px;
+    border-radius: 999px;
+    background: rgba(251, 243, 224, 0.14);
+    border: 1px solid rgba(219, 184, 118, 0.52);
+    font-size: 12px;
+    font-weight: 700;
+    color: #faefd5;
+  }
+  .turn-pill.enemy-turn {
+    background: rgba(184, 69, 58, 0.34);
+    border-color: rgba(240, 152, 138, 0.65);
+    color: #ffe6e2;
+  }
+  .top-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .top-btn {
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 5px 11px;
+    border-radius: 8px;
+    border: 1px solid #b89867;
+    background: linear-gradient(180deg, #f5ead2 0%, #e7d6b3 100%);
+    color: #3b2817;
+    box-shadow: 0 1px 3px rgba(30, 18, 8, 0.22);
+    transition: background 0.15s, border-color 0.15s, transform 0.12s;
+  }
+  .top-btn:hover {
+    background: linear-gradient(180deg, #fbf3e2 0%, #efe0c2 100%);
+    border-color: #d6b274;
+  }
+  .top-btn.guide-on {
+    background: linear-gradient(180deg, #378b60 0%, #2b704c 100%);
+    border-color: #77ba96;
+    color: #fff;
+  }
+  .top-btn.guide-on:hover {
+    background: linear-gradient(180deg, #3e986a 0%, #2f7a53 100%);
+  }
+
+  /* =========================================================================
+     3. 主双栏舞台（明亮沙石羊皮纸对战盘 + 同色系羊皮纸手账面板）
+     ========================================================================= */
+  .arena-grid {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 318px;
+    gap: 9px;
+    align-items: stretch;
+  }
+
+  .playmat {
+    position: relative;
+    height: 100%;
+    min-height: 0;
+    background:
+      radial-gradient(ellipse at 50% 46%, var(--mat-center) 0%, var(--mat-mid) 60%, var(--mat-edge) 100%);
+    border: 2px solid #9c7946;
+    border-radius: 14px;
+    box-shadow:
+      0 10px 26px rgba(34, 20, 9, 0.34),
+      inset 0 0 0 3px rgba(255, 246, 224, 0.34),
+      inset 0 0 34px rgba(124, 88, 43, 0.22);
+    padding: 6px 10px 6px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 4px;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .playmat.anim-shake {
+    animation: matShake 0.26s cubic-bezier(.36,.07,.19,.97);
+  }
+  @keyframes matShake {
+    0%, 100% { transform: translate(0, 0); }
+    20% { transform: translate(-3px, 1.5px); }
+    45% { transform: translate(3px, -1.5px); }
+    70% { transform: translate(-2px, 1px); }
+  }
+
+  .side-half {
+    flex: 1 0 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 80px 1fr 72px;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .zone-col {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: center;
+    justify-content: center;
+  }
+  .zone-label {
+    font-size: 11px;
+    font-weight: 800;
+    color: #46311d;
+    text-align: center;
+    line-height: 1.25;
+  }
+  .zh-line {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--ink-sub);
+  }
+
+  /* 奖赏卡（经典酒馆褐金卡背） / 牌库 / 弃牌堆 */
+  .prize-stack {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+  }
+  .prize-card {
+    width: 26px;
+    height: 40px;
+    border-radius: 5px;
+    background: linear-gradient(145deg, #7d522f, #52341b);
+    border: 1.5px solid #d4a64c;
+    box-shadow: 0 2px 5px rgba(58, 36, 16, 0.34), inset 0 0 0 1px rgba(255, 232, 180, 0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #f6df9e;
+    font-size: 11px;
+    font-weight: 800;
+    transition: opacity 0.25s, transform 0.25s, background 0.25s;
+  }
+  .prize-card.taken {
+    opacity: 1;
+    background: linear-gradient(145deg, #e7f6ec, #c8ead4);
+    border: 1.5px solid #2f7a53;
+    box-shadow: 0 2px 6px rgba(47, 122, 83, 0.22);
+    color: #1f633e;
+    font-size: 13px;
+  }
+  .prize-card.taken.enemy-taken {
+    background: linear-gradient(145deg, #fceae6, #f4cbc3);
+    border-color: #b8453a;
+    box-shadow: 0 2px 6px rgba(184, 69, 58, 0.2);
+    color: #9c3329;
+  }
+  .prize-count-pill {
+    font-size: 10px;
+    font-weight: 800;
+    text-align: center;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: rgba(251, 245, 230, 0.78);
+    border: 1px solid #c3a576;
+    color: #5a3e21;
+    line-height: 1.2;
+  }
+  .prize-count-pill.has-progress {
+    background: rgba(47, 122, 83, 0.14);
+    border-color: rgba(47, 122, 83, 0.45);
+    color: #1f633e;
+  }
+  .prize-count-pill.enemy-progress {
+    background: rgba(184, 69, 58, 0.14);
+    border-color: rgba(184, 69, 58, 0.45);
+    color: #9c3329;
+  }
+  .prize-toast {
+    position: absolute;
+    top: 52px;
+    left: 50%;
+    transform: translate(-50%, -10px) scale(0.96);
+    z-index: 25;
+    pointer-events: none;
+    opacity: 0;
+    background: linear-gradient(180deg, #fffdf5 0%, #f4e6c4 100%);
+    border: 2px solid #c6922c;
+    border-radius: 12px;
+    padding: 8px 16px;
+    box-shadow: 0 10px 26px rgba(58, 36, 16, 0.34);
+    text-align: center;
+    max-width: 86%;
+    transition: opacity 0.24s ease, transform 0.28s cubic-bezier(.22, 1.12, .36, 1);
+  }
+  .prize-toast.show {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  .prize-toast.enemy {
+    background: linear-gradient(180deg, #fff6f4 0%, #f5dcd6 100%);
+    border-color: #b8453a;
+  }
+  .prize-toast .pt-ja { font-size: 12.5px; font-weight: 800; color: #3a240e; line-height: 1.35; }
+  .prize-toast .pt-zh { font-size: 11px; font-weight: 600; color: #6a4c2a; margin-top: 2px; line-height: 1.35; }
+  .prize-toast.enemy .pt-ja { color: #7a231b; }
+  .prize-toast.enemy .pt-zh { color: #8c3d35; }
+  .pile-box {
+    width: 72px;
+    border-radius: 8px;
+    border: 1px solid #b59668;
+    background: rgba(251, 245, 230, 0.76);
+    box-shadow: inset 0 1px 3px rgba(105, 74, 38, 0.12);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 5px 4px;
+    text-align: center;
+    gap: 1px;
+    cursor: pointer;
+    transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+  }
+  .pile-box:hover {
+    transform: translateY(-1px);
+    border-color: var(--gold-deep);
+    background: rgba(255, 250, 238, 0.94);
+    box-shadow: 0 3px 8px rgba(74, 48, 22, 0.18);
+  }
+  .pile-modal-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 11px;
+    border-radius: 9px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    border: 1.5px solid #cbb38a;
+    background: #f8f0dd;
+    color: #4a3319;
+  }
+  .pile-modal-banner.recycle {
+    border-color: rgba(47, 122, 83, 0.52);
+    background: rgba(47, 122, 83, 0.1);
+    color: #1f5c3a;
+  }
+  .pile-section { margin-bottom: 10px; }
+  .pile-section:last-child { margin-bottom: 0; }
+  .pile-section-title {
+    font-size: 11.5px;
+    font-weight: 800;
+    color: #4f371e;
+    margin-bottom: 6px;
+    padding-bottom: 3px;
+    border-bottom: 1px dashed #d7c39f;
+    display: flex;
+    justify-content: space-between;
+  }
+  .pile-chip-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+    gap: 6px;
+  }
+  .pile-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1.5px solid #d5c19c;
+    background: #fffdf7;
+    font-size: 11.5px;
+  }
+  .pile-chip.fire { border-left: 4px solid var(--fire); }
+  .pile-chip.water { border-left: 4px solid var(--water); }
+  .pile-chip.thunder { border-left: 4px solid var(--thunder); }
+  .pile-chip.supporter { border-left: 4px solid #8a4fa8; }
+  .pile-chip.item { border-left: 4px solid var(--ok); }
+  .pile-chip-left { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .pile-chip-name { font-weight: 700; color: var(--ink); line-height: 1.25; }
+  .pile-chip-zh { display: block; font-size: 10px; font-weight: 500; color: var(--ink-sub); }
+  .pile-chip-qty {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #efe3c8;
+    color: #4a3116;
+  }
+  .pile-empty {
+    text-align: center;
+    padding: 22px 12px;
+    font-size: 12.5px;
+    color: var(--ink-sub);
+    background: rgba(255, 250, 238, 0.7);
+    border-radius: 10px;
+    border: 1px dashed #ccb58d;
+  }
+  .pile-box strong { font-size: 14.5px; color: #362415; line-height: 1.1; }
+  .pile-box .pile-ja { font-size: 10px; font-weight: 700; color: #543b24; line-height: 1.15; }
+  .pile-box .pile-zh { font-size: 9.5px; color: var(--ink-sub); line-height: 1.15; }
+
+  /* 战斗区与三格备战区（统一相对比例卡槽：主战区固定宽稳态、备战区三格等宽等高、绝不忽大忽小或截断） */
+  .field-center {
+    height: auto;
+    min-height: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    align-items: center;
+  }
+  .bench-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+    align-items: stretch;
+  }
+  .slot-box {
+    border: 1px solid rgba(126, 91, 49, 0.36);
+    border-radius: 10px;
+    background: var(--mat-slot);
+    box-shadow: inset 0 1px 5px rgba(95, 65, 30, 0.14);
+    padding: 15px 5px 5px;
+    min-height: 106px;
+    height: auto;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    position: relative;
+    transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
+  }
+  .slot-box.active-slot {
+    border: 2px solid var(--gold-soft);
+    background: rgba(255, 246, 224, 0.34);
+    box-shadow: inset 0 1px 6px rgba(130, 88, 32, 0.15);
+    width: clamp(340px, 56%, 430px);
+    min-height: 116px;
+  }
+  .slot-box.highlight-ally {
+    border: 2px solid var(--ok);
+    background: rgba(47, 122, 83, 0.14);
+    box-shadow: 0 0 0 2px rgba(47, 122, 83, 0.24);
+    cursor: pointer;
+  }
+  .slot-box.highlight-enemy {
+    border: 2px solid var(--danger);
+    background: rgba(184, 69, 58, 0.14);
+    box-shadow: 0 0 0 2px rgba(184, 69, 58, 0.22);
+    cursor: pointer;
+  }
+  .slot-tag {
+    position: absolute;
+    top: 2px;
+    left: 7px;
+    font-size: 9.5px;
+    font-weight: 700;
+    color: #6b5236;
+  }
+  .slot-empty {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: rgba(102, 76, 48, 0.65);
+    text-align: center;
+    padding: 4px 8px;
+  }
+
+  /* 敌我中心石刻分界线 + 本回合可用次数牌 */
+  .mat-divider {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+  }
+  .mat-divider::before,
+  .mat-divider::after {
+    content: "";
+    flex: 1;
+    height: 1.5px;
+    background: linear-gradient(90deg, transparent, rgba(130, 94, 48, 0.45), transparent);
+  }
+  .vs-badge {
+    padding: 2px 11px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, #634329 0%, #4d331d 100%);
+    border: 1px solid #b58d4d;
+    font-size: 10.5px;
+    font-weight: 700;
+    color: #fbf2dd;
+    white-space: nowrap;
+    box-shadow: 0 1px 4px rgba(58, 36, 16, 0.24);
+  }
+  .turn-limits {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .limit-pill {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(253, 248, 236, 0.88);
+    border: 1px solid #b89867;
+    color: #442f1c;
+    white-space: nowrap;
+  }
+  .limit-pill.used {
+    background: rgba(130, 96, 54, 0.14);
+    border-color: rgba(130, 96, 54, 0.26);
+    color: #8a7358;
+    text-decoration: line-through;
+  }
+
+  /* 非阻塞右侧中段半透明引导提示（支持完成撤回动画与新引导弹性弹出动画顺序衔接） */
+  .guide-float {
+    position: absolute;
+    top: 39%;
+    right: 12px;
+    transform: translate(118%, -50%) scale(0.93);
+    z-index: 45;
+    pointer-events: none;
+    opacity: 0;
+    width: clamp(235px, 26%, 305px);
+    transition:
+      transform 0.28s cubic-bezier(.4, 0, .2, 1),
+      opacity 0.22s ease;
+  }
+  .guide-float.show {
+    opacity: 1;
+    transform: translate(0, -50%) scale(1);
+    transition:
+      transform 0.38s cubic-bezier(.22, 1.12, .36, 1),
+      opacity 0.24s ease;
+  }
+  .guide-card {
+    pointer-events: none;
+    background: rgba(253, 249, 238, 0.86);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    border: 1.5px solid rgba(176, 142, 88, 0.85);
+    border-left: 4px solid var(--ok);
+    border-radius: 12px;
+    padding: 10px 12px;
+    box-shadow: 0 10px 26px rgba(56, 36, 15, 0.24);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .guide-body { min-width: 0; flex: 1; }
+  .guide-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--ok);
+    margin-bottom: 3px;
+  }
+  .guide-ja {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.38;
+  }
+  .guide-zh {
+    font-size: 11px;
+    color: var(--ink-sub);
+    margin-top: 3px;
+    line-height: 1.38;
+  }
+  .guide-close {
+    pointer-events: auto;
+    cursor: pointer;
+    border: 1px solid #c9b086;
+    background: rgba(242, 231, 207, 0.92);
+    color: var(--ink-sub);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    padding: 0;
+    flex-shrink: 0;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .guide-close:hover { background: #e3cfa8; color: var(--ink); border-color: #9e7c49; }
+
+  /* =========================================================================
+     4. 经典象牙羊皮纸实体卡牌（柔和属性卡头 + 细顶线 + 传说古铜金 ex 框）
+     ========================================================================= */
+  .card {
+    width: 100%;
+    height: 100%;
+    flex-shrink: 0;
+    background: var(--card-bg);
+    border: 1.5px solid var(--card-border);
+    border-top: 3px solid #8a7358;
+    border-radius: 9px;
+    padding: 0 0 4px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 2.5px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.18s cubic-bezier(.22,.85,.36,1), box-shadow 0.18s ease;
+    cursor: pointer;
+  }
+  .card:hover {
+    transform: translateY(-2.5px);
+    box-shadow: 0 8px 16px rgba(64, 42, 20, 0.26);
+  }
+  .card.selected {
+    transform: translateY(-5px);
+    box-shadow: 0 0 0 2px var(--ok), 0 8px 18px rgba(64, 42, 20, 0.28);
+  }
+  .card.fire { border-top-color: var(--fire); }
+  .card.water { border-top-color: var(--water); }
+  .card.thunder { border-top-color: var(--thunder); }
+  .card.item { border-top-color: var(--item); }
+  .card.supporter { border-top-color: var(--supporter); }
+
+  /* ex 王牌卡：经典传说卡古铜金浮雕边 + 柔和金辉扫光 */
+  .card.is-ex {
+    border: 2px solid var(--gold);
+    border-top: 3.5px solid var(--gold-deep);
+    box-shadow: 0 4px 14px rgba(178, 128, 34, 0.34);
+  }
+  .card.is-ex::after {
+    content: "";
+    position: absolute;
+    inset: -40%;
+    background: linear-gradient(115deg, transparent 44%, rgba(255, 245, 205, 0.44) 50%, transparent 56%);
+    transform: translateX(-120%);
+    animation: exShimmer 5s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 3;
+  }
+  @keyframes exShimmer {
+    0%, 66% { transform: translateX(-120%); }
+    100% { transform: translateX(120%); }
+  }
+  .card.supporter-used { opacity: 0.48; filter: grayscale(0.35); }
+
+  /* 防御姿态倾斜反馈与受击/攻击/贴能激活特效 */
+  .card.guarding {
+    transform: rotate(-2deg);
+    box-shadow: 0 0 0 2px var(--water), var(--shadow);
+  }
+  .card.guarding:hover {
+    transform: rotate(-2deg) translateY(-2.5px);
+  }
+  .card.anim-hit { animation: cardHit 0.44s cubic-bezier(.36,.07,.19,.97); }
+  .card.anim-lunge-up { animation: cardLungeUp 0.42s cubic-bezier(.22,.85,.36,1); z-index: 6; }
+  .card.anim-lunge-down { animation: cardLungeDown 0.42s cubic-bezier(.22,.85,.36,1); z-index: 6; }
+  .card.anim-powerup { animation: cardPowerUp 0.68s ease; }
+  .card.anim-heal { animation: cardHeal 0.65s ease; }
+  .card.anim-enter { animation: cardEnter 0.4s cubic-bezier(.2,.9,.3,1); }
+  .card.anim-guard { animation: cardGuardFlash 0.52s ease; }
+  @keyframes cardHit {
+    0% { transform: translateX(0) scale(1); }
+    15% { transform: translateX(-8px) rotate(-2.5deg) scale(0.97); box-shadow: 0 0 0 2.5px rgba(184, 69, 58, 0.72), var(--shadow); }
+    38% { transform: translateX(8px) rotate(2.5deg); }
+    60% { transform: translateX(-4px) rotate(-1deg); }
+    80% { transform: translateX(3px); }
+    100% { transform: translateX(0) scale(1); }
+  }
+  @keyframes cardLungeUp {
+    0% { transform: translateY(0) scale(1); }
+    35% { transform: translateY(-20px) scale(1.05) rotate(-1deg); box-shadow: 0 14px 24px rgba(58, 36, 16, 0.34); }
+    55% { transform: translateY(-15px) scale(1.03); }
+    100% { transform: translateY(0) scale(1); }
+  }
+  @keyframes cardLungeDown {
+    0% { transform: translateY(0) scale(1); }
+    35% { transform: translateY(20px) scale(1.05) rotate(1deg); box-shadow: 0 14px 24px rgba(58, 36, 16, 0.34); }
+    55% { transform: translateY(15px) scale(1.03); }
+    100% { transform: translateY(0) scale(1); }
+  }
+  @keyframes cardPowerUp {
+    0% { box-shadow: 0 0 0 0 rgba(198, 146, 44, 0.75), var(--shadow); transform: scale(1); }
+    40% { box-shadow: 0 0 0 8px rgba(47, 122, 83, 0.34), var(--shadow); transform: scale(1.04); }
+    100% { box-shadow: 0 0 0 0 rgba(47, 122, 83, 0), var(--shadow); transform: scale(1); }
+  }
+  @keyframes cardHeal {
+    0% { box-shadow: 0 0 0 0 rgba(47, 122, 83, 0.68), var(--shadow); transform: scale(1); }
+    45% { box-shadow: 0 0 0 8px rgba(63, 148, 104, 0.28), var(--shadow); transform: scale(1.03); }
+    100% { box-shadow: 0 0 0 0 rgba(63, 148, 104, 0), var(--shadow); transform: scale(1); }
+  }
+  @keyframes cardEnter {
+    0% { opacity: 0.2; transform: translateY(14px) scale(0.93); }
+    65% { opacity: 1; transform: translateY(-3px) scale(1.02); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes cardGuardFlash {
+    0% { box-shadow: 0 0 0 0 rgba(61, 118, 166, 0.72), var(--shadow); }
+    50% { box-shadow: 0 0 0 8px rgba(61, 118, 166, 0.3), var(--shadow); }
+    100% { box-shadow: 0 0 0 2px var(--water), var(--shadow); }
+  }
+  .prize-card.anim-prize-pop { animation: prizePop 0.6s ease; }
+  @keyframes prizePop {
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(198, 146, 44, 0.8); }
+    45% { transform: scale(1.2); box-shadow: 0 0 0 10px rgba(198, 146, 44, 0); }
+    100% { transform: scale(1); }
+  }
+
+  /* 浮动伤害/回血/贴能战斗数值与属性命中特效层 */
+  .float-text {
+    position: absolute;
+    left: 50%;
+    top: 36%;
+    transform: translate(-50%, 0);
+    pointer-events: none;
+    z-index: 30;
+    font-size: 15.5px;
+    font-weight: 800;
+    white-space: nowrap;
+    padding: 3px 9px;
+    border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(50, 30, 12, 0.28);
+    animation: floatUpFade 0.92s cubic-bezier(.16,.84,.44,1) forwards;
+  }
+  .float-text.dmg { background: var(--danger); color: #fff; }
+  .float-text.crit { background: linear-gradient(135deg, #b8453a, #c6861e); color: #fff; font-size: 17.5px; }
+  .float-text.heal { background: var(--ok); color: #fff; }
+  .float-text.energy { background: #5a3e26; color: #fbf3df; border: 1px solid var(--gold); font-size: 12.5px; }
+  .float-text.guard { background: var(--water); color: #fff; font-size: 12.5px; }
+  .float-text.ko { background: #462f1c; color: #f8e1a2; border: 1px solid var(--gold); font-size: 14.5px; }
+  @keyframes floatUpFade {
+    0% { opacity: 0; transform: translate(-50%, 8px) scale(0.76); }
+    18% { opacity: 1; transform: translate(-50%, -8px) scale(1.1); }
+    75% { opacity: 1; transform: translate(-50%, -26px) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -38px) scale(0.95); }
+  }
+
+  .vfx-burst {
+    position: absolute;
+    inset: 4px;
+    border-radius: 9px;
+    pointer-events: none;
+    z-index: 25;
+    animation: vfxFade 0.58s ease-out forwards;
+  }
+  .vfx-burst.vfx-fire { background: radial-gradient(circle, rgba(246, 185, 118, 0.68) 0%, rgba(189, 79, 59, 0.36) 54%, transparent 78%); }
+  .vfx-burst.vfx-water { background: radial-gradient(circle, rgba(162, 214, 245, 0.64) 0%, rgba(61, 118, 166, 0.34) 55%, transparent 78%); }
+  .vfx-burst.vfx-thunder { background: radial-gradient(circle, rgba(252, 232, 148, 0.75) 0%, rgba(179, 131, 30, 0.36) 54%, transparent 78%); }
+  .vfx-burst.vfx-heal { background: radial-gradient(circle, rgba(138, 216, 174, 0.58) 0%, rgba(47, 122, 83, 0.26) 55%, transparent 80%); }
+  .vfx-burst.vfx-energy { background: radial-gradient(circle, rgba(244, 222, 148, 0.6) 0%, rgba(198, 146, 44, 0.28) 55%, transparent 80%); }
+  @keyframes vfxFade {
+    0% { opacity: 0.92; transform: scale(0.86); }
+    45% { opacity: 0.82; transform: scale(1.04); }
+    100% { opacity: 0; transform: scale(1.1); }
+  }
+
+  /* 经典酒馆木金斜切回合横幅 */
+  .turn-banner {
+    position: absolute;
+    left: 50%;
+    top: 46%;
+    transform: translate(-66%, -50%) skewX(-8deg) scale(0.92);
+    pointer-events: none;
+    z-index: 40;
+    opacity: 0;
+    padding: 8px 26px;
+    border-radius: 8px;
+    background: linear-gradient(180deg, #5d4026 0%, #442d1a 100%);
+    border: 2px solid #d4a64c;
+    color: #fdf4df;
+    text-align: center;
+    box-shadow: 0 12px 26px rgba(42, 24, 10, 0.42);
+    transition: opacity 0.22s ease, transform 0.24s cubic-bezier(.22,.85,.36,1);
+  }
+  .turn-banner.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) skewX(-8deg) scale(1);
+  }
+  .turn-banner.enemy {
+    background: linear-gradient(180deg, #74322a 0%, #56231d 100%);
+    border-color: #d98276;
+  }
+  .turn-banner .tb-ja { font-size: 14.5px; font-weight: 800; letter-spacing: 0.03em; transform: skewX(8deg); }
+  .turn-banner .tb-zh { font-size: 12px; color: #f0dfbe; margin-top: 1px; transform: skewX(8deg); }
+
+  /* 卡牌头部：温润淡彩底 + 深褐高对比文字 */
+  .card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 6px;
+    background: #f3ead8;
+    color: var(--ink);
+    border-bottom: 1px solid rgba(112, 79, 41, 0.14);
+  }
+  .card.fire .card-head { background: var(--fire-tint); }
+  .card.water .card-head { background: var(--water-tint); }
+  .card.thunder .card-head { background: var(--thunder-tint); }
+  .card.item .card-head { background: var(--item-tint); }
+  .card.supporter .card-head { background: var(--supporter-tint); }
+
+  .card-head-left {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .card-head-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .card-art {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #fffdf8;
+    border: 1px solid rgba(112, 79, 41, 0.22);
+    overflow: hidden;
+  }
+  .card-art svg { width: 22px; height: 22px; display: block; }
+  .bench-row .card-art { width: 22px; height: 22px; border-radius: 5px; }
+  .bench-row .card-art svg { width: 18px; height: 18px; }
+  .hand-card .card-art { width: 24px; height: 24px; border-radius: 6px; }
+  .hand-card .card-art svg { width: 20px; height: 20px; }
+  .card-title-inline {
+    font-size: 11.5px;
+    font-weight: 800;
+    color: var(--ink);
+    line-height: 1.2;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .card-title-inline .zh-sub {
+    font-size: 0.95em;
+    font-weight: 600;
+    color: var(--ink-sub);
+  }
+  .hp-badge {
+    font-size: 10.5px;
+    font-weight: 800;
+    color: #9e2d24;
+    background: #fffdf8;
+    border: 1px solid #dfc5ba;
+    border-radius: 5px;
+    padding: 1px 5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .hp-track {
+    width: calc(100% - 12px);
+    margin: 0 6px;
+    height: 4.5px;
+    background: #e6dac3;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .hp-fill {
+    height: 100%;
+    background: var(--ok-soft);
+    border-radius: 999px;
+    transition: width 0.25s ease;
+  }
+  .hp-fill.mid { background: #c98f22; }
+  .hp-fill.low { background: var(--danger); }
+
+  /* 能量圆片与状态筹码 */
+  .token-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 3px 4px;
+    min-height: 16px;
+    padding: 0 6px;
+  }
+  .token-chips {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .energy-pips {
+    display: flex;
+    gap: 2.5px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .pip {
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 800;
+    color: #fff;
+    border: 1px solid rgba(48, 30, 12, 0.2);
+  }
+  .pip svg {
+    width: 10px;
+    height: 10px;
+    fill: #fff;
+    display: block;
+  }
+  .chip-icon {
+    width: 10px;
+    height: 10px;
+    vertical-align: -1px;
+    margin-right: 2px;
+    fill: currentColor;
+    display: inline-block;
+  }
+  .pip.fire { background: var(--fire); }
+  .pip.water { background: var(--water); }
+  .pip.thunder { background: var(--thunder); }
+  .pip.any { background: #857664; }
+  .pip.item { background: var(--item); }
+  .pip.filled {
+    box-shadow: 0 0 0 1.5px #fffdf8, 0 1px 3px rgba(64, 42, 20, 0.28);
+    transform: scale(1.03);
+  }
+  .pip.unfilled {
+    opacity: 0.36;
+    filter: grayscale(0.55);
+    border: 1px dashed rgba(64, 42, 20, 0.45);
+  }
+
+  .dmg-chip {
+    font-size: 9.5px;
+    font-weight: 800;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--danger);
+    color: #fff;
+  }
+  .guard-chip {
+    font-size: 9.5px;
+    font-weight: 800;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--water);
+    color: #fff;
+  }
+  .weak-chip {
+    font-size: 9px;
+    font-weight: 600;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: #f3ead8;
+    color: var(--ink-sub);
+    border: 1px solid #d9c7a6;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+  }
+  .weak-chip svg {
+    width: 10px;
+    height: 10px;
+    fill: currentColor;
+    display: block;
+  }
+  .boost-chip {
+    font-size: 9.5px;
+    font-weight: 800;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--gold-deep);
+    color: #fff;
+  }
+  .ex-chip {
+    font-size: 9px;
+    font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #d8a740, #a67419);
+    color: #fff;
+    white-space: nowrap;
+  }
+  .supporter-chip {
+    font-size: 8.5px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: var(--supporter);
+    color: #fff;
+    white-space: nowrap;
+  }
+
+  /* 技能行：羊皮纸温润底，能量满足时淡森绿高亮 */
+  .skills-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 1px 5px 0;
+  }
+  .skill-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 4px;
+    font-size: 10.5px;
+    line-height: 1.2;
+    padding: 2px 5px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: #f5eedf;
+    opacity: 0.66;
+    transition: background 0.16s ease, border-color 0.16s ease, transform 0.14s ease, opacity 0.16s ease;
+  }
+  .bench-row .skill-line {
+    font-size: 9.5px;
+    padding: 2px 4px;
+  }
+  .skill-line.ready {
+    opacity: 1;
+    background: rgba(47, 122, 83, 0.12);
+    border-color: rgba(47, 122, 83, 0.42);
+  }
+  .skill-line.ready:hover {
+    background: rgba(47, 122, 83, 0.2);
+    transform: translateX(2px);
+  }
+  .skill-line.just-unlocked {
+    animation: skillUnlock 0.85s ease;
+  }
+  @keyframes skillUnlock {
+    0% { background: rgba(198, 146, 44, 0.34); border-color: var(--gold); transform: scale(1.02); }
+    100% { background: rgba(47, 122, 83, 0.12); border-color: rgba(47, 122, 83, 0.42); transform: scale(1); }
+  }
+  .skill-left {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex-wrap: wrap;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .skill-name { font-weight: 700; color: var(--ink); }
+  .skill-right {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .skill-ready-tag {
+    font-size: 8.5px;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 4px;
+    background: var(--ok);
+    color: #fff;
+  }
+  .skill-dmg { font-size: 11px; font-weight: 800; color: #2b1d12; white-space: nowrap; }
+  .skill-note { font-size: 9px; color: var(--ink-sub); font-weight: 600; }
+  .skill-tag {
+    font-size: 8.5px;
+    font-weight: 700;
+    padding: 0.5px 4px;
+    border-radius: 4px;
+    white-space: nowrap;
+    line-height: 1.25;
+  }
+  .skill-tag.normal {
+    background: rgba(112, 79, 41, 0.11);
+    color: var(--ink-sub);
+    border: 1px solid rgba(112, 79, 41, 0.24);
+  }
+  .skill-tag.snipe {
+    background: rgba(179, 131, 30, 0.2);
+    color: #7a4f06;
+    border: 1px solid rgba(179, 131, 30, 0.55);
+  }
+  .skill-tag.guard {
+    background: rgba(61, 118, 166, 0.15);
+    color: #26547c;
+    border: 1px solid rgba(61, 118, 166, 0.35);
+  }
+
+  /* 手牌区：PC 全屏默认展示 4.5 张等宽统一卡面，第 5 张露出半张自然引导横向滚动 */
+  .hand-section {
+    flex-shrink: 0;
+    border-top: 1px solid rgba(130, 94, 48, 0.28);
+    padding-top: 3px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .hand-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .hand-body {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+    min-width: 0;
+  }
+  .hand-cards {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    gap: 8px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 10px 4px 4px;
+    align-items: stretch;
+  }
+  .hand-card {
+    flex: 0 0 calc((100% - 32px) / 4.5);
+    min-width: 184px;
+    max-width: 236px;
+    min-height: 94px;
+    height: auto;
+    justify-content: space-between;
+  }
+  .hand-actions {
+    flex: 0 0 112px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 0 4px 8px;
+    border-left: 1px dashed rgba(130, 94, 48, 0.32);
+  }
+  .hand-actions .btn-sm {
+    flex: 1;
+    width: 100%;
+    padding: 6px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    white-space: nowrap;
+  }
+  .hand-actions .btn-defend {
+    background: linear-gradient(180deg, #eaf2f8 0%, #d4e4f1 100%);
+    border-color: #7ca4c4;
+    color: #21496b;
+  }
+  .hand-actions .btn-defend:hover {
+    background: linear-gradient(180deg, #f2f7fc 0%, #dfecf6 100%);
+    border-color: #4f82ac;
+  }
+  .hand-actions .btn-endturn {
+    background: linear-gradient(180deg, #c99235 0%, #a97520 100%);
+    border-color: #8c5f17;
+    color: #fffdf8;
+  }
+  .hand-actions .btn-endturn:hover {
+    background: linear-gradient(180deg, #d59d3d 0%, #b57e24 100%);
+  }
+  .hand-actions .btn-endturn .btn-zh {
+    color: rgba(255, 253, 248, 0.9);
+  }
+  .hand-card:hover {
+    transform: translateY(-9px) scale(1.03);
+    z-index: 12;
+  }
+  .hand-card[draggable="true"] { cursor: grab; }
+  .hand-card.dragging-source {
+    position: fixed;
+    left: -9999px;
+    top: -9999px;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .hand-drop-placeholder {
+    flex: 0 0 calc((100% - 32px) / 4.5);
+    min-width: 184px;
+    max-width: 236px;
+    min-height: 94px;
+    border-radius: 12px;
+    border: 2px dashed var(--gold);
+    background: linear-gradient(180deg, rgba(224, 173, 78, 0.22) 0%, rgba(201, 146, 53, 0.1) 100%);
+    box-shadow: inset 0 0 0 1px rgba(255, 245, 220, 0.5), 0 0 14px rgba(201, 146, 53, 0.28);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    pointer-events: none;
+    animation: dropSlotPulse 1.1s ease-in-out infinite;
+  }
+  .hand-drop-placeholder .drop-slot-ja {
+    font-size: 11px;
+    font-weight: 800;
+    color: #8c5f17;
+  }
+  .hand-drop-placeholder .drop-slot-zh {
+    font-size: 10px;
+    font-weight: 600;
+    color: #9e7430;
+  }
+  @keyframes dropSlotPulse {
+    0%, 100% { border-color: rgba(201, 146, 53, 0.95); background: rgba(224, 173, 78, 0.18); }
+    50% { border-color: rgba(201, 146, 53, 0.55); background: rgba(224, 173, 78, 0.1); }
+  }
+  .hand-card.setup-pick {
+    transform: translateY(-8px);
+    border: 2px solid var(--ok);
+    border-top: 3.5px solid var(--ok);
+    box-shadow: 0 0 0 2px rgba(47, 122, 83, 0.34), 0 8px 18px rgba(58, 36, 16, 0.24);
+    animation: setupPulse 1.8s infinite;
+  }
+  .hand-card.setup-pick:hover {
+    transform: translateY(-12px) scale(1.04);
+    z-index: 14;
+  }
+  @keyframes setupPulse {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(47, 122, 83, 0.36), 0 8px 18px rgba(58, 36, 16, 0.24); }
+    50% { box-shadow: 0 0 0 4px rgba(47, 122, 83, 0.16), 0 10px 22px rgba(58, 36, 16, 0.28); }
+  }
+  .setup-pick-tag {
+    font-size: 9px;
+    font-weight: 700;
+    color: #fff;
+    background: var(--ok);
+    padding: 1px 7px;
+    margin: 0 6px;
+    border-radius: 999px;
+    align-self: flex-start;
+  }
+  .hand-card .skill-line { opacity: 1; padding: 1.5px 4px; }
+  .card-desc {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    line-height: 1.25;
+    padding: 2px 6px 2px;
+  }
+  .card-desc .desc-ja { font-size: 10.5px; font-weight: 600; color: var(--ink); }
+  .card-desc .desc-zh { font-size: 9.5px; color: var(--ink-sub); border-top: 1px dashed rgba(112, 79, 41, 0.18); padding-top: 2px; }
+
+  /* =========================================================================
+     5. 右侧羊皮纸手账面板（明亮耐看，与左侧沙石棋盘自然一体）
+     ========================================================================= */
+  .side-panel {
+    position: relative;
+    height: 100%;
+    min-height: 0;
+    background: linear-gradient(180deg, #f6eedd 0%, var(--panel-bg) 100%);
+    border: 2px solid #9c7946;
+    border-radius: 14px;
+    box-shadow: 0 10px 26px rgba(34, 20, 9, 0.32), inset 0 0 0 2px rgba(255, 250, 238, 0.55);
+    padding: 10px 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    overflow: hidden;
+    color: var(--ink);
+  }
+  .top-btn.log-on {
+    background: linear-gradient(180deg, #c99235 0%, #a97520 100%);
+    border-color: #e4bd6d;
+    color: #fff;
+  }
+  .log-err-dot {
+    display: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #d94336;
+    margin-left: 5px;
+    vertical-align: 1px;
+    box-shadow: 0 0 0 1.5px #fff;
+  }
+  .log-err-dot.show { display: inline-block; }
+
+  /* 右侧链路调试日志抽屉（临时覆盖在右侧操纵栏上方，不影响左侧牌桌操作） */
+  .debug-log-drawer {
+    position: absolute;
+    inset: 0;
+    z-index: 60;
+    background: linear-gradient(180deg, #f8f1e2 0%, #efe3cb 100%);
+    border-radius: 12px;
+    padding: 10px 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    transform: translateX(104%);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.28s cubic-bezier(.22, 1, .36, 1), opacity 0.2s ease;
+  }
+  .debug-log-drawer.open {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .dlog-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #3f2b19;
+    border-bottom: 1.5px solid #d7c39f;
+    padding-bottom: 6px;
+  }
+  .dlog-filters {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+  .dlog-chip {
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    border: 1px solid #c5ab80;
+    background: #fbf6ea;
+    color: var(--ink-sub);
+  }
+  .dlog-chip.active {
+    background: #5c3f27;
+    border-color: #5c3f27;
+    color: #fdf4df;
+  }
+  .dlog-list {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    background: var(--panel-inset);
+    border: 1px solid #cfb993;
+    border-radius: 8px;
+    padding: 6px 7px;
+    font-size: 11px;
+    line-height: 1.38;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .dlog-item {
+    background: #fbf7ed;
+    border: 1px solid #decba8;
+    border-left: 3px solid #7d664f;
+    border-radius: 6px;
+    padding: 4px 6px;
+    word-break: break-word;
+  }
+  .dlog-item.cat-ASR { border-left-color: #3d76a6; }
+  .dlog-item.cat-NLU { border-left-color: #745694; }
+  .dlog-item.cat-TTS { border-left-color: #2f7a53; }
+  .dlog-item.cat-AEC { border-left-color: #c6922c; }
+  .dlog-item.cat-ERR { border-left-color: #b8453a; background: #fdf1ef; }
+  .dlog-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    font-size: 9.5px;
+    font-weight: 700;
+    color: var(--ink-sub);
+    margin-bottom: 2px;
+  }
+  .dlog-msg { font-weight: 600; color: var(--ink); }
+  .dlog-detail {
+    margin-top: 2px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 9.5px;
+    color: #5e4a36;
+    white-space: pre-wrap;
+    max-height: 84px;
+    overflow-y: auto;
+  }
+  .dlog-foot {
+    display: grid;
+    grid-template-columns: 1fr 1.25fr 0.8fr;
+    gap: 5px;
+    border-top: 1.5px solid #d7c39f;
+    padding-top: 6px;
+  }
+  .dlog-foot .btn-sm { padding: 5px 4px; font-size: 10.5px; white-space: nowrap; }
+  .panel-title {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    font-weight: 800;
+    color: #3f2b19;
+    border-bottom: 1.5px solid #d7c39f;
+    padding-bottom: 6px;
+  }
+  .panel-title > span:first-child {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+  .call-state-badge {
+    flex-shrink: 0;
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #ebe0c8;
+    color: var(--ink-sub);
+    border: 1px solid #cbb38a;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .call-state-badge.live {
+    background: #f9e4e1;
+    color: #9e2d24;
+    border-color: #d9958d;
+  }
+  .call-state-badge.live::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--danger);
+    animation: liveDot 1.1s infinite;
+  }
+  @keyframes liveDot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  /* 保存成功轻提示浮层 */
+  .save-toast {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-10px);
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    padding: 9px 18px;
+    border-radius: 10px;
+    background: #4e341e;
+    border: 1.5px solid #c9a15a;
+    color: #fbf3e0;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: 0 10px 24px rgba(34, 20, 9, 0.38);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    white-space: nowrap;
+  }
+  .save-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* 对手与裁判双语气泡（统一浅象牙纸卡 + 仅左侧 3px 低饱和细线区分身份） */
+  .bubble {
+    flex-shrink: 0;
+    border-radius: 9px;
+    padding: 7px 9px;
+    background: var(--panel-card);
+    border: 1px solid #d9c5a2;
+    border-left: 3.5px solid #4e7496;
+  }
+  .bubble.rival {
+    background: var(--panel-card);
+    border-left-color: #b55446;
+  }
+  .bubble-role {
+    font-size: 10px;
+    font-weight: 800;
+    color: #3f6282;
+    margin-bottom: 2px;
+  }
+  .bubble.rival .bubble-role { color: #9c4236; }
+  .bubble-ja {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.35;
+  }
+  .bubble-zh {
+    font-size: 11px;
+    color: var(--ink-sub);
+    margin-top: 3px;
+    padding-top: 3px;
+    border-top: 1px dashed rgba(112, 79, 41, 0.2);
+    line-height: 1.32;
+  }
+
+  /* 追问与二次确认交互条 */
+  .pending-bar {
+    flex-shrink: 0;
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    background: #f9eed4;
+    border: 1.5px solid #cfa049;
+    border-radius: 9px;
+    padding: 7px 9px;
+  }
+  .pending-bar.open { display: flex; }
+  .pending-ja { font-size: 11.5px; font-weight: 700; color: #543714; line-height: 1.35; }
+  .pending-zh { font-size: 10.5px; color: #7b5a2e; line-height: 1.32; border-top: 1px dashed rgba(156, 111, 28, 0.28); padding-top: 3px; }
+  .pending-btns { display: flex; flex-wrap: wrap; gap: 4px; }
+
+  /* 对局记录区 */
+  .log-wrap {
+    flex: 1 1 0;
+    min-height: 54px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow: hidden;
+  }
+  .log-bar {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-sub);
+  }
+  .notepad-log {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    background: var(--panel-inset);
+    border: 1px solid #cfb993;
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 11.5px;
+    line-height: 1.4;
+    box-shadow: inset 0 1px 4px rgba(105, 74, 38, 0.1);
+  }
+  .log-entry {
+    padding: 4px 0;
+    border-bottom: 1px dashed rgba(112, 79, 41, 0.2);
+  }
+  .log-entry:last-child { border-bottom: none; }
+  .log-ja { color: var(--ink); font-weight: 600; }
+  .log-zh { color: var(--ink-sub); font-size: 10.5px; margin-top: 1px; }
+
+  /* 底部语音通话、输入框与实时 Tips 建议区 */
+  .voice-dock {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-top: 1.5px solid #d7c39f;
+    padding-top: 7px;
+  }
+  /* 语音通话与文字发送共享 2 列网格：右列自动收缩为「単発（单次）」与「送信（发送）」中较宽文字的最小不换行宽度 */
+  .voice-controls-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    gap: 5px;
+    align-items: stretch;
+  }
+  .btn-voice {
+    width: 100%;
+    padding: 7px 10px;
+    border-radius: 9px;
+    border: 1px solid #245f40;
+    background: linear-gradient(180deg, #378b60 0%, #2b704c 100%);
+    color: #fff;
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    line-height: 1.25;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(42, 74, 52, 0.24);
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn-voice .btn-zh { font-size: 11.5px; font-weight: 500; opacity: 0.92; }
+  .btn-voice:hover { background: linear-gradient(180deg, #3e996a 0%, #2f7a53 100%); }
+  .btn-voice.in-call {
+    background: linear-gradient(180deg, #c65044 0%, #a53c32 100%);
+    border-color: #8c2f26;
+    animation: pulseRec 1.3s infinite;
+  }
+  .btn-icon {
+    width: 14px;
+    height: 14px;
+    vertical-align: -2px;
+    margin-right: 4px;
+    fill: currentColor;
+  }
+  .btn-ptt {
+    width: 100%;
+    padding: 6px 4px;
+    border-radius: 9px;
+    border: 1px solid #bfa378;
+    background: linear-gradient(180deg, #fbf5e7 0%, #ecdcc0 100%);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.25;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn-ptt .btn-zh { font-size: 11px; font-weight: 500; color: var(--ink-sub); }
+  .btn-ptt:hover { background: linear-gradient(180deg, #fffaf0 0%, #f3e5cc 100%); border-color: #a38353; }
+  .btn-ptt.recording {
+    background: var(--danger);
+    border-color: #8c2f26;
+    color: #fff;
+    animation: pulseRec 1.2s infinite;
+  }
+  .btn-ptt.recording .btn-zh { color: rgba(255, 255, 255, 0.92); }
+  @keyframes pulseRec {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(184, 69, 58, 0.45); }
+    50% { box-shadow: 0 0 0 6px rgba(184, 69, 58, 0); }
+  }
+
+  .voice-controls-grid input {
+    width: 100%;
+    min-width: 0;
+    padding: 6px 9px;
+    border: 1.5px solid #c9b086;
+    border-radius: 8px;
+    font-size: 11.5px;
+    font-family: inherit;
+    background: #fffdf8;
+    color: var(--ink);
+  }
+  .voice-controls-grid input::placeholder { color: #9a856b; }
+  .voice-controls-grid input:focus { outline: none; border-color: var(--gold-deep); }
+  .voice-controls-grid .btn-sm {
+    width: 100%;
+    padding: 6px 6px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .btn-sm {
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 11.5px;
+    font-weight: 700;
+    line-height: 1.25;
+    padding: 5px 9px;
+    border-radius: 8px;
+    border: 1px solid #bfa378;
+    background: linear-gradient(180deg, #fbf5e7 0%, #ecdcc0 100%);
+    color: var(--ink);
+    transition: background 0.14s, border-color 0.14s;
+  }
+  .btn-sm .btn-zh { font-size: 10.5px; font-weight: 500; color: var(--ink-sub); }
+  .btn-sm:hover { border-color: #9e7c49; background: linear-gradient(180deg, #fffaf0 0%, #f3e5cc 100%); }
+  .btn-sm.primary {
+    background: linear-gradient(180deg, #c99235 0%, #a97520 100%);
+    border-color: #8c5f17;
+    color: #fffdf8;
+  }
+  .btn-sm.primary:hover { background: linear-gradient(180deg, #d59d3d 0%, #b57e24 100%); }
+
+  /* 实时战术建议区 */
+  .live-tip-box {
+    background: var(--panel-card);
+    border: 1px solid #d9c5a2;
+    border-left: 3.5px solid var(--ok);
+    border-radius: 8px;
+    padding: 6px 8px;
+    line-height: 1.35;
+  }
+  .live-tip-label {
+    font-size: 10px;
+    font-weight: 800;
+    color: var(--ok);
+    margin-bottom: 2px;
+  }
+  .live-tip-ja {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .live-tip-zh {
+    font-size: 10.5px;
+    color: var(--ink-sub);
+    margin-top: 1px;
+  }
+
+
+
+  /* =========================================================================
+     6. 浮层菜单与弹窗（手动操作菜单 / 规则弹窗 / 胜负弹窗 / 接口与语音设置）
+     ========================================================================= */
+  .action-popover {
+    position: fixed;
+    z-index: 90;
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 210px;
+    background: #fbf6ea;
+    border: 1.5px solid #a88652;
+    border-radius: 10px;
+    padding: 9px;
+    color: var(--ink);
+    box-shadow: 0 12px 26px rgba(48, 28, 12, 0.3);
+  }
+  .action-popover.open { display: flex; }
+
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(44, 28, 14, 0.56);
+    backdrop-filter: blur(2.5px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 100;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal-box {
+    width: 100%;
+    max-width: 620px;
+    max-height: 88vh;
+    overflow-y: auto;
+    background: #fbf6ea;
+    border: 2px solid #a88652;
+    border-radius: 14px;
+    color: var(--ink);
+    box-shadow: 0 20px 50px rgba(36, 22, 10, 0.4);
+    padding: 18px 20px;
+  }
+  .modal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1.5px solid #decba8;
+    padding-bottom: 9px;
+    margin-bottom: 12px;
+  }
+  .modal-head h2 { margin: 0; font-size: 16px; color: #3a2615; }
+
+  #codexModal .modal-box { max-width: 880px; }
+  #rulesModal .modal-box { max-width: 1000px; max-height: 94vh; padding: 15px 20px; }
+  #rulesModal .modal-head { padding-bottom: 8px; margin-bottom: 10px; }
+  #rulesModal .modal-head h2 { font-size: 15.5px; }
+  .codex-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    align-items: center;
+    background: #f4ead5;
+    border: 1px solid #d5bf99;
+    border-radius: 9px;
+    padding: 7px 11px;
+    font-size: 11.5px;
+    color: var(--ink-sub);
+    margin-bottom: 10px;
+  }
+  .codex-filters {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+  }
+  .codex-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .codex-card {
+    background: var(--card-bg);
+    border: 1.5px solid var(--card-border);
+    border-top: 3px solid #8a7358;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 7px rgba(64, 42, 20, 0.12);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-bottom: 8px;
+  }
+  .codex-card.fire { border-top-color: var(--fire); }
+  .codex-card.water { border-top-color: var(--water); }
+  .codex-card.thunder { border-top-color: var(--thunder); }
+  .codex-card.item { border-top-color: var(--item); }
+  .codex-card.supporter { border-top-color: var(--supporter); }
+  .codex-card.is-ex { border: 2px solid var(--gold); border-top: 3.5px solid var(--gold-deep); }
+  .codex-card .card-head { padding: 6px 9px; }
+  .codex-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    padding: 0 9px;
+    font-size: 10.5px;
+    color: var(--ink-sub);
+  }
+  .codex-skills {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 9px;
+  }
+  .codex-skill-row {
+    background: #f5eedf;
+    border: 1px solid rgba(112, 79, 41, 0.16);
+    border-radius: 7px;
+    padding: 4px 7px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .codex-skill-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+  }
+  .codex-skill-desc {
+    font-size: 10px;
+    color: var(--ink-sub);
+  }
+  .side-tag {
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: #e9dec6;
+    color: #4f3922;
+  }
+  .side-tag.player { background: rgba(47, 122, 83, 0.16); color: var(--ok); }
+  .side-tag.opponent { background: rgba(184, 69, 58, 0.15); color: var(--danger); }
+  .rules-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    align-items: stretch;
+    margin-bottom: 10px;
+  }
+  .rules-block {
+    background: #f4ead5;
+    border: 1px solid #d5bf99;
+    border-radius: 10px;
+    padding: 11px 14px;
+    margin-bottom: 0;
+  }
+  .rules-block h3 {
+    margin: 0 0 6px;
+    font-size: 13px;
+    color: #5b3d1e;
+  }
+  .rules-list { margin: 0; padding-left: 17px; font-size: 12px; line-height: 1.56; }
+  .rules-list li { margin-bottom: 5.5px; }
+  .rules-list li:last-child { margin-bottom: 0; }
+  .rules-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .diff-picker {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--ink-sub);
+  }
+  .diff-seg {
+    display: inline-flex;
+    background: #efe5cf;
+    border: 1px solid #cdb88f;
+    border-radius: 8px;
+    padding: 2px;
+    gap: 2px;
+  }
+  .diff-btn {
+    border: none;
+    background: transparent;
+    color: var(--ink-sub);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.14s, color 0.14s;
+  }
+  .diff-btn.active {
+    background: var(--water);
+    color: #fff;
+  }
+  .diff-btn.hard.active {
+    background: var(--fire);
+    color: #fff;
+  }
+
+
+  .cfg-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .cfg-field { display: flex; flex-direction: column; gap: 3px; margin-bottom: 7px; }
+  .cfg-field label { font-size: 12px; font-weight: 700; color: #3a2615; }
+  .cfg-field input, .cfg-field select {
+    padding: 6px 8px;
+    border: 1.5px solid #cbb288;
+    border-radius: 7px;
+    font-size: 12px;
+    font-family: inherit;
+    background: #fffdf8;
+    color: var(--ink);
+  }
+  .dropzone {
+    border: 1.5px dashed #b29364;
+    border-radius: 9px;
+    padding: 10px;
+    text-align: center;
+    background: #f4ead5;
+    font-size: 11.5px;
+    color: var(--ink-sub);
+    margin-top: 6px;
+  }
+  .dropzone.dragover { border-color: var(--ok); background: #e8f3ec; color: var(--ink); }
+
+  /* =========================================================================
+     7. 视口自适应与窄屏横屏提示页
+     ========================================================================= */
+  .landscape-notice {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    background: linear-gradient(155deg, var(--wood-1) 0%, var(--wood-2) 100%);
+  }
+  .landscape-card {
+    max-width: 360px;
+    width: 100%;
+    background: #fbf6ea;
+    border: 2px solid #a88652;
+    border-radius: 14px;
+    padding: 26px 22px;
+    text-align: center;
+    box-shadow: 0 18px 44px rgba(36, 22, 10, 0.42);
+    color: var(--ink);
+  }
+  .landscape-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 12px;
+    fill: #7d5932;
+    display: block;
+  }
+  .landscape-title-ja { font-size: 16px; font-weight: 800; margin-bottom: 4px; }
+  .landscape-title-zh { font-size: 15px; font-weight: 700; color: var(--ink-sub); margin-bottom: 10px; }
+  .landscape-desc { font-size: 12px; line-height: 1.55; color: var(--ink-sub); margin: 0; }
+
+  @media (max-width: 1180px) {
+    .arena-grid { grid-template-columns: 1fr 300px; gap: 8px; }
+    .side-half { grid-template-columns: 76px 1fr 68px; gap: 6px; }
+    .bench-row { grid-template-columns: repeat(3, minmax(136px, 1fr)); gap: 5px; }
+    .pile-box { width: 66px; }
+  }
+
+  @media (max-height: 760px) {
+    .playmat { padding: 6px 9px; gap: 4px; }
+    .slot-box { padding: 12px 4px 3px; min-height: 74px; }
+    .slot-box.active-slot { min-height: 78px; }
+    .card { padding: 0 0 3px; gap: 2px; }
+    .card-head { padding: 3px 5px; }
+    .skill-line { font-size: 10px; }
+    .hand-card { min-height: 66px; }
+    .bubble { padding: 5px 7px; }
+    .bubble-ja { font-size: 11.5px; }
+  }
+
+  /* 仅在窄屏竖屏（portrait）时提示横屏游玩，避免误拦 844px 等手机横屏视口 */
+  @media (max-width: 900px) and (orientation: portrait) {
+    .table-shell, .action-popover, .modal-backdrop, .save-toast { display: none !important; }
+    .landscape-notice { display: flex; }
+  }
+  /* 5 柱实时声波条与实时斩杀/威胁 HUD 样式 */
+  .voice-wave-meter { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; margin-right: 4px; vertical-align: middle; }
+  .voice-wave-meter i { display: block; width: 2.5px; height: 20%; border-radius: 2px; background: #a89982; transition: height 0.06s ease, background 0.15s ease; }
+  .voice-wave-meter.active i { background: var(--ok); }
+  .eff-dmg { font-size: 9.5px; font-weight: 800; color: #b54524; margin-left: 1px; }
+  .lethal-tag { font-size: 9px; font-weight: 800; padding: 0 5px; border-radius: 999px; background: linear-gradient(135deg, #c9861f, #a64b1e); color: #fffdf8; margin-right: 3px; white-space: nowrap; }
+  .threat-chip { font-size: 9px; font-weight: 800; padding: 1px 5px; border-radius: 999px; background: rgba(184, 52, 42, 0.14); color: #a62b22; border: 1px solid rgba(184, 52, 42, 0.35); margin-right: 3px; white-space: nowrap; }
+</style>
+</head>
+<body>
+<!-- 窄屏横屏游玩提示页 -->
+<div class="landscape-notice" id="landscapeNotice" role="status" aria-live="polite">
+  <div class="landscape-card">
+    <svg class="landscape-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h1.5C23.44 4.84 18.29 0 12 0l-.66.03 3.81 3.81 1.33-1.32zm-6.25-.77c-.59-.59-1.54-.59-2.12 0L1.75 8.11c-.59.59-.59 1.54 0 2.12l12.02 12.02c.59.59 1.54.59 2.12 0l6.36-6.36c.59-.59.59-1.54 0-2.12L10.23 1.75zm4.6 19.44L2.81 9.17l6.36-6.36 12.02 12.02-6.36 6.36zm-7.31.29C4.25 19.94 1.91 16.76 1.55 13H.05C.56 19.16 5.71 24 12 24l.66-.03-3.81-3.81-1.33 1.32z"/></svg>
+    <div class="landscape-title-ja">横画面でプレイしてください</div>
+    <div class="landscape-title-zh">请切换横屏游玩</div>
+    <p class="landscape-desc">画面幅を広げるか、端末を横向きにしてお楽しみください。<br>（请拉宽浏览器窗口，或将设备旋转至横屏后继续对战）</p>
+  </div>
+</div>
+
+<div class="table-shell">
+  <!-- 顶部状态与快捷入口栏 -->
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-title">言霊デュエル（言灵对决）</span>
+      <span class="turn-pill" id="turnBadge">ターン 1：あなたの番（第 1 回合：你的回合）</span>
+    </div>
+    <div class="top-actions">
+      <button class="top-btn" id="btnToggleLog" title="音声・AI通信ログ表示（查看实时语音与 AI 链路 Log）"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Log<span class="log-err-dot" id="logErrDot"></span></button>
+      <button class="top-btn guide-on" id="btnGuideMode" title="初回操作ガイド切替（开启/关闭首次操作浮动+语音引导）"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z"/><circle cx="12" cy="12" r="1.2"/></svg>ガイド ON（引导模式）</button>
+      <button class="top-btn" id="btnResetMatch"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>再戦（重开）</button>
+      <button class="top-btn" id="btnOpenCodex" title="モンスター・技・グッズ図鑑（查看全部怪兽、技能类型与道具图鉴）"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2zm8 14H5v-6h6v6zm0-8H5V5h6v6zm8 8h-6v-6h6v6zm0-8h-6V5h6v6z"/></svg>図鑑（图鉴）</button>
+      <button class="top-btn" id="btnOpenRules"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>ルール（规则）</button>
+      <button class="top-btn" id="btnOpenSettings"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.74 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.05.3-.08.63-.08.94s.03.64.08.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.12.22.37.3.6.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.23.08.48 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg>設定（设置）</button>
+    </div>
+  </header>
+
+  <main class="arena-grid">
+    <!-- 左侧：实体帆布对战垫（对手半场 / 分界线 / 己方半场 / 手牌区） -->
+    <section class="playmat">
+      <div class="turn-banner" id="turnBanner"></div>
+      <div class="prize-toast" id="prizeToast" role="status" aria-live="polite"></div>
+      <!-- 非阻塞引导浮动提示卡 -->
+      <div class="guide-float" id="guideFloat" role="status" aria-live="polite">
+        <div class="guide-card">
+          <div class="guide-body">
+            <div class="guide-tag" id="guideTag"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z"/><circle cx="12" cy="12" r="1.2"/></svg>ガイド（操作引导）</div>
+            <div class="guide-ja" id="guideJa"></div>
+            <div class="guide-zh" id="guideZh"></div>
+          </div>
+          <button class="guide-close" id="btnCloseGuide" title="关闭提示">✕</button>
+        </div>
+      </div>
+      <!-- 对手半场 -->
+      <div class="side-half">
+        <div class="zone-col">
+          <div class="zone-label">相手サイド<span class="zh-line">对手奖赏卡</span></div>
+          <div class="prize-stack" id="enemyPrizes"></div>
+          <div class="prize-count-pill" id="enemyPrizeCount">取得 0/3</div>
+        </div>
+
+        <div class="field-center">
+          <div class="bench-row" id="enemyBenchRow"></div>
+          <div class="slot-box active-slot" id="enemyActiveSlot"></div>
+        </div>
+
+        <div class="zone-col">
+          <div class="pile-box" id="enemyDeckBox" role="button" tabindex="0" title="初期デッキリストを確認（查看对手初始卡表）">
+            <strong id="enemyDeckCount">0</strong>
+            <span class="pile-ja">山札</span>
+            <span class="pile-zh">牌库</span>
+          </div>
+          <div class="pile-box" id="enemyTrashBox" role="button" tabindex="0" title="相手のトラッシュを確認（查看对手弃牌区）">
+            <strong id="enemyTrashCount">0</strong>
+            <span class="pile-ja">トラッシュ</span>
+            <span class="pile-zh">弃牌区</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 中心分界线与本回合可用次数指示 -->
+      <div class="mat-divider">
+        <span class="vs-badge">VS 相手レン（对手 莲）</span>
+        <div class="turn-limits" id="turnLimits">
+          <span class="limit-pill" id="limitEnergy"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v11h3v9l7-12h-4l4-8H7z"/></svg>エネ 1/1（贴能）</span>
+          <span class="limit-pill" id="limitSupporter"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l7.1-1.01L12 2z"/></svg>サポート 1/1（支援）</span>
+          <span class="limit-pill" id="limitRetreat"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>交代 1/1（撤退）</span>
+        </div>
+      </div>
+
+      <!-- 己方半场 -->
+      <div class="side-half">
+        <div class="zone-col">
+          <div class="zone-label">サイド<span class="zh-line">己方奖赏卡</span></div>
+          <div class="prize-stack" id="playerPrizes"></div>
+          <div class="prize-count-pill" id="playerPrizeCount">取得 0/3</div>
+        </div>
+
+        <div class="field-center">
+          <div class="slot-box active-slot" id="playerActiveSlot"></div>
+          <div class="bench-row" id="playerBenchRow"></div>
+        </div>
+
+        <div class="zone-col">
+          <div class="pile-box" id="playerDeckBox" role="button" tabindex="0" title="初期デッキリストを確認（查看己方初始卡表）">
+            <strong id="playerDeckCount">0</strong>
+            <span class="pile-ja">山札</span>
+            <span class="pile-zh">牌库</span>
+          </div>
+          <div class="pile-box" id="playerTrashBox" role="button" tabindex="0" title="自分のトラッシュを確認（查看己方弃牌区与可回收能量）">
+            <strong id="playerTrashCount">0</strong>
+            <span class="pile-ja">トラッシュ</span>
+            <span class="pile-zh">弃牌区</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 己方手牌区与右侧防御/回合结束操作列 -->
+      <div class="hand-section">
+        <div class="hand-header">
+          <div class="zone-label" style="text-align:left;">手札（手牌）</div>
+          <div class="zone-label" id="handSelectionHint"></div>
+        </div>
+        <div class="hand-body">
+          <div class="hand-cards" id="playerHand"></div>
+          <div class="hand-actions">
+            <button class="btn-sm btn-defend" id="btnDefend"><span><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg>防御態勢</span><span class="btn-zh">（防御）</span></button>
+            <button class="btn-sm btn-endturn" id="btnEndTurn"><span><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18l8.5-6L6 6v12zm10-12v12h2V6h-2z"/></svg>ターン終了</span><span class="btn-zh">（结束回合）</span></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 右侧：语音通话、双语对局记录与实时 Tips 建议 -->
+    <aside class="side-panel">
+      <!-- 实时语音与 AI 链路调试 Log 抽屉（默认收起，不占牌桌空间） -->
+      <div class="debug-log-drawer" id="debugLogDrawer" aria-label="音声・AI通信ログ（语音与 AI 链路 Log）">
+        <div class="dlog-head">
+          <span><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>音声・AI通信ログ（语音与 AI 链路）</span>
+          <button class="btn-sm" id="btnCloseLogDrawer" style="padding:2px 7px;font-size:11px;">✕</button>
+        </div>
+        <div class="dlog-filters" id="dlogFilters">
+          <button class="dlog-chip active" data-cat="ALL">すべて（全部）</button>
+          <button class="dlog-chip" data-cat="ASR">ASR</button>
+          <button class="dlog-chip" data-cat="NLU">NLU</button>
+          <button class="dlog-chip" data-cat="TTS">TTS</button>
+          <button class="dlog-chip" data-cat="AEC">AEC</button>
+          <button class="dlog-chip" data-cat="ERR">ERR</button>
+        </div>
+        <div class="dlog-list" id="debugLogList"></div>
+        <div class="dlog-foot">
+          <button class="btn-sm" id="btnCopyLog">コピー（复制）</button>
+          <button class="btn-sm primary" id="btnExportLog">JSON出力（导出）</button>
+          <button class="btn-sm" id="btnClearLog">クリア（清空）</button>
+        </div>
+      </div>
+
+      <div class="panel-title">
+        <span>音声と対局メモ（语音与记录）</span>
+        <span style="display:inline-flex;align-items:center;"><span class="voice-wave-meter" id="voiceWaveMeter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span class="call-state-badge" id="callStateBadge">待機（待机）</span></span>
+      </div>
+
+      <div class="bubble rival">
+        <div class="bubble-role">相手レン（对手 莲）</div>
+        <div class="bubble-ja" id="rivalJa">「さあ、手加減なしで行くぜ！」</div>
+        <div class="bubble-zh" id="rivalZh">“来吧，我可不会手下留情！”</div>
+      </div>
+
+      <div class="bubble">
+        <div class="bubble-role">審判（裁判）</div>
+        <div class="bubble-ja" id="refereeJa">あなたのターンです。日本語・中国語のどちらでも話しかけてください。</div>
+        <div class="bubble-zh" id="refereeZh">轮到你的回合，支持中文或日语语音及文字下达指令。</div>
+      </div>
+
+      <!-- 追问 / 二次确认快捷条 -->
+      <div class="pending-bar" id="pendingBar">
+        <div class="pending-ja" id="pendingJa"></div>
+        <div class="pending-zh" id="pendingZh"></div>
+        <div class="pending-btns" id="pendingBtns"></div>
+      </div>
+
+      <!-- 双语对局日志（每条日语换行显示中文） -->
+      <div class="log-wrap">
+        <div class="log-bar">対局ログ（对局记录）</div>
+        <div class="notepad-log" id="matchLog"></div>
+      </div>
+
+      <!-- 语音通话 / 输入框 / 实时 Tips 建议 -->
+      <div class="voice-dock">
+        <div class="voice-controls-grid">
+          <button class="btn-voice" id="btnLiveCall"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.46.57 3.58a1 1 0 0 1-.25 1.01l-2.2 2.2z"/></svg>通話開始<br><span class="btn-zh">（开始持续通话）</span></button>
+          <button class="btn-ptt" id="btnRecordVoice" title="単発音声入力（单次按录）"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>単発<br><span class="btn-zh">（单次）</span></button>
+          <input type="text" id="cmdInput" placeholder="コマンド入力（输入指令）" />
+          <button class="btn-sm primary" id="btnSendCmd">送信（发送）</button>
+        </div>
+
+        <!-- 实时战术建议（本地即时刷新 + 按需 AI 深度分析） -->
+        <div class="live-tip-box" id="liveTipBox">
+          <div class="live-tip-label" style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+            <span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21h6v-1H9v1zm3-19a7 7 0 0 0-4 12.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26A7 7 0 0 0 12 2z"/></svg>Tips<span id="liveTipAiTag" style="display:none;margin-left:5px;font-size:9.5px;padding:0 4px;border-radius:4px;background:rgba(46,107,71,0.14);color:var(--ok);">AI</span></span>
+            <button class="btn-sm" id="btnAiTip" style="padding:1px 7px;font-size:10px;"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/></svg>AI戦術（AI分析）</button>
+          </div>
+          <div class="live-tip-ja" id="liveTipJa"></div>
+          <div class="live-tip-zh" id="liveTipZh"></div>
+        </div>
+
+
+      </div>
+    </aside>
+  </main>
+</div>
+
+<!-- 战斗区手动点击弹出菜单 -->
+<div class="action-popover" id="actionPopover"></div>
+
+<!-- 弃牌区 / 初始卡表双语预览弹窗 -->
+<div class="modal-backdrop" id="pileModal">
+  <div class="modal-box" style="max-width:640px;">
+    <div class="modal-head">
+      <h2 id="pileModalTitle">トラッシュ（弃牌区）</h2>
+      <button class="btn-sm" id="btnClosePileTop">✕</button>
+    </div>
+    <div id="pileModalBody"></div>
+  </div>
+</div>
+
+<!-- 卡牌图鉴弹窗（怪兽 / 技能类型 / 能量与道具总览） -->
+<div class="modal-backdrop" id="codexModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2zm8 14H5v-6h6v6zm0-8H5V5h6v6zm8 8h-6v-6h6v6zm0-8h-6V5h6v6z"/></svg>カード図鑑（卡牌图鉴）</h2>
+      <button class="btn-sm" id="btnCloseCodexTop">✕</button>
+    </div>
+    <div class="codex-legend">
+      <span><span class="skill-tag normal">通常·前</span> 通常ワザ：相手バトル場のみ（弱点+20）／普通技能：仅攻击对手战斗区（计算弱点 +20）</span>
+      <span><span class="skill-tag snipe"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm0-13a5 5 0 1 0 5 5 5 5 0 0 0-5-5zm0 8a3 3 0 1 1 3-3 3 3 0 0 1-3 3zm0-4.5A1.5 1.5 0 1 0 13.5 12 1.5 1.5 0 0 0 12 10.5z"/></svg>狙撃</span> 狙撃ワザ：バトル場・ベンチどちらも可（ベンチは弱点なし）／狙击技能：可打战斗区或备战区（对备战区不计弱点）</span>
+      <span>弱点相性：水→炎→雷→水（+20）／弱点循环：水→炎→雷→水（+20）</span>
+    </div>
+    <div class="codex-filters" id="codexFilters">
+      <button class="dlog-chip active" data-codex="ALL">すべて（全部）</button>
+      <button class="dlog-chip" data-codex="player">自分モンスター（己方怪兽）</button>
+      <button class="dlog-chip" data-codex="opponent">相手モンスター（对手怪兽）</button>
+      <button class="dlog-chip" data-codex="items">エネ・グッズ・サポート（能量・道具・支援者）</button>
+    </div>
+    <div class="codex-grid" id="codexGrid"></div>
+  </div>
+</div>
+
+<!-- 开局规则说明弹窗 -->
+<div class="modal-backdrop open" id="rulesModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>言霊デュエルのルール説明（言灵对决规则说明）</h2>
+      <button class="btn-sm" id="btnCloseRulesTop">✕</button>
+    </div>
+    <div class="rules-grid">
+      <div class="rules-block">
+        <h3>日本語ルール</h3>
+        <ul class="rules-list" id="rulesModalListJa"></ul>
+      </div>
+      <div class="rules-block">
+        <h3>中文规则</h3>
+        <ul class="rules-list" id="rulesModalListZh"></ul>
+      </div>
+    </div>
+    <div class="rules-footer">
+      <div class="diff-picker">
+        <span>難易度（对手难度）：</span>
+        <div class="diff-seg" role="group" aria-label="对手难度">
+          <button type="button" class="diff-btn active" id="diffOptNormal" data-diff="normal">ふつう（普通）</button>
+          <button type="button" class="diff-btn hard" id="diffOptHard" data-diff="hard">むずかしい（困难）</button>
+        </div>
+      </div>
+      <button class="btn-sm primary" id="btnStartGame">ゲーム開始（开始对战）</button>
+    </div>
+  </div>
+</div>
+
+<!-- 胜负结算弹窗 -->
+<div class="modal-backdrop" id="gameOverModal">
+  <div class="modal-box" style="max-width:460px;text-align:center;">
+    <h2 id="gameOverTitleJa" style="margin:0 0 6px;">勝利！</h2>
+    <p id="gameOverDescJa" style="font-size:13px;line-height:1.6;margin:0 0 12px;"></p>
+    <div style="border-top:1px dashed #d5c7ad;padding-top:10px;margin-bottom:16px;">
+      <div id="gameOverTitleZh" style="font-size:15px;font-weight:700;color:var(--ink-sub);margin-bottom:4px;">你赢了！</div>
+      <p id="gameOverDescZh" style="font-size:12.5px;color:var(--ink-sub);line-height:1.6;margin:0;"></p>
+    </div>
+    <button class="btn-sm primary" id="btnPlayAgain" style="padding:8px 20px;">もう一度対戦（再来一局）</button>
+  </div>
+</div>
+
+<!-- Vertex API 与语音设置弹窗 -->
+<div class="modal-backdrop" id="settingsModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.74 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.05.3-.08.63-.08.94s.03.64.08.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.12.22.37.3.6.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.23.08.48 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg>Vertex API・音声設定（接口与语音设置）</h2>
+      <button class="btn-sm" id="btnCloseSettings">✕</button>
+    </div>
+
+    <div class="cfg-field">
+      <label>Vertex APIキー（Vertex API 密钥，清空则使用本地兜底）</label>
+      <input type="password" id="apiKey" autocomplete="off" />
+    </div>
+
+    <div class="cfg-grid">
+      <div class="cfg-field">
+        <label>音声出力（语音播报方式）</label>
+        <select id="ttsEngine">
+          <option value="vertex_tts">Vertex Gemini TTS（AI音声）</option>
+          <option value="chrome_tts">Chrome 標準音声（浏览器朗读）</option>
+        </select>
+      </div>
+      <div class="cfg-field">
+        <label>LLM / ASR モデル（指令与识别模型）</label>
+        <input type="text" id="llmModel" />
+      </div>
+    </div>
+
+    <div class="cfg-field">
+      <label>TTS モデル（语音合成模型）</label>
+      <input type="text" id="ttsModel" />
+    </div>
+
+    <div class="cfg-grid">
+      <div class="cfg-field">
+        <label>音声入力（语音识别方式）</label>
+        <select id="asrMode">
+          <option value="gemini_audio">Gemini 音声直伝（中/日语自动识别）</option>
+          <option value="chrome_asr_llm">Chrome ASR → Gemini</option>
+          <option value="chrome_local">オフライン（本地中/日语解析）</option>
+        </select>
+      </div>
+      <div class="cfg-field">
+        <label>音声認識言語（浏览器识别语言）</label>
+        <select id="asrLang">
+          <option value="ja-JP">日本語（ja-JP）</option>
+          <option value="zh-CN">中文（zh-CN）</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="cfg-grid">
+      <div class="cfg-field">
+        <label>審判ボイス（裁判音色）</label>
+        <select id="voiceReferee">
+          <option value="Zephyr">Zephyr</option>
+          <option value="Leda">Leda</option>
+          <option value="Kore" selected>Kore</option>
+          <option value="Aoede">Aoede</option>
+          <option value="Puck">Puck</option>
+          <option value="Charon">Charon</option>
+          <option value="Fenrir">Fenrir</option>
+        </select>
+      </div>
+      <div class="cfg-field">
+        <label>相手レンのボイス（对手音色）</label>
+        <select id="voiceRival">
+          <option value="Zephyr">Zephyr</option>
+          <option value="Leda">Leda</option>
+          <option value="Kore">Kore</option>
+          <option value="Aoede">Aoede</option>
+          <option value="Puck">Puck</option>
+          <option value="Charon">Charon</option>
+          <option value="Fenrir">Fenrir</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="cfg-grid">
+      <div class="cfg-field">
+        <label>Chrome 日本語音声（兜底发音人）</label>
+        <select id="chromeVoiceSelect">
+          <option value="">自動選択（自动选择日语发音人）</option>
+        </select>
+      </div>
+      <div class="cfg-field">
+        <label>無応答リマインド（久未响应提醒秒数）</label>
+        <input type="number" id="idlePromptSec" min="0" max="120" step="1" value="30" />
+      </div>
+    </div>
+
+    <div class="cfg-field">
+      <label>相手AI難易度（对手难度）</label>
+      <select id="aiDifficulty">
+        <option value="normal">ふつう（普通）</option>
+        <option value="hard">むずかしい（困难）</option>
+      </select>
+    </div>
+
+    <div id="voiceEngineStatus" style="font-size:11px;color:var(--ink-sub);margin:2px 0 6px;"></div>
+
+    <div style="display:flex;align-items:center;gap:8px;font-size:12px;margin:4px 0 8px;">
+      <input type="checkbox" id="chkAutoSpeak" checked />
+      <label for="chkAutoSpeak">日本語音声を自動再生（自动播报日语语音，跳过中文）</label>
+    </div>
+
+    <!-- 外部 gamedata.json 拖放热更新入口 -->
+    <div class="dropzone" id="mdDropzone">
+      外部 <strong>gamedata.json</strong> をドロップ、または
+      <label style="color:var(--water);text-decoration:underline;cursor:pointer;">
+        ファイル選択（导入 .json）
+        <input type="file" id="mdFileInput" accept=".json,.md,.txt" style="display:none;" />
+      </label>
+      <div id="mdStatusText" style="margin-top:4px;font-size:11px;"></div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;gap:8px;margin-top:12px;flex-wrap:wrap;">
+      <button class="btn-sm" id="btnResetDefaults"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>初期値に戻す（恢复默认）</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-sm" id="btnTestTts"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>音声テスト（测试播报）</button>
+        <button class="btn-sm primary" id="btnSaveConfig"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm3-10H5V5h10v4z"/></svg>保存（保存配置）</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 本地 file:// 直接打开时的数据文件引导弹窗（仅当无法自动读取 gamedata.json 时显示） -->
+<div class="modal-backdrop" id="dataLoadModal">
+  <div class="modal-box" style="max-width:460px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div style="font-size:16px;font-weight:900;">gamedata.json を読み込む<span style="display:block;font-size:11px;font-weight:600;color:var(--ink-sub);margin-top:2px;">加载游戏数据文件（gamedata.json）</span></div>
+    </div>
+    <p style="font-size:12px;line-height:1.65;color:var(--ink);margin:0 0 10px;">
+      ブラウザのセキュリティ制限（<code>file://</code>）により、ローカルの <strong>gamedata.json</strong> を自動読込できませんでした。<br/>
+      下のボタンから同フォルダ内の <strong>gamedata.json</strong> を選択してください（次回からは自動読込されます）。
+    </p>
+    <p style="font-size:11.5px;line-height:1.6;color:var(--ink-sub);margin:0 0 12px;">
+      由于浏览器本地 <code>file://</code> 安全限制，无法自动读取同目录的 <strong>gamedata.json</strong>。请点击下方选择同目录的 <strong>gamedata.json</strong>（选择一次后会缓存），或直接运行 <code>start.command</code>（Mac/Linux）/ <code>start.bat</code>（Windows）自动启动。
+    </p>
+    <div class="dropzone" id="dataLoadDropzone" style="padding:14px;">
+      <label class="btn-sm primary" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+        gamedata.json を選択（选择文件）
+        <input type="file" id="dataLoadFileInput" accept=".json" style="display:none;" />
+      </label>
+      <div style="margin-top:6px;font-size:11px;color:var(--ink-sub);">またはここにファイルをドロップ（或直接拖拽至此）</div>
+    </div>
+  </div>
+</div>
+
+<!-- 保存成功轻提示弹窗 -->
+<div class="save-toast" id="saveToast" role="status" aria-live="polite"></div>
+
+<!-- 独立代码层：游戏引擎与语音交互逻辑 -->
+<script src="./app.js"></script>
+</body>
+</html>
