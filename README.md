@@ -2,6 +2,7 @@
 
 一款纯前端、零构建依赖的 **日语 / 中文双语语音桌游卡牌对战原型**。  
 玩家可通过全双工实时语音（支持日语或中文指令）、文字输入或鼠标点击，在 20 张卡组、3 奖赏卡制的回合制对决中与 AI 对手对战；系统提供纯日语裁判与对手双声线播报、WebRTC 回声消除（AEC3）与人声打断（Barge-in）、新手引导和全链路调试日志。
+**在线试玩**：[https://ezta23x.github.io/kotodama-duel-voice-tcg/](https://ezta23x.github.io/kotodama-duel-voice-tcg/)（建议使用 Chrome / Edge 并允许麦克风权限体验全双工语音对战）
 
 ---
 
@@ -35,6 +36,7 @@
 1. 将整个项目目录推送至 GitHub 仓库。
 2. 在仓库 `Settings` → `Pages` 中选择 `Deploy from a branch`（`main` 分支根目录 `/`）。
 3. 部署完成后访问生成的 HTTPS 链接即可直接进行网页端测试（HTTPS 环境支持完整的麦克风与 WebRTC AEC3 能力）。
+4. **在线试玩**：[https://ezta23x.github.io/kotodama-duel-voice-tcg/](https://ezta23x.github.io/kotodama-duel-voice-tcg/)（建议使用 Chrome / Edge 并允许麦克风权限体验全双工语音对战）
 
 ---
 
