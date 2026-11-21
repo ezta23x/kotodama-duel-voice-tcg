@@ -105,7 +105,7 @@
     voiceReferee: "Kore",
     voiceRival: "Fenrir",
     chromeVoiceURI: "",
-    idlePromptSec: 30,
+    idlePromptSec: 20,
     aiDifficulty: "normal",
     autoSpeak: true,
     guideMode: true,
