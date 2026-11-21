@@ -6574,7 +6574,27 @@
     });
     $("btnGuideMode").addEventListener("click", () => GuideEngine.toggle());
     $("btnCloseGuide").addEventListener("click", () => GuideEngine.hide());
-    $("btnResetMatch").addEventListener("click", () => BattleEngine.reset(true));
+    const closeResetConfirm = () => $("resetConfirmModal")?.classList.remove("open");
+    $("btnResetMatch").addEventListener("click", () => {
+      if ($("resetConfirmModal")) {
+        $("resetConfirmModal").classList.add("open");
+      } else {
+        BattleEngine.reset(true);
+      }
+    });
+    $("btnCancelReset")?.addEventListener("click", closeResetConfirm);
+    $("btnConfirmReset")?.addEventListener("click", () => {
+      closeResetConfirm();
+      BattleEngine.reset(true);
+    });
+    $("resetConfirmModal")?.addEventListener("click", (e) => {
+      if (e.target === $("resetConfirmModal")) closeResetConfirm();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && $("resetConfirmModal")?.classList.contains("open")) {
+        closeResetConfirm();
+      }
+    });
     $("btnPlayAgain").addEventListener("click", () => BattleEngine.reset(true));
     $("playerTrashBox")?.addEventListener("click", () => TableUI.openPileModal("player_trash"));
     $("enemyTrashBox")?.addEventListener("click", () => TableUI.openPileModal("enemy_trash"));

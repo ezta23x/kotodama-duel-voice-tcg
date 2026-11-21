@@ -1834,6 +1834,17 @@
     border-color: #7d5312;
     box-shadow: 0 3px 9px rgba(140, 95, 23, 0.34), inset 0 1px 0 rgba(255, 248, 224, 0.44);
   }
+  .btn-sm.danger {
+    background: linear-gradient(180deg, #c85245 0%, #a53a2f 100%);
+    border-color: #8c2f26;
+    color: #fffdf8;
+    box-shadow: 0 2px 7px rgba(165, 58, 47, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  }
+  .btn-sm.danger:hover:not(:disabled) {
+    background: linear-gradient(180deg, #d45b4e 0%, #b34236 100%);
+    border-color: #7c271f;
+    box-shadow: 0 3px 9px rgba(165, 58, 47, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  }
 
   /* 实时战术建议区 */
   .live-tip-box {
@@ -2171,6 +2182,30 @@
      ========================================================================= */
   #btnFullscreen { display: none; }
   body.is-mobile #btnFullscreen { display: inline-flex; }
+
+  #resetConfirmModal { z-index: 210; }
+  #resetConfirmModal .modal-box { max-width: 400px; text-align: center; }
+  .reset-confirm-icon {
+    width: 42px;
+    height: 42px;
+    margin: 0 auto 8px;
+    fill: #9a6822;
+    display: block;
+  }
+  .reset-confirm-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed #d7c39f;
+  }
+  .reset-confirm-actions .btn-sm {
+    padding: 8px 16px;
+    font-size: 12.5px;
+    min-width: 124px;
+    white-space: nowrap;
+  }
 
   #mobileFsModal { z-index: 220; }
   #mobileFsModal .modal-box { max-width: 440px; text-align: center; }
@@ -2636,6 +2671,18 @@
       min-height: 42px;
       font-size: 13.5px;
     }
+    .reset-confirm-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .reset-confirm-actions .btn-sm {
+      min-width: 0;
+      width: 100%;
+      min-height: 40px;
+      padding: 8px 6px;
+      font-size: 12px;
+    }
   }
   /* 5 柱实时声波条与实时斩杀/威胁 HUD 样式 */
   .voice-wave-meter { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; margin-right: 4px; vertical-align: middle; }
@@ -3063,6 +3110,21 @@
         <input type="file" id="dataLoadFileInput" accept=".json" style="display:none;" />
       </label>
       <div style="margin-top:6px;font-size:11px;color:var(--ink-sub);">またはここにファイルをドロップ<span class="zh-inline" lang="zh-CN">（或直接拖拽至此）</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- 再戦（重开）二次确认弹窗 -->
+<div class="modal-backdrop" id="resetConfirmModal" role="dialog" aria-modal="true" aria-labelledby="resetConfirmTitleJa">
+  <div class="modal-box">
+    <svg class="reset-confirm-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+    <h2 class="mobile-fs-title-ja" id="resetConfirmTitleJa">対局をやり直しますか？</h2>
+    <div class="mobile-fs-title-zh" lang="zh-CN">确定要重新开始本局对战吗？</div>
+    <p class="mobile-fs-desc-ja" style="text-align:center;">現在の盤面と手札はリセットされ、新しい対局が始まります。</p>
+    <p class="mobile-fs-desc-zh" lang="zh-CN" style="text-align:center;margin-bottom:0;">当前场上的怪兽、手牌与对局进度将被清空，并重新发牌开始新对局。</p>
+    <div class="reset-confirm-actions">
+      <button type="button" class="btn-sm" id="btnCancelReset">キャンセル<span class="zh-inline" lang="zh-CN">（取消）</span></button>
+      <button type="button" class="btn-sm danger" id="btnConfirmReset">再戦する<span class="zh-inline" lang="zh-CN">（确认重开）</span></button>
     </div>
   </div>
 </div>
