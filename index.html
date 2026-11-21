@@ -62,6 +62,8 @@
     height: 100dvh;
     overflow: hidden;
     font-family: var(--font-ja);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
   }
 
   /* 统一覆盖浏览器原生表单与按钮默认字体，确保全 UI 100% 继承双语字体栈 */
@@ -153,7 +155,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 10px;
+    flex-wrap: wrap;
+    gap: 8px 10px;
     padding: 6px 14px;
     background: linear-gradient(180deg, var(--wood-bar-1) 0%, var(--wood-bar-2) 100%);
     border: 1.5px solid #9e7c49;
@@ -172,6 +175,7 @@
     font-weight: 800;
     letter-spacing: 0.04em;
     color: #fdf4df;
+    white-space: nowrap;
     text-shadow: 0 1px 2px rgba(24, 13, 5, 0.45);
   }
   .turn-pill {
@@ -182,6 +186,7 @@
     font-size: 12px;
     font-weight: 700;
     color: #faefd5;
+    white-space: nowrap;
   }
   .turn-pill.enemy-turn {
     background: rgba(184, 69, 58, 0.34);
@@ -190,21 +195,37 @@
   }
   .top-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: 6px;
     align-items: center;
   }
   .top-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
     font-family: inherit;
     font-size: 12px;
     font-weight: 700;
-    padding: 5px 11px;
+    line-height: 1.25;
+    min-height: 28px;
+    padding: 4px 11px;
     border-radius: 8px;
     border: 1px solid #b89867;
     background: linear-gradient(180deg, #f5ead2 0%, #e7d6b3 100%);
     color: #3b2817;
+    white-space: nowrap;
+    flex-shrink: 0;
     box-shadow: 0 1px 3px rgba(30, 18, 8, 0.22);
     transition: background 0.15s, border-color 0.15s, transform 0.12s;
+  }
+  .top-btn .btn-icon {
+    flex-shrink: 0;
+    vertical-align: 0;
+  }
+  .top-btn .zh-inline {
+    white-space: nowrap;
+    flex-shrink: 0;
   }
   .top-btn:hover {
     background: linear-gradient(180deg, #fbf3e2 0%, #efe0c2 100%);
@@ -2024,7 +2045,7 @@
      7. 视口自适应、手机端横屏全屏建议弹窗与 PC 同级可读性排版
      ========================================================================= */
   #btnFullscreen { display: none; }
-  body.is-mobile #btnFullscreen { display: inline-flex; align-items: center; }
+  body.is-mobile #btnFullscreen { display: inline-flex; }
 
   #mobileFsModal { z-index: 220; }
   #mobileFsModal .modal-box { max-width: 440px; text-align: center; }
@@ -2072,6 +2093,9 @@
   .mobile-fs-actions .btn-sm { padding: 8px 14px; font-size: 12px; }
 
   @media (max-width: 1180px) {
+    .topbar { flex-wrap: wrap; padding: 5px 10px; gap: 6px; }
+    .top-actions { flex-wrap: wrap; gap: 5px; }
+    .top-btn { font-size: 11.5px; min-height: 26px; padding: 3px 9px; }
     .arena-grid { grid-template-columns: minmax(0, 1fr) 296px; gap: 8px; }
     .side-half { grid-template-columns: 72px minmax(0, 1fr) 64px; gap: 6px; }
     .bench-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
@@ -2111,8 +2135,8 @@
     .brand { flex-wrap: nowrap; flex-shrink: 0; gap: 6px; }
     .brand-title { font-size: 13.5px; white-space: nowrap; }
     .turn-pill { font-size: 11px; padding: 2px 8px; white-space: nowrap; }
-    .top-actions { flex-shrink: 0; gap: 4px; }
-    .top-btn { font-size: 11px; padding: 4px 8px; white-space: nowrap; }
+    .top-actions { flex-wrap: nowrap; flex-shrink: 0; gap: 4px; }
+    .top-btn { font-size: 11px; min-height: 25px; padding: 3px 8px; white-space: nowrap; }
 
     .arena-grid {
       grid-template-columns: minmax(0, 1fr) clamp(256px, 31vw, 308px);
@@ -2200,7 +2224,7 @@
     .table-shell { height: auto; min-height: 0; }
     .topbar { flex-wrap: wrap; padding: 6px 8px; gap: 6px; }
     .top-actions { flex-wrap: wrap; gap: 4px; }
-    .top-btn { font-size: 11px; padding: 4px 8px; }
+    .top-btn { font-size: 11px; min-height: 25px; padding: 3px 8px; }
     .arena-grid { grid-template-columns: 1fr; gap: 8px; }
     .playmat { height: auto; overflow-x: hidden; overflow-x: clip; overflow-y: visible; }
     .side-panel { height: auto; overflow-x: hidden; overflow-y: visible; }

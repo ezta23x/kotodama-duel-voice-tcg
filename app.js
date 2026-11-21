@@ -6744,10 +6744,18 @@
 
     isMobile() {
       const ua = (typeof navigator !== "undefined" && navigator.userAgent) ? navigator.userAgent : "";
-      const uaMobile = /Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(ua);
-      const shortEdge = Math.min(window.screen?.width || 9999, window.screen?.height || 9999);
-      const coarseTouch = Boolean(window.matchMedia && window.matchMedia("(pointer: coarse)").matches) && shortEdge <= 600;
-      return uaMobile || coarseTouch;
+      const sw = window.screen?.width || 0;
+      const sh = window.screen?.height || 0;
+      const shortEdge = Math.min(sw || 9999, sh || 9999);
+      const uaMobile =
+        /iPhone|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|HarmonyOS|OpenHarmony/i.test(ua) ||
+        (/Android/i.test(ua) && shortEdge <= 600);
+      // 手机浏览器切换为“PC模式 / 桌面版网站”时 UA 会伪装为桌面，但物理屏幕短边与触控特征仍在，保留全屏按钮
+      const hasTouch =
+        Boolean(window.matchMedia && window.matchMedia("(pointer: coarse)").matches) ||
+        (typeof navigator !== "undefined" && (navigator.maxTouchPoints || 0) > 0);
+      const smallTouchScreen = hasTouch && shortEdge <= 600;
+      return uaMobile || smallTouchScreen;
     },
 
     isFullscreen() {
@@ -6764,6 +6772,9 @@
       const btn = $("btnFullscreen");
       if (!btn) return;
       const fs = this.isFullscreen();
+      const nextState = fs ? "1" : "0";
+      if (btn.dataset.fsState === nextState) return;
+      btn.dataset.fsState = nextState;
       const enterSvg = '<svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>';
       const exitSvg = '<svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>';
       btn.innerHTML = fs
@@ -6785,7 +6796,7 @@
           await root.requestFullscreen();
           fsOk = true;
         } else if (root?.webkitRequestFullscreen) {
-          root.webkitRequestFullscreen();
+          await Promise.resolve(root.webkitRequestFullscreen());
           fsOk = true;
         }
       } catch (_) {}
@@ -6808,7 +6819,7 @@
       if (this.isFullscreen()) {
         try {
           if (document.exitFullscreen) await document.exitFullscreen();
-          else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+          else if (document.webkitExitFullscreen) await Promise.resolve(document.webkitExitFullscreen());
         } catch (_) {}
         try {
           if (window.screen?.orientation?.unlock) window.screen.orientation.unlock();
