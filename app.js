@@ -55,6 +55,16 @@
       .replace(/'/g, "&#39;");
   }
 
+  /** 将「日文（中文）」双语标签安全拆分为带 lang="zh-CN" 的 HTML，确保中日文字体严格分轨 */
+  function formatBilingualLabelHtml(str) {
+    const raw = String(str == null ? "" : str);
+    const m = raw.match(/^([\s\S]*?)（([^）]+)）([\s\S]*)$/);
+    if (!m) return escapeHtml(raw);
+    const inner = m[2];
+    if (/[\u3040-\u30ff]/.test(inner)) return escapeHtml(raw);
+    return `${escapeHtml(m[1])}<span class="zh-inline" lang="zh-CN">（${escapeHtml(inner)}）</span>${escapeHtml(m[3])}`;
+  }
+
   /** 过滤云端模型偶发吐出的外部作品术语，确保界面与语音播报 100% 仅使用本作原创术语「モンスター（怪兽）」 */
   const _EXT_CARD_RE = new RegExp("\u30dd\u30b1\u30e2\u30f3\u30ab\u30fc\u30c9|\u30dd\u30b1\u30ab", "gi");
   const _EXT_MON_RE = new RegExp("\u30dd\u30b1\u30e2\u30f3|pok\u00e9?mon|p" + "tcg", "gi");
@@ -105,7 +115,7 @@
     voiceReferee: "Kore",
     voiceRival: "Fenrir",
     chromeVoiceURI: "",
-    idlePromptSec: 30,
+    idlePromptSec: 15,
     aiDifficulty: "normal",
     autoSpeak: true,
     guideMode: true,
@@ -248,7 +258,7 @@
       if (!list) return;
       const rows = this.filter === "ALL" ? this.entries : this.entries.filter((e) => e.cat === this.filter);
       if (rows.length === 0) {
-        list.innerHTML = '<div class="dlog-empty" style="text-align:center;color:var(--ink-sub);padding:18px 8px;">ログはまだありません（暂无 Log）</div>';
+        list.innerHTML = '<div class="dlog-empty" style="text-align:center;color:var(--ink-sub);padding:18px 8px;">ログはまだありません<span class="zh-inline" lang="zh-CN">（暂无 Log）</span></div>';
         return;
       }
       list.innerHTML = rows.map((e) => this.formatItemHtml(e)).join("");
@@ -276,7 +286,7 @@
       if (!btn) return;
       const on = this.isEnabled();
       btn.classList.toggle("guide-on", on);
-      btn.innerHTML = `${SVG_ICONS.guide}${on ? "ガイド ON（引导模式）" : "ガイド OFF（引导已关）"}`;
+      btn.innerHTML = `${SVG_ICONS.guide}${on ? 'ガイド ON<span class="zh-inline" lang="zh-CN">（引导模式）</span>' : 'ガイド OFF<span class="zh-inline" lang="zh-CN">（引导已关）</span>'}`;
     },
 
     toggle() {
@@ -345,7 +355,7 @@
       const box = $("guideFloat");
       if (box) {
         box.classList.remove("show");
-        if ($("guideTag")) $("guideTag").innerHTML = `${SVG_ICONS.guideChip}${escapeHtml(msg.tag)}`;
+        if ($("guideTag")) $("guideTag").innerHTML = `${SVG_ICONS.guideChip}${formatBilingualLabelHtml(msg.tag)}`;
         if ($("guideJa")) $("guideJa").textContent = msg.ja;
         if ($("guideZh")) $("guideZh").textContent = msg.zh;
         void box.offsetWidth;
@@ -1106,15 +1116,18 @@
       if (this.callActive) this.stopCall(true);
     },
 
-    setVoiceStatus(msg) {
+    setVoiceStatus(msg, zhHint = "") {
       const el = $("voiceEngineStatus");
-      if (el) el.textContent = msg;
+      if (!el) return;
+      el.innerHTML = zhHint
+        ? `${escapeHtml(msg)}<span class="zh-inline" lang="zh-CN">（${escapeHtml(zhHint)}）</span>`
+        : escapeHtml(msg);
     },
 
     setCallBadge(text, isLive = false) {
       const el = $("callStateBadge");
       if (!el) return;
-      el.textContent = text;
+      el.innerHTML = formatBilingualLabelHtml(text);
       el.classList.toggle("live", isLive);
     },
 
@@ -1552,7 +1565,7 @@
 
           try {
             if (!hasKey || cfg.ttsEngine === "chrome_tts") {
-              this.setVoiceStatus("現在：Chrome標準日本語音声（浏览器日语朗读）");
+              this.setVoiceStatus("現在：Chrome標準日本語音声", "浏览器日语朗读");
               DebugLog.add("TTS", `Chrome TTS (${role})`, jaOnly);
               await this.speakChrome(jaOnly, role, myToken);
             } else if (this.apiTtsBlocked) {
@@ -5418,7 +5431,7 @@
         .map((e) => `
           <div class="log-entry">
             <div class="log-ja">${escapeHtml(e.ja)}</div>
-            <div class="log-zh">（${escapeHtml(e.zh)}）</div>
+            <div class="log-zh" lang="zh-CN">（${escapeHtml(e.zh)}）</div>
           </div>
         `)
         .join("");
@@ -5510,7 +5523,7 @@
         zh = `对手获得 ${count} 张奖赏卡！（对手进度 ${takenTotal}/${TOTAL_PRIZES}）`;
       }
       el.className = "prize-toast" + (isEnemy ? " enemy" : "");
-      el.innerHTML = `<div class="pt-ja">${escapeHtml(ja)}</div><div class="pt-zh">${escapeHtml(zh)}</div>`;
+      el.innerHTML = `<div class="pt-ja">${escapeHtml(ja)}</div><div class="pt-zh" lang="zh-CN">${escapeHtml(zh)}</div>`;
       void el.offsetWidth;
       el.classList.add("show");
       this._prizeToastTimer = setTimeout(() => el.classList.remove("show"), 2800);
@@ -5522,7 +5535,7 @@
       if (!el) return;
       clearTimeout(this._bannerTimer);
       el.className = "turn-banner" + (isEnemy ? " enemy" : "");
-      el.innerHTML = `<div class="tb-ja">${escapeHtml(ja)}</div><div class="tb-zh">${escapeHtml(zh)}</div>`;
+      el.innerHTML = `<div class="tb-ja">${escapeHtml(ja)}</div><div class="tb-zh" lang="zh-CN">${escapeHtml(zh)}</div>`;
       void el.offsetWidth;
       el.classList.add("show");
       this._bannerTimer = setTimeout(() => el.classList.remove("show"), 1150);
@@ -5533,7 +5546,7 @@
       const el = $("saveToast");
       if (!el) return;
       clearTimeout(this._toastTimer);
-      el.innerHTML = `${SVG_ICONS.check}${escapeHtml(ja)}${zh ? `（${escapeHtml(zh)}）` : ""}`;
+      el.innerHTML = `${SVG_ICONS.check}${escapeHtml(ja)}${zh ? `<span class="zh-inline" lang="zh-CN">（${escapeHtml(zh)}）</span>` : ""}`;
       el.classList.add("show");
       this._toastTimer = setTimeout(() => el.classList.remove("show"), 2000);
     },
@@ -5592,7 +5605,7 @@
                ${canDirectClick ? 'title="クリックで発動（点击直接发动）"' : ""}>
             <div class="skill-left">
               ${costPips}
-              <span class="skill-name">${escapeHtml(sk.name_ja)}（${escapeHtml(sk.name_zh)}）</span>
+              <span class="skill-name">${escapeHtml(sk.name_ja)}<span class="zh-inline" lang="zh-CN">（${escapeHtml(sk.name_zh)}）</span></span>
               ${targetTag}${effectTag}
             </div>
             <span class="skill-right">
@@ -5623,13 +5636,13 @@
           <div class="card-head">
             <div class="card-head-left">
               ${CARD_ART[inst.id] ? `<span class="card-art">${CARD_ART[inst.id]}</span>` : `<span class="pip ${escapeHtml(def.element)} filled">${SVG_ICONS[def.element] || SVG_ICONS.any}</span>`}
-              <div class="card-title-inline">${escapeHtml(def.name_ja)}<span class="zh-sub">（${escapeHtml(def.name_zh)}）</span></div>
+              <div class="card-title-inline">${escapeHtml(def.name_ja)}<span class="zh-sub" lang="zh-CN">（${escapeHtml(def.name_zh)}）</span></div>
             </div>
             <div class="card-head-right">${threatHtml}<span class="hp-badge">HP ${inst.hp}/${def.hp}</span></div>
           </div>
           <div class="hp-track"><div class="hp-fill ${fillCls}" style="width:${pct}%"></div></div>
           <div class="token-row">
-            <div class="energy-pips">${pipsHtml || '<span style="font-size:9.5px;color:#8c806d;">エネ0（无能量）</span>'}</div>
+            <div class="energy-pips">${pipsHtml || '<span style="font-size:9.5px;color:#8c806d;">エネ0<span class="zh-inline" lang="zh-CN">（无能量）</span></span>'}</div>
             <div class="token-chips">
               ${def.is_ex ? '<span class="ex-chip">ex・2枚</span>' : ""}
               ${weakBadge}
@@ -5649,24 +5662,27 @@
       const mon = SpecEngine.getMonster(cardId);
       if (mon) {
         const isSetup = s.phase === "setup";
+        const monTitle = isSetup
+          ? ' title="クリックまたは名前を言って先発に出す（点击或说出名字作为首发上场）"'
+          : ' title="クリックまたは音声でベンチに出せます（手牌有怪兽卡可直接点击或语音放入备战区）"';
         return `
-          <div class="card ${escapeHtml(mon.element)} ${mon.is_ex ? "is-ex" : ""} hand-card ${selected ? "selected" : ""} ${isSetup ? "setup-pick" : ""}" data-hand-idx="${idx}" draggable="true">
+          <div class="card ${escapeHtml(mon.element)} ${mon.is_ex ? "is-ex" : ""} hand-card ${selected ? "selected" : ""} ${isSetup ? "setup-pick" : ""}" data-hand-idx="${idx}" draggable="true"${monTitle}>
             <div class="card-head">
               <div class="card-head-left">
                 ${CARD_ART[mon.id] ? `<span class="card-art">${CARD_ART[mon.id]}</span>` : `<span class="pip ${escapeHtml(mon.element)} filled">${SVG_ICONS[mon.element] || SVG_ICONS.any}</span>`}
-                <div class="card-title-inline">${escapeHtml(mon.name_ja)}<span class="zh-sub">（${escapeHtml(mon.name_zh)}）</span></div>
+                <div class="card-title-inline">${escapeHtml(mon.name_ja)}<span class="zh-sub" lang="zh-CN">（${escapeHtml(mon.name_zh)}）</span></div>
               </div>
               <div class="card-head-right">
                 <span class="hp-badge">HP ${mon.hp}</span>
                 ${mon.is_ex ? '<span class="ex-chip">ex・2枚</span>' : ""}
               </div>
             </div>
-            ${isSetup ? '<span class="setup-pick-tag">先発に選ぶ（点击出战）</span>' : ""}
+            ${isSetup ? '<span class="setup-pick-tag">先発に選ぶ<span class="zh-inline" lang="zh-CN">（点击出战）</span></span>' : ""}
             <div class="skills-list">
               ${mon.skills.map((sk) => `
                 <div class="skill-line">
                   <div class="skill-left">
-                    <span class="skill-name">${escapeHtml(sk.name_ja)}（${escapeHtml(sk.name_zh)}）</span>
+                    <span class="skill-name">${escapeHtml(sk.name_ja)}<span class="zh-inline" lang="zh-CN">（${escapeHtml(sk.name_zh)}）</span></span>
                     ${sk.target === "enemy_any" ? `<span class="skill-tag snipe">${SVG_ICONS.snipe}狙撃</span>` : '<span class="skill-tag normal">通常·前</span>'}
                   </div>
                   <span class="skill-dmg">${sk.damage}</span>
@@ -5686,13 +5702,13 @@
           <div class="card-head">
             <div class="card-head-left">
               ${CARD_ART[it.id] ? `<span class="card-art">${CARD_ART[it.id]}</span>` : ""}
-              <div class="card-title-inline">${escapeHtml(it.name_ja)}<span class="zh-sub">（${escapeHtml(it.name_zh)}）</span></div>
+              <div class="card-title-inline">${escapeHtml(it.name_ja)}<span class="zh-sub" lang="zh-CN">（${escapeHtml(it.name_zh)}）</span></div>
             </div>
             ${isSup ? `<span class="supporter-chip">${supUsed ? "使用済" : "サポート"}</span>` : `<span class="pip ${escapeHtml(cls)}">${SVG_ICONS[it.element] || SVG_ICONS.item}</span>`}
           </div>
           <div class="card-desc">
             <div class="desc-ja">${escapeHtml(it.desc_ja)}</div>
-            <div class="desc-zh">${escapeHtml(it.desc_zh)}</div>
+            <div class="desc-zh" lang="zh-CN">${escapeHtml(it.desc_zh)}</div>
           </div>
         </div>
       `;
@@ -5722,8 +5738,8 @@
             ? `<span class="weak-chip">弱 ${ELEM_ICON[weakElem] || ""}+20</span>`
             : "";
           const sideHtml = m.side === "player"
-            ? '<span class="side-tag player">自分デッキ（己方卡组）</span>'
-            : '<span class="side-tag opponent">相手デッキ（对手卡组）</span>';
+            ? '<span class="side-tag player">自分デッキ<span class="zh-inline" lang="zh-CN">（己方卡组）</span></span>'
+            : '<span class="side-tag opponent">相手デッキ<span class="zh-inline" lang="zh-CN">（对手卡组）</span></span>';
           const skillsHtml = m.skills.map((sk) => {
             const pips = (sk.cost || []).map((c) =>
               `<span class="pip ${escapeHtml(c)} filled">${SVG_ICONS[c] || SVG_ICONS.any}</span>`
@@ -5738,16 +5754,16 @@
             const effHtml = (gVal > 0 ? `<span class="skill-tag guard">被ダメ-${gVal}</span>` : "")
               + (dVal > 0 ? `<span class="skill-tag guard">エネ-${dVal}</span>` : "");
             const desc = isSnipe
-              ? "狙撃ワザ：相手バトル場・ベンチどちらも可（ベンチは弱点なし）<br>定点狙击：可打对手战斗区或备战区任意怪兽（对备战区不计弱点）"
+              ? '狙撃ワザ：相手バトル場・ベンチどちらも可（ベンチは弱点なし）<br><span class="zh-inline" lang="zh-CN">定点狙击：可打对手战斗区或备战区任意怪兽（对备战区不计弱点）</span>'
               : (gVal > 0
-                ? `通常ワザ：相手バトル場のみ（次の相手ターン被ダメ-${gVal}）<br>普通攻击：仅打对手战斗区，发动后下回合受击 -${gVal}`
+                ? `通常ワザ：相手バトル場のみ（次の相手ターン被ダメ-${gVal}）<br><span class="zh-inline" lang="zh-CN">普通攻击：仅打对手战斗区，发动后下回合受击 -${gVal}</span>`
                 : (dVal > 0
-                  ? `通常ワザ：相手バトル場のみ（発動後自身のエネルギーを${dVal}枚トラッシュ）<br>普通攻击：仅打对手战斗区，发动后弃置自身 ${dVal} 张能量`
-                  : "通常ワザ：相手バトル場のみ（弱点+20）<br>普通攻击：仅打对手战斗区（计算弱点 +20）"));
+                  ? `通常ワザ：相手バトル場のみ（発動後自身のエネルギーを${dVal}枚トラッシュ）<br><span class="zh-inline" lang="zh-CN">普通攻击：仅打对手战斗区，发动后弃置自身 ${dVal} 张能量</span>`
+                  : '通常ワザ：相手バトル場のみ（弱点+20）<br><span class="zh-inline" lang="zh-CN">普通攻击：仅打对手战斗区（计算弱点 +20）</span>'));
             return `
               <div class="codex-skill-row">
                 <div class="codex-skill-top">
-                  <div class="skill-left">${pips}<span class="skill-name">${escapeHtml(sk.name_ja)}（${escapeHtml(sk.name_zh)}）</span>${tagHtml}${effHtml}</div>
+                  <div class="skill-left">${pips}<span class="skill-name">${escapeHtml(sk.name_ja)}<span class="zh-inline" lang="zh-CN">（${escapeHtml(sk.name_zh)}）</span></span>${tagHtml}${effHtml}</div>
                   <span class="skill-dmg">${sk.damage}</span>
                 </div>
                 <div class="codex-skill-desc">${desc}</div>
@@ -5759,12 +5775,12 @@
               <div class="card-head">
                 <div class="card-head-left">
                   ${CARD_ART[m.id] ? `<span class="card-art">${CARD_ART[m.id]}</span>` : `<span class="pip ${escapeHtml(m.element)} filled">${SVG_ICONS[m.element] || SVG_ICONS.any}</span>`}
-                  <div class="card-title-inline">${escapeHtml(m.name_ja)}<span class="zh-sub">（${escapeHtml(m.name_zh)}）</span></div>
+                  <div class="card-title-inline">${escapeHtml(m.name_ja)}<span class="zh-sub" lang="zh-CN">（${escapeHtml(m.name_zh)}）</span></div>
                 </div>
                 <span class="hp-badge">HP ${m.hp}</span>
               </div>
               <div class="codex-meta">
-                <div>${sideHtml} ${m.is_ex ? '<span class="ex-chip">ex・サイド2枚（击倒拿2张）</span>' : ""}</div>
+                <div>${sideHtml} ${m.is_ex ? '<span class="ex-chip">ex・サイド2枚<span class="zh-inline" lang="zh-CN">（击倒拿2张）</span></span>' : ""}</div>
                 <div>${weakHtml}</div>
               </div>
               <div class="codex-skills">${skillsHtml}</div>
@@ -5777,20 +5793,24 @@
         for (const it of SpecEngine.items) {
           const isSup = it.category === "supporter";
           const cls = it.category === "energy" ? it.element : (isSup ? "supporter" : "item");
-          const catLabel = it.category === "energy" ? "エネルギー（能量卡，每回合限贴1次）" : (isSup ? "サポート（支援者卡，每回合限用1张）" : "グッズ（普通道具卡，不限次数）");
+          const catLabel = it.category === "energy"
+            ? 'エネルギー<span class="zh-inline" lang="zh-CN">（能量卡，每回合限贴1次）</span>'
+            : (isSup
+              ? 'サポート<span class="zh-inline" lang="zh-CN">（支援者卡，每回合限用1张）</span>'
+              : 'グッズ<span class="zh-inline" lang="zh-CN">（普通道具卡，不限次数）</span>');
           cards.push(`
             <div class="codex-card ${escapeHtml(cls)}">
               <div class="card-head">
                 <div class="card-head-left">
                   ${CARD_ART[it.id] ? `<span class="card-art">${CARD_ART[it.id]}</span>` : `<span class="pip ${escapeHtml(cls)} filled">${SVG_ICONS[it.element] || SVG_ICONS.item}</span>`}
-                  <div class="card-title-inline">${escapeHtml(it.name_ja)}<span class="zh-sub">（${escapeHtml(it.name_zh)}）</span></div>
+                  <div class="card-title-inline">${escapeHtml(it.name_ja)}<span class="zh-sub" lang="zh-CN">（${escapeHtml(it.name_zh)}）</span></div>
                 </div>
                 ${isSup ? '<span class="supporter-chip">サポート</span>' : `<span class="side-tag">${it.category === "energy" ? "エネルギー" : "グッズ"}</span>`}
               </div>
               <div class="codex-meta"><span>${catLabel}</span></div>
               <div class="card-desc" style="padding:0 9px;">
                 <div class="desc-ja">${escapeHtml(it.desc_ja)}</div>
-                <div class="desc-zh">${escapeHtml(it.desc_zh)}</div>
+                <div class="desc-zh" lang="zh-CN">${escapeHtml(it.desc_zh)}</div>
               </div>
             </div>
           `);
@@ -5815,13 +5835,13 @@
         : (isPlayer ? (s.player.trash || []) : (s.enemy.trash || []));
 
       if (isDeck) {
-        titleEl.textContent = isPlayer
-          ? `自分の初期デッキリスト（己方初始卡表，共 ${list.length} 张）`
-          : `相手の初期デッキリスト（对手初始卡表，共 ${list.length} 张）`;
+        titleEl.innerHTML = isPlayer
+          ? `自分の初期デッキリスト<span class="zh-inline" lang="zh-CN">（己方初始卡表，共 ${list.length} 张）</span>`
+          : `相手の初期デッキリスト<span class="zh-inline" lang="zh-CN">（对手初始卡表，共 ${list.length} 张）</span>`;
       } else {
-        titleEl.textContent = isPlayer
-          ? `自分のトラッシュ（己方弃牌区，共 ${list.length} 张）`
-          : `相手のトラッシュ（对手弃牌区，共 ${list.length} 张）`;
+        titleEl.innerHTML = isPlayer
+          ? `自分のトラッシュ<span class="zh-inline" lang="zh-CN">（己方弃牌区，共 ${list.length} 张）</span>`
+          : `相手のトラッシュ<span class="zh-inline" lang="zh-CN">（对手弃牌区，共 ${list.length} 张）</span>`;
       }
 
       const counts = new Map();
@@ -5846,10 +5866,10 @@
 
       let bannerHtml = "";
       if (isDeck) {
-        bannerHtml = `<div class="pile-modal-banner"><span>※山札の順番やサイドの中身は非公開です（初期構成のみ表示）</span><span style="font-weight:500;color:var(--ink-sub);">牌库顺序与奖赏卡内容保密，仅展示初始 20 张卡表</span></div>`;
+        bannerHtml = `<div class="pile-modal-banner"><span>※山札の順番やサイドの中身は非公開です（初期構成のみ表示）</span><span class="zh-inline" lang="zh-CN" style="font-weight:500;color:var(--ink-sub);">牌库顺序与奖赏卡内容保密，仅展示初始 20 张卡表</span></div>`;
       } else if (isPlayer) {
         const elemSummary = energies.map((e) => `${escapeHtml(e.ja)}×${escapeHtml(e.qty)}`).join("・");
-        bannerHtml = `<div class="pile-modal-banner recycle"><span>⚡ エネ回収対象：<strong>${totalEnergy}枚</strong>（可回收能量 <strong>${totalEnergy}</strong> 张）</span><span style="font-size:11px;">${elemSummary || "回収可能なエネルギーなし（暂无可回收能量）"}</span></div>`;
+        bannerHtml = `<div class="pile-modal-banner recycle"><span>⚡ エネ回収対象：<strong>${totalEnergy}枚</strong><span class="zh-inline" lang="zh-CN">（可回收能量 <strong>${totalEnergy}</strong> 张）</span></span><span style="font-size:11px;">${elemSummary || '回収可能なエネルギーなし<span class="zh-inline" lang="zh-CN">（暂无可回收能量）</span>'}</span></div>`;
       }
 
       const renderGroup = (titleJa, titleZh, items) => {
@@ -5859,21 +5879,21 @@
           <div class="pile-chip ${escapeHtml(x.cls)}">
             <div class="pile-chip-left">
               ${x.art ? `<span class="card-art" style="width:24px;height:24px;">${x.art}</span>` : `<span class="pip ${escapeHtml(x.cls)} filled">${x.icon || SVG_ICONS.item}</span>`}
-              <div class="pile-chip-name">${escapeHtml(x.ja)}<span class="pile-chip-zh">${escapeHtml(x.zh)}</span></div>
+              <div class="pile-chip-name">${escapeHtml(x.ja)}<span class="pile-chip-zh" lang="zh-CN">${escapeHtml(x.zh)}</span></div>
             </div>
             <span class="pile-chip-qty">×${x.qty}</span>
           </div>
         `).join("");
         return `
           <div class="pile-section">
-            <div class="pile-section-title"><span>${titleJa}（${titleZh}）</span><span>${sum}枚</span></div>
+            <div class="pile-section-title"><span>${titleJa}<span class="zh-inline" lang="zh-CN">（${titleZh}）</span></span><span>${sum}枚</span></div>
             <div class="pile-chip-grid">${chips}</div>
           </div>
         `;
       };
 
       if (list.length === 0) {
-        bodyEl.innerHTML = `${bannerHtml}<div class="pile-empty">トラッシュにカードはありません。<br>弃牌区目前为空。</div>`;
+        bodyEl.innerHTML = `${bannerHtml}<div class="pile-empty">トラッシュにカードはありません。<br><span class="zh-inline" lang="zh-CN">弃牌区目前为空。</span></div>`;
       } else {
         bodyEl.innerHTML = bannerHtml
           + renderGroup("エネルギー", "能量卡", energies)
@@ -5899,7 +5919,7 @@
       }
 
       const seq = ++this._tipSeq;
-      if (btn) { btn.disabled = true; btn.textContent = "解析中…（分析中…）"; }
+      if (btn) { btn.disabled = true; btn.innerHTML = '解析中…<span class="zh-inline" lang="zh-CN">（分析中…）</span>'; }
       const ac = typeof AbortController !== "undefined" ? new AbortController() : null;
       const timer = ac ? setTimeout(() => ac.abort(), 8000) : null;
       try {
@@ -5939,7 +5959,7 @@
         TableUI.showToast("AI戦術分析に失敗・ローカル提案を表示中", "AI 分析连接失败，已显示本地战术建议");
       } finally {
         if (timer) clearTimeout(timer);
-        if (btn) { btn.disabled = false; btn.innerHTML = `${SVG_ICONS.sparkle}AI戦術（AI分析）`; }
+        if (btn) { btn.disabled = false; btn.innerHTML = `${SVG_ICONS.sparkle}AI戦術<span class="zh-inline" lang="zh-CN">（AI分析）</span>`; }
       }
     },
 
@@ -6046,11 +6066,11 @@
 
       const badge = $("turnBadge");
       badge.className = "turn-pill" + (s.currentPlayer === "enemy" ? " enemy-turn" : "");
-      badge.textContent = s.phase === "setup"
-        ? "対戦準備：先発モンスターを選択（开局准备：选择首发怪兽）"
+      badge.innerHTML = s.phase === "setup"
+        ? '対戦準備：先発モンスターを選択<span class="zh-inline" lang="zh-CN">（开局准备：选择首发怪兽）</span>'
         : (s.currentPlayer === "player"
-          ? `ターン ${s.turn}：あなたの番（第 ${s.turn} 回合：你的回合）`
-          : `ターン ${s.turn}：相手レンの番（第 ${s.turn} 回合：对手回合）`);
+          ? `ターン ${s.turn}：あなたの番<span class="zh-inline" lang="zh-CN">（第 ${s.turn} 回合：你的回合）</span>`
+          : `ターン ${s.turn}：相手レンの番<span class="zh-inline" lang="zh-CN">（第 ${s.turn} 回合：对手回合）</span>`);
 
       const limBox = $("turnLimits");
       if (limBox) {
@@ -6058,9 +6078,9 @@
         const limE = $("limitEnergy");
         const limS = $("limitSupporter");
         const limR = $("limitRetreat");
-        if (limE) { limE.className = "limit-pill" + (s.energyUsedThisTurn ? " used" : ""); limE.innerHTML = `${SVG_ICONS.boost}${s.energyUsedThisTurn ? "エネ 0/1（已贴能）" : "エネ 1/1（贴能）"}`; }
-        if (limS) { limS.className = "limit-pill" + (s.supporterUsedThisTurn ? " used" : ""); limS.innerHTML = `${SVG_ICONS.starChip}${s.supporterUsedThisTurn ? "サポート 0/1（已用）" : "サポート 1/1（支援）"}`; }
-        if (limR) { limR.className = "limit-pill" + (s.retreatedThisTurn ? " used" : ""); limR.innerHTML = `${SVG_ICONS.swapChip}${s.retreatedThisTurn ? "交代 0/1（已撤退）" : "交代 1/1（撤退）"}`; }
+        if (limE) { limE.className = "limit-pill" + (s.energyUsedThisTurn ? " used" : ""); limE.innerHTML = `${SVG_ICONS.boost}${s.energyUsedThisTurn ? 'エネ 0/1<span class="zh-inline" lang="zh-CN">（已贴能）</span>' : 'エネ 1/1<span class="zh-inline" lang="zh-CN">（贴能）</span>'}`; }
+        if (limS) { limS.className = "limit-pill" + (s.supporterUsedThisTurn ? " used" : ""); limS.innerHTML = `${SVG_ICONS.starChip}${s.supporterUsedThisTurn ? 'サポート 0/1<span class="zh-inline" lang="zh-CN">（已用）</span>' : 'サポート 1/1<span class="zh-inline" lang="zh-CN">（支援）</span>'}`; }
+        if (limR) { limR.className = "limit-pill" + (s.retreatedThisTurn ? " used" : ""); limR.innerHTML = `${SVG_ICONS.swapChip}${s.retreatedThisTurn ? '交代 0/1<span class="zh-inline" lang="zh-CN">（已撤退）</span>' : '交代 1/1<span class="zh-inline" lang="zh-CN">（撤退）</span>'}`; }
       }
 
       const prizeIdx = Array.from({ length: TOTAL_PRIZES }, (_, i) => i);
@@ -6106,25 +6126,29 @@
 
       const eAct = $("enemyActiveSlot");
       eAct.className = "slot-box active-slot" + (pendingEnemy ? " highlight-enemy" : "");
-      eAct.innerHTML = `<span class="slot-tag">相手バトル場（对手战斗区）</span>` +
-        (s.enemy.active ? this.renderMonsterCard(s.enemy.active, "enemy_active") : `<div class="slot-empty">${s.phase === "setup" ? "裏向き待機中（对手暗置首发中）" : "空き（空位）"}</div>`);
+      eAct.innerHTML = `<span class="slot-tag">相手バトル場<span class="zh-inline" lang="zh-CN">（对手战斗区）</span></span>` +
+        (s.enemy.active ? this.renderMonsterCard(s.enemy.active, "enemy_active") : `<div class="slot-empty">${s.phase === "setup" ? '裏向き待機中<span class="zh-inline" lang="zh-CN">（对手暗置首发中）</span>' : '空き<span class="zh-inline" lang="zh-CN">（空位）</span>'}</div>`);
 
       const pAct = $("playerActiveSlot");
       pAct.className = "slot-box active-slot" + (needAllyTarget || s.phase === "setup" ? " highlight-ally" : "");
-      pAct.innerHTML = `<span class="slot-tag">バトル場（己方战斗区）</span>` +
-        (s.player.active ? this.renderMonsterCard(s.player.active, "player_active") : `<div class="slot-empty">${s.phase === "setup" ? "手札から1体選択（请从手牌选择首发）" : "空き（空位）"}</div>`);
+      pAct.innerHTML = `<span class="slot-tag">バトル場<span class="zh-inline" lang="zh-CN">（己方战斗区）</span></span>` +
+        (s.player.active ? this.renderMonsterCard(s.player.active, "player_active") : `<div class="slot-empty">${s.phase === "setup" ? '手札から1体選択<span class="zh-inline" lang="zh-CN">（请从手牌选择首发）</span>' : '空き<span class="zh-inline" lang="zh-CN">（空位）</span>'}</div>`);
 
       $("enemyBenchRow").innerHTML = s.enemy.bench.map((inst, i) => `
         <div class="slot-box ${(needEnemyBench || pendingEnemy) && inst ? "highlight-enemy" : ""}" data-slot-box="enemy_bench_${i}">
-          <span class="slot-tag">相手ベンチ ${POS_JA[i]}（对手备战 ${POS_ZH[i]}）</span>
-          ${inst ? this.renderMonsterCard(inst, `enemy_bench_${i}`) : `<div class="slot-empty">空き（空位）</div>`}
+          <span class="slot-tag">相手ベンチ ${POS_JA[i]}<span class="zh-inline" lang="zh-CN">（对手备战 ${POS_ZH[i]}）</span></span>
+          ${inst ? this.renderMonsterCard(inst, `enemy_bench_${i}`) : '<div class="slot-empty">空き<span class="zh-inline" lang="zh-CN">（空位）</span></div>'}
         </div>
       `).join("");
 
+      const hasHandMon = s.player.hand.some((id) => Boolean(SpecEngine.getMonster(id)));
+      const hasEmptyBench = s.player.bench.includes(null);
+      const canHintBench = s.phase === "battle" && s.currentPlayer === "player" && !s.gameOver && hasHandMon && hasEmptyBench;
+
       $("playerBenchRow").innerHTML = s.player.bench.map((inst, i) => `
         <div class="slot-box ${(needAllyTarget || pendingAlly) && inst ? "highlight-ally" : ""}" data-slot-box="player_bench_${i}">
-          <span class="slot-tag">ベンチ ${POS_JA[i]}（己方备战 ${POS_ZH[i]}）</span>
-          ${inst ? this.renderMonsterCard(inst, `player_bench_${i}`) : `<div class="slot-empty">空き（空位）</div>`}
+          <span class="slot-tag">ベンチ ${POS_JA[i]}<span class="zh-inline" lang="zh-CN">（己方备战 ${POS_ZH[i]}）</span></span>
+          ${inst ? this.renderMonsterCard(inst, `player_bench_${i}`) : (canHintBench && i === s.player.bench.indexOf(null) ? '<div class="slot-empty">手札のモンスターを出せます<span class="zh-inline" lang="zh-CN">（可放入手牌怪兽）</span></div>' : '<div class="slot-empty">空き<span class="zh-inline" lang="zh-CN">（空位）</span></div>')}
         </div>
       `).join("");
 
@@ -6134,9 +6158,13 @@
       });
 
       $("playerHand").innerHTML = s.player.hand.map((id, idx) => this.renderHandCard(id, idx)).join("");
-      $("handSelectionHint").textContent = s.phase === "setup"
-        ? "先発モンスターをクリック（点击绿色高亮怪兽作为首发）"
-        : (selCardId ? "対象をクリック（点击高亮目标使用，再点手牌取消）" : "");
+      $("handSelectionHint").innerHTML = s.phase === "setup"
+        ? '先発モンスターをクリック<span class="zh-inline" lang="zh-CN">（点击绿色高亮怪兽作为首发）</span>'
+        : (selCardId
+          ? '対象をクリック<span class="zh-inline" lang="zh-CN">（点击高亮目标使用，再点手牌取消）</span>'
+          : (canHintBench
+            ? '手札のモンスターをクリック／発話でベンチへ展開可<span class="zh-inline" lang="zh-CN">（手牌有怪兽卡可直接点击或语音放入备战区）</span>'
+            : ""));
 
       const bar = $("pendingBar");
       if (s.pending) {
@@ -6144,7 +6172,7 @@
         $("pendingJa").textContent = s.pending.promptJa || "";
         $("pendingZh").textContent = s.pending.promptZh || "";
         $("pendingBtns").innerHTML = (s.pending.options || []).map((o) =>
-          `<button class="btn-sm" data-reply="${escapeHtml(o.reply)}">${escapeHtml(o.label)}</button>`
+          `<button class="btn-sm" data-reply="${escapeHtml(o.reply)}">${formatBilingualLabelHtml(o.label)}</button>`
         ).join("");
         $("pendingBtns").querySelectorAll("button").forEach((b) => {
           b.addEventListener("click", async () => {
@@ -6269,12 +6297,12 @@
         const unit = s.player.active;
         const def = SpecEngine.getMonster(unit.id);
         const pop = $("actionPopover");
-        pop.innerHTML = `<div style="font-size:12px;font-weight:800;margin-bottom:4px;">${escapeHtml(def.name_ja)}（${escapeHtml(def.name_zh)}）</div>`;
+        pop.innerHTML = `<div style="font-size:12px;font-weight:800;margin-bottom:4px;">${escapeHtml(def.name_ja)}<span class="zh-inline" lang="zh-CN">（${escapeHtml(def.name_zh)}）</span></div>`;
         def.skills.forEach((sk) => {
           const b = document.createElement("button");
           b.className = "btn-sm";
           b.disabled = !BattleEngine.canPayCost(unit.energies, sk.cost);
-          b.textContent = `${sk.name_ja}（${sk.name_zh}） ${sk.damage}`;
+          b.innerHTML = `${escapeHtml(sk.name_ja)}<span class="zh-inline" lang="zh-CN">（${escapeHtml(sk.name_zh)}）</span> ${sk.damage}`;
           b.addEventListener("click", () => {
             this.closePopover();
             this.triggerSkillClick(sk.name_ja);
@@ -6283,15 +6311,15 @@
         });
         const rBtn = document.createElement("button");
         rBtn.className = "btn-sm";
-        rBtn.innerHTML = `${SVG_ICONS.swap}交代（弃1能撤退）`;
+        rBtn.innerHTML = `${SVG_ICONS.swap}交代<span class="zh-inline" lang="zh-CN">（弃1能撤退）</span>`;
         rBtn.addEventListener("click", () => {
           this.closePopover();
           BattleEngine.performDirectAction({ type: "RETREAT", target: null });
         });
         pop.appendChild(rBtn);
 
-        pop.style.left = `${Math.min((ev?.clientX || 320) + 10, window.innerWidth - 220)}px`;
-        pop.style.top = `${Math.min((ev?.clientY || 320) + 10, window.innerHeight - 190)}px`;
+        pop.style.left = `${Math.max(8, Math.min((ev?.clientX || 120) + 10, window.innerWidth - 224))}px`;
+        pop.style.top = `${Math.max(8, Math.min((ev?.clientY || 120) + 10, window.innerHeight - 196))}px`;
         pop.classList.add("open");
       }
     },
@@ -6710,6 +6738,110 @@
     }
   }
 
+  /* ---------- 手机端识别、横屏全屏建议弹窗与全屏状态同步 ---------- */
+  const MobileViewportManager = {
+    SESSION_KEY: "kotodama_mobile_fs_prompted_v1",
+
+    isMobile() {
+      const ua = (typeof navigator !== "undefined" && navigator.userAgent) ? navigator.userAgent : "";
+      const uaMobile = /Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(ua);
+      const shortEdge = Math.min(window.screen?.width || 9999, window.screen?.height || 9999);
+      const coarseTouch = Boolean(window.matchMedia && window.matchMedia("(pointer: coarse)").matches) && shortEdge <= 600;
+      return uaMobile || coarseTouch;
+    },
+
+    isFullscreen() {
+      return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+    },
+
+    isLandscape() {
+      return (window.innerWidth || 0) > (window.innerHeight || 0);
+    },
+
+    syncUi() {
+      const mobile = this.isMobile();
+      document.body?.classList.toggle("is-mobile", mobile);
+      const btn = $("btnFullscreen");
+      if (!btn) return;
+      const fs = this.isFullscreen();
+      const enterSvg = '<svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>';
+      const exitSvg = '<svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></svg>';
+      btn.innerHTML = fs
+        ? `${exitSvg}解除<span class="zh-inline" lang="zh-CN">（退出全屏）</span>`
+        : `${enterSvg}全画面<span class="zh-inline" lang="zh-CN">（全屏）</span>`;
+    },
+
+    closeModal() {
+      $("mobileFsModal")?.classList.remove("open");
+      try { sessionStorage.setItem(this.SESSION_KEY, "1"); } catch (_) {}
+    },
+
+    async enterLandscapeFullscreen() {
+      this.closeModal();
+      const root = document.documentElement;
+      let fsOk = false;
+      try {
+        if (root?.requestFullscreen) {
+          await root.requestFullscreen();
+          fsOk = true;
+        } else if (root?.webkitRequestFullscreen) {
+          root.webkitRequestFullscreen();
+          fsOk = true;
+        }
+      } catch (_) {}
+
+      try {
+        if (window.screen?.orientation?.lock) {
+          await window.screen.orientation.lock("landscape");
+        }
+      } catch (_) {}
+
+      this.syncUi();
+      if (fsOk) {
+        TableUI.showToast("横画面・全画面モードにしました", "已尝试进入横屏全屏模式");
+      } else {
+        TableUI.showToast("端末を横向きに回転してください", "请横向旋转手机即可获得与 PC 一致的清晰牌桌体验");
+      }
+    },
+
+    async toggleFullscreen() {
+      if (this.isFullscreen()) {
+        try {
+          if (document.exitFullscreen) await document.exitFullscreen();
+          else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+        } catch (_) {}
+        try {
+          if (window.screen?.orientation?.unlock) window.screen.orientation.unlock();
+        } catch (_) {}
+        this.syncUi();
+      } else {
+        await this.enterLandscapeFullscreen();
+      }
+    },
+
+    init() {
+      this.syncUi();
+      $("btnFullscreen")?.addEventListener("click", () => this.toggleFullscreen());
+      $("btnEnterMobileFs")?.addEventListener("click", () => this.enterLandscapeFullscreen());
+      $("btnDismissMobileFs")?.addEventListener("click", () => this.closeModal());
+      $("mobileFsModal")?.addEventListener("click", (e) => {
+        if (e.target === $("mobileFsModal")) this.closeModal();
+      });
+      document.addEventListener("fullscreenchange", () => this.syncUi());
+      document.addEventListener("webkitfullscreenchange", () => this.syncUi());
+      window.addEventListener("resize", () => this.syncUi());
+      window.addEventListener("orientationchange", () => this.syncUi());
+
+      if (this.isMobile() && !(this.isFullscreen() && this.isLandscape())) {
+        let alreadyPrompted = false;
+        try { alreadyPrompted = sessionStorage.getItem(this.SESSION_KEY) === "1"; } catch (_) {}
+        if (!alreadyPrompted) {
+          $("mobileFsModal")?.classList.add("open");
+        }
+      }
+    }
+  };
+
   /** 应用入口：加载配置 → 注册浏览器语音 → 绑定事件 → 加载 gamedata.json */
   async function init() {
     ConfigManager.load();
@@ -6719,6 +6851,7 @@
       speechSynthesis.onvoiceschanged = () => VoiceEngine.populateChromeVoices();
     }
     bindGlobalEvents();
+    MobileViewportManager.init();
     const loaded = await SpecEngine.loadThreeTier();
     if (loaded) {
       applySpecToUi();
