@@ -6947,10 +6947,8 @@
     }
   }
 
-  /* ---------- 手机端识别、横屏全屏建议弹窗与全屏状态同步 ---------- */
+  /* ---------- 手机端识别与顶栏横屏全屏按钮状态同步 ---------- */
   const MobileViewportManager = {
-    SESSION_KEY: "kotodama_mobile_fs_prompted_v1",
-
     isMobile() {
       const ua = (typeof navigator !== "undefined" && navigator.userAgent) ? navigator.userAgent : "";
       const sw = window.screen?.width || 0;
@@ -6971,10 +6969,6 @@
       return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
     },
 
-    isLandscape() {
-      return (window.innerWidth || 0) > (window.innerHeight || 0);
-    },
-
     syncUi() {
       const mobile = this.isMobile();
       document.body?.classList.toggle("is-mobile", mobile);
@@ -6991,13 +6985,7 @@
         : `${enterSvg}全画面<span class="zh-inline" lang="zh-CN">（全屏）</span>`;
     },
 
-    closeModal() {
-      $("mobileFsModal")?.classList.remove("open");
-      try { sessionStorage.setItem(this.SESSION_KEY, "1"); } catch (_) {}
-    },
-
     async enterLandscapeFullscreen() {
-      this.closeModal();
       const root = document.documentElement;
       let fsOk = false;
       try {
@@ -7042,23 +7030,10 @@
     init() {
       this.syncUi();
       $("btnFullscreen")?.addEventListener("click", () => this.toggleFullscreen());
-      $("btnEnterMobileFs")?.addEventListener("click", () => this.enterLandscapeFullscreen());
-      $("btnDismissMobileFs")?.addEventListener("click", () => this.closeModal());
-      $("mobileFsModal")?.addEventListener("click", (e) => {
-        if (e.target === $("mobileFsModal")) this.closeModal();
-      });
       document.addEventListener("fullscreenchange", () => this.syncUi());
       document.addEventListener("webkitfullscreenchange", () => this.syncUi());
       window.addEventListener("resize", () => this.syncUi());
       window.addEventListener("orientationchange", () => this.syncUi());
-
-      if (this.isMobile() && !(this.isFullscreen() && this.isLandscape())) {
-        let alreadyPrompted = false;
-        try { alreadyPrompted = sessionStorage.getItem(this.SESSION_KEY) === "1"; } catch (_) {}
-        if (!alreadyPrompted) {
-          $("mobileFsModal")?.classList.add("open");
-        }
-      }
     }
   };
 

@@ -2238,15 +2238,6 @@
     white-space: nowrap;
   }
 
-  #mobileFsModal { z-index: 220; }
-  #mobileFsModal .modal-box { max-width: 440px; text-align: center; }
-  .mobile-fs-icon {
-    width: 46px;
-    height: 46px;
-    margin: 0 auto 10px;
-    fill: #7d5932;
-    display: block;
-  }
   .mobile-fs-title-ja {
     font-family: var(--font-display-ja);
     font-size: 16px;
@@ -2275,13 +2266,6 @@
     margin: 0 0 14px;
     text-align: left;
   }
-  .mobile-fs-actions {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-  .mobile-fs-actions .btn-sm { padding: 8px 14px; font-size: 12px; }
 
   @media (max-width: 1180px) {
     .topbar { flex-wrap: wrap; padding: 5px 10px; gap: 6px; }
@@ -2392,8 +2376,7 @@
       padding: 12px 14px;
       -webkit-overflow-scrolling: touch;
     }
-    .reset-confirm-icon,
-    .mobile-fs-icon { width: 32px; height: 32px; margin-bottom: 5px; }
+    .reset-confirm-icon { width: 32px; height: 32px; margin-bottom: 5px; }
     .mobile-fs-title-ja { font-size: 14.5px; }
     .mobile-fs-title-zh { font-size: 13px; margin-bottom: 6px; }
     .mobile-fs-desc-ja,
@@ -3192,21 +3175,6 @@
     <div class="reset-confirm-actions">
       <button type="button" class="btn-sm" id="btnCancelEndTurn">戻る<span class="zh-inline" lang="zh-CN">（返回操作）</span></button>
       <button type="button" class="btn-sm primary" id="btnConfirmEndTurn">このまま終了<span class="zh-inline" lang="zh-CN">（确认结束）</span></button>
-    </div>
-  </div>
-</div>
-
-<!-- 手机端访问建议：横屏全屏体验弹窗（非强制，可随时关闭继续） -->
-<div class="modal-backdrop" id="mobileFsModal" role="dialog" aria-modal="true" aria-labelledby="mobileFsTitleJa">
-  <div class="modal-box">
-    <svg class="mobile-fs-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h1.5C23.44 4.84 18.29 0 12 0l-.66.03 3.81 3.81 1.33-1.32zm-6.25-.77c-.59-.59-1.54-.59-2.12 0L1.75 8.11c-.59.59-.59 1.54 0 2.12l12.02 12.02c.59.59 1.54.59 2.12 0l6.36-6.36c.59-.59.59-1.54 0-2.12L10.23 1.75zm4.6 19.44L2.81 9.17l6.36-6.36 12.02 12.02-6.36 6.36zm-7.31.29C4.25 19.94 1.91 16.76 1.55 13H.05C.56 19.16 5.71 24 12 24l.66-.03-3.81-3.81-1.33 1.32z"/></svg>
-    <h2 class="mobile-fs-title-ja" id="mobileFsTitleJa">横画面・全画面モードのおすすめ</h2>
-    <div class="mobile-fs-title-zh" lang="zh-CN">建议切换横屏全屏游玩</div>
-    <p class="mobile-fs-desc-ja">スマートフォンからのアクセスを検出しました。横画面＋全画面表示にすると、PC版と同じ見やすさでカード・技・対局ログを快適に操作できます。</p>
-    <p class="mobile-fs-desc-zh" lang="zh-CN">检测到手机端访问。进入横屏全屏后，可保持与 PC 端一致的双栏牌桌布局与清晰可读性，操作手牌与语音指令更顺手（iOS Safari 如未自动全屏，横向旋转手机即可）。</p>
-    <div class="mobile-fs-actions">
-      <button type="button" class="btn-sm primary" id="btnEnterMobileFs"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>横画面・全画面にする<span class="zh-inline" lang="zh-CN">（进入横屏全屏）</span></button>
-      <button type="button" class="btn-sm" id="btnDismissMobileFs">このまま続ける<span class="zh-inline" lang="zh-CN">（暂不切换）</span></button>
     </div>
   </div>
 </div>
