@@ -13,7 +13,7 @@
 
 <br />
 
-<img src="./docs/battle-ui.png" alt="言灵对决主对战界面" width="92%" />
+![言灵对决主对战界面](docs/battle-ui.png)
 
 </div>
 
@@ -117,9 +117,7 @@ cd kotodama-duel-voice-tcg
 
 ### 2. 设置与热更新面板
 
-<div align="center">
-  <img src="./docs/settings-ui.png" alt="接口与语音设置面板" width="76%" />
-</div>
+![接口与语音设置面板](docs/settings-ui.png)
 
 点击右上角「設定（设置）」可自由切换 **云端 AI 语音 / 浏览器本地语音**、配置 API Key 与模型、分别选择裁判与对手音色、调整无响应提醒秒数（默认 `15s`）及对手难度，并可通过底部拖放区直接拖入自定义 `gamedata.json` 实现零代码热更新。
 
@@ -145,7 +143,7 @@ kotodama-duel-voice-tcg/
 
 面向需要接入团队自研 **ASR / TTS / LLM** 或二次扩展卡池的研发同学，点击下方展开完整技术文档：
 
-<details>
+<details open>
 <summary><strong>1. 系统架构与全链路数据流（Mermaid 流程图）</strong></summary>
 
 ```mermaid
