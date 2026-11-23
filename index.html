@@ -3227,152 +3227,206 @@
   }
 
   /* =========================================================================
-     9. 单语言释放空间后的层次化大字号排版（主次分明、易读不拥挤）
+     9. 全站 0.5px 梯度字号体系 + 防溢出牌桌与卡牌比例自适配
      ========================================================================= */
+  :root {
+    --fs-display: 24px;   /* 启动遮罩主标题 */
+    --fs-h1: 19px;        /* 主弹窗/确认弹窗标题、回合横幅 */
+    --fs-h2: 17.5px;      /* 顶部品牌标题、设置/图鉴/弃牌弹窗标题 */
+    --fs-title: 15px;     /* 主战区怪兽名、奖赏浮层、主开始按钮 */
+    --fs-body: 14px;      /* 气泡对话、规则正文、语音通话/输入、设置输入、主战区伤害 */
+    --fs-ui: 13px;        /* 常规按钮、日志、战术建议、手牌/备战卡名、主战区技能、HP */
+    --fs-sub: 12px;       /* 备战/手牌技能、卡牌效果、次数牌、区域标签、状态胶囊 */
+    --fs-micro: 10.5px;   /* 卡槽角标、能量圆片、属性/状态/技能徽章 */
+  }
+
+  .boot-splash-title { font-size: var(--fs-display); }
+  .boot-splash-sub { font-size: var(--fs-sub); }
+
+  .table-shell { max-width: 1620px; }
   .topbar { padding: 5px 12px; gap: 6px; }
-  .brand-title { font-size: 18.5px; }
-  .turn-pill { font-size: 13px; padding: 3px 12px; }
+  .brand-title { font-size: var(--fs-h2); }
+  .turn-pill { font-size: var(--fs-ui); padding: 3px 12px; min-width: 168px; text-align: center; }
   .top-actions { flex-wrap: nowrap; gap: 5px; }
-  .top-btn { font-size: 12.5px; min-height: 30px; padding: 4px 10px; gap: 4px; }
-  /* 全显示器尺寸与纵横比自适应：通过 clamp+dvh 锁定空/满卡槽等高，怪兽上场零挤压、零位移 */
-  .arena-grid { grid-template-columns: minmax(0, 1fr) clamp(292px, 24vw, 372px); gap: clamp(6px, 0.7vw, 10px); }
+  .top-btn { font-size: var(--fs-sub); min-height: 29px; padding: 4px 10px; gap: 4px; }
+  .lang-pill { font-size: var(--fs-sub); min-width: 72px; }
+  .lang-switch.light .lang-pill { font-size: var(--fs-ui); }
 
-  .zone-label { font-size: 12.5px; }
-  .prize-card { width: clamp(22px, 1.8vw, 28px); height: clamp(32px, 4.2dvh, 42px); font-size: 13px; }
-  .prize-count-pill { font-size: 11.5px; padding: 1.5px 7px; }
-  .pile-box { width: clamp(68px, 5.2vw, 80px); padding: 4px 4px; }
-  .pile-box strong { font-size: 16px; }
-  .pile-box .pile-ja, .pile-box .pile-zh { font-size: 11.5px; font-weight: 700; color: #543b24; line-height: 1.15; }
+  /* 牌桌主舞台：左侧对战垫与右侧面板均衡比例，窄屏/矮屏绝不截断卡牌 */
+  .arena-grid { grid-template-columns: minmax(0, 1fr) clamp(288px, 23vw, 356px); gap: clamp(6px, 0.7vw, 10px); }
+  .playmat { overflow-y: auto; overflow-x: hidden; padding: 5px 9px; gap: 4px; }
+  .side-half { grid-template-columns: clamp(68px, 5.4vw, 78px) minmax(0, 1fr) clamp(64px, 5vw, 74px); gap: clamp(5px, 0.55vw, 8px); }
 
-  .field-center { gap: clamp(3px, 0.45dvh, 6px); }
+  .zone-label { font-size: var(--fs-sub); }
+  .prize-card { width: clamp(21px, 1.7vw, 27px); height: clamp(30px, 4dvh, 40px); font-size: var(--fs-ui); }
+  .prize-count-pill { font-size: var(--fs-micro); padding: 1.5px 6px; }
+  .pile-box { width: clamp(62px, 4.9vw, 74px); padding: 4px 3px; }
+  .pile-box strong { font-size: var(--fs-title); }
+  .pile-box .pile-ja, .pile-box .pile-zh { font-size: var(--fs-micro); font-weight: 700; color: #543b24; line-height: 1.15; }
+
+  /* 空/满卡槽等高基准 + height:auto 防溢出保护：怪兽上场无跳动，多标签/长名也绝不裁切 */
+  .field-center { gap: clamp(4px, 0.5dvh, 7px); }
+  .bench-row { gap: clamp(5px, 0.55vw, 8px); }
   .slot-box {
-    padding: 16px 5px 4px;
-    height: clamp(92px, 14.2dvh, 126px);
-    min-height: clamp(92px, 14.2dvh, 126px);
+    padding: 15px 5px 4px;
+    height: auto;
+    min-height: clamp(114px, 15.6dvh, 134px);
   }
   .slot-box.active-slot {
-    width: clamp(310px, 58%, 480px);
-    height: clamp(106px, 16.2dvh, 142px);
-    min-height: clamp(106px, 16.2dvh, 142px);
+    width: clamp(350px, 64%, 520px);
+    height: auto;
+    min-height: clamp(124px, 17dvh, 144px);
   }
-  .slot-box > .card { height: 100%; justify-content: space-between; }
-  .slot-tag { top: 2px; left: 7px; font-size: 11.5px; }
-  .slot-empty { font-size: 13px; }
+  .slot-box > .card { height: auto; min-height: 100%; justify-content: space-between; }
+  .slot-tag { top: 2px; left: 7px; font-size: var(--fs-micro); }
+  .slot-empty { font-size: var(--fs-ui); }
 
-  .vs-badge { font-size: 12.5px; padding: 2px 12px; }
-  .limit-pill { font-size: 12px; padding: 2px 9px; }
+  .vs-badge { font-size: var(--fs-sub); padding: 2px 12px; }
+  .limit-pill { font-size: var(--fs-sub); padding: 2px 8px; }
 
-  .card-head { padding: 4px 7px; gap: 5px; }
-  .card-art { width: 28px; height: 28px; }
-  .card-art svg { width: 24px; height: 24px; }
+  /* 卡牌内部防挤压排版：头部单行对齐、备战/手牌技能单行防折行溢出 */
+  .card { gap: 2px; padding: 0 0 4px; }
+  .card-head { padding: 3.5px 6px; gap: 5px; }
+  .card-head-right { flex-direction: row; align-items: center; gap: 4px; }
+  .card-art { width: 26px; height: 26px; }
+  .card-art svg { width: 22px; height: 22px; }
   .bench-row .card-art { width: 22px; height: 22px; }
   .bench-row .card-art svg { width: 18px; height: 18px; }
-  .hand-card .card-art { width: 24px; height: 24px; }
-  .hand-card .card-art svg { width: 20px; height: 20px; }
-  /* 层次化字号：主战区最醒目 > 手牌清晰 > 备战区紧凑有序，同时收紧留白确保桌面端单页完整不滚动 */
-  .card-title-inline { font-size: 15px; line-height: 1.18; }
-  .bench-row .card-title-inline { font-size: 13px; }
-  .hand-card .card-title-inline { font-size: 13.5px; }
-  .hp-badge { font-size: 13px; padding: 1.5px 7px; }
-  .bench-row .hp-badge { font-size: 11.5px; padding: 1px 5px; }
-  .hand-card .hp-badge { font-size: 12px; padding: 1px 6px; }
-  .hp-track { height: 5px; }
-  .token-row { min-height: 18px; padding: 0 6px; }
-  .pip { width: 16px; height: 16px; font-size: 10.5px; }
-  .pip svg { width: 10px; height: 10px; }
-  .dmg-chip, .guard-chip, .boost-chip, .weak-chip, .ex-chip, .supporter-chip {
-    font-size: 11px;
-    padding: 0.5px 5px;
+  .hand-card .card-art { width: 22px; height: 22px; }
+  .hand-card .card-art svg { width: 18px; height: 18px; }
+
+  .card-title-inline { font-size: var(--fs-title); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bench-row .card-title-inline { font-size: var(--fs-ui); }
+  .hand-card .card-title-inline { font-size: var(--fs-ui); }
+  .hp-badge { font-size: var(--fs-ui); padding: 1px 6px; }
+  .bench-row .hp-badge { font-size: var(--fs-sub); padding: 1px 5px; }
+  .hand-card .hp-badge { font-size: var(--fs-sub); padding: 1px 5px; }
+  .hp-track { height: 4.5px; }
+
+  .token-row { min-height: 18px; padding: 0 6px; gap: 2px 4px; flex-wrap: nowrap; overflow: hidden; }
+  .token-chips { flex-wrap: nowrap; gap: 2.5px; flex-shrink: 0; }
+  .energy-pips { flex-wrap: nowrap; gap: 2px; min-width: 0; }
+  .pip { width: 15px; height: 15px; font-size: var(--fs-micro); flex-shrink: 0; }
+  .pip svg { width: 9.5px; height: 9.5px; }
+  .bench-row .pip, .hand-card .pip { width: 14px; height: 14px; }
+  .bench-row .pip svg, .hand-card .pip svg { width: 9px; height: 9px; }
+  .dmg-chip, .guard-chip, .boost-chip, .weak-chip, .ex-chip, .supporter-chip, .lethal-tag, .threat-chip {
+    font-size: var(--fs-micro);
+    padding: 0.5px 4.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
+
   .skills-list { gap: 2px; padding: 1.5px 5px 1px; }
-  .skill-line { font-size: 13.5px; line-height: 1.2; padding: 2.5px 6px; }
-  .bench-row .skill-line { font-size: 12px; padding: 2px 5px; }
-  .skill-dmg { font-size: 14.5px; }
-  .bench-row .skill-dmg { font-size: 13px; }
-  .skill-tag, .skill-ready-tag { font-size: 11px; padding: 0.5px 4.5px; }
+  .skill-line {
+    font-size: var(--fs-ui);
+    line-height: 1.2;
+    padding: 2.5px 6px;
+    flex-wrap: nowrap;
+    min-height: 22px;
+  }
+  .skill-left { flex-wrap: nowrap; overflow: hidden; min-width: 0; gap: 3px; }
+  .skill-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .bench-row .skill-line { font-size: var(--fs-sub); padding: 2px 4.5px; min-height: 20px; }
+  .skill-dmg { font-size: var(--fs-body); }
+  .bench-row .skill-dmg { font-size: var(--fs-ui); }
+  .eff-dmg { font-size: var(--fs-micro); }
+  .skill-tag, .skill-ready-tag { font-size: var(--fs-micro); padding: 0.5px 4px; flex-shrink: 0; }
 
   .hand-section { padding-top: 3px; gap: 3px; }
-  .hand-card { min-height: 88px; }
-  .hand-card .skill-line { font-size: 12px; padding: 2px 5px; }
+  .hand-cards { padding: 8px 4px 4px; gap: 8px; }
+  .hand-card,
+  .hand-drop-placeholder {
+    flex: 0 0 calc((100% - 28px) / 4.2);
+    min-width: 196px;
+    max-width: 248px;
+    min-height: 94px;
+    height: auto;
+  }
+  .hand-card .skill-line { font-size: var(--fs-sub); padding: 2px 5px; min-height: 20px; }
+  .hand-card .skill-dmg { font-size: var(--fs-ui); }
   .card-desc { padding: 3px 7px 3px; }
   .card-desc .desc-ja,
   .card-desc .desc-zh {
-    font-size: 12.5px;
+    font-size: var(--fs-sub);
     font-weight: 600;
     color: var(--ink);
     line-height: 1.32;
     border-top: none;
     padding-top: 0;
   }
-  .setup-pick-tag { font-size: 11px; padding: 1.5px 7px; }
-  .hand-actions { flex: 0 0 112px; gap: 5px; }
-  .hand-actions .btn-sm { font-size: 13px; padding: 6px 8px; }
+  .setup-pick-tag { font-size: var(--fs-micro); padding: 1px 7px; }
+  .hand-actions { flex: 0 0 108px; gap: 5px; }
+  .hand-actions .btn-sm { font-size: var(--fs-ui); padding: 6px 8px; }
 
-  /* 右侧面板：大字号纯净单语言，气泡与战报层次清晰 */
+  /* 右侧面板：统一字号梯度，气泡与战报层次清晰 */
   .side-panel { padding: 9px 11px; gap: 6px; }
-  .panel-title { font-size: 14.5px; padding-bottom: 7px; }
-  .call-state-badge { font-size: 12px; padding: 3px 9px; }
-  .bubble { padding: 9px 12px; }
-  .bubble-role { font-size: 12.5px; margin-bottom: 3px; }
+  .panel-title { font-size: var(--fs-body); padding-bottom: 6px; }
+  .call-state-badge { font-size: var(--fs-sub); padding: 2.5px 8px; }
+  .bubble { padding: 8px 11px; }
+  .bubble-role { font-size: var(--fs-sub); margin-bottom: 2px; }
   .bubble-ja,
   .bubble-zh {
-    font-size: 14.5px;
+    font-size: var(--fs-body);
     font-weight: 700;
     color: var(--ink);
-    line-height: 1.48;
+    line-height: 1.44;
     margin-top: 0;
     padding-top: 0;
     border-top: none;
   }
   .pending-ja,
   .pending-zh {
-    font-size: 14px;
+    font-size: var(--fs-body);
     font-weight: 700;
     color: #543714;
-    line-height: 1.44;
+    line-height: 1.42;
     border-top: none;
     padding-top: 0;
   }
-  .log-bar { font-size: 13px; }
-  .notepad-log { font-size: 13.5px; line-height: 1.5; padding: 8px 10px; }
-  .log-entry { padding: 5px 0; }
+  .log-bar { font-size: var(--fs-sub); }
+  .notepad-log { font-size: var(--fs-ui); line-height: 1.48; padding: 7px 9px; }
+  .log-entry { padding: 4px 0; }
   .log-ja,
-  .log-zh { font-size: 13.5px; color: var(--ink); font-weight: 600; margin-top: 0; }
-  .btn-voice { font-size: 14.5px; padding: 9px 12px; }
-  .btn-ptt { font-size: 14px; padding: 8px 10px; }
-  .voice-controls-grid input { font-size: 14px; padding: 8px 10px; }
-  .voice-controls-grid .btn-sm { font-size: 13.5px; padding: 8px 12px; }
-  .btn-sm { font-size: 13.5px; padding: 6px 11px; }
-  .live-tip-box { padding: 8px 11px; }
-  .live-tip-label { font-size: 12.5px; margin-bottom: 3px; }
+  .log-zh { font-size: var(--fs-ui); color: var(--ink); font-weight: 600; margin-top: 0; }
+  .btn-voice { font-size: var(--fs-body); padding: 8.5px 12px; }
+  .btn-ptt { font-size: var(--fs-ui); padding: 8px 10px; }
+  .voice-controls-grid input { font-size: var(--fs-body); padding: 7.5px 10px; }
+  .voice-controls-grid .btn-sm { font-size: var(--fs-ui); padding: 7.5px 12px; }
+  .btn-sm { font-size: var(--fs-ui); padding: 6px 11px; }
+  .live-tip-box { padding: 7px 10px; }
+  .live-tip-label { font-size: var(--fs-sub); margin-bottom: 2px; }
   .live-tip-ja,
-  .live-tip-zh { font-size: 13.5px; font-weight: 700; color: var(--ink); line-height: 1.44; margin-top: 0; }
+  .live-tip-zh { font-size: var(--fs-ui); font-weight: 700; color: var(--ink); line-height: 1.42; margin-top: 0; }
 
-  .guide-card { padding: 12px 15px; }
-  .guide-tag { font-size: 12.5px; margin-bottom: 4px; }
+  .voice-hud { bottom: 146px; }
+  .voice-hud-body { font-size: var(--fs-ui); }
+
+  .guide-card { padding: 11px 14px; }
+  .guide-tag { font-size: var(--fs-sub); margin-bottom: 3px; }
   .guide-ja,
-  .guide-zh { font-size: 14px; font-weight: 700; color: var(--ink); line-height: 1.46; margin-top: 0; }
+  .guide-zh { font-size: var(--fs-body); font-weight: 700; color: var(--ink); line-height: 1.44; margin-top: 0; }
 
   .prize-toast .pt-ja,
-  .prize-toast .pt-zh { font-size: 15px; font-weight: 800; color: #3a240e; margin-top: 0; }
+  .prize-toast .pt-zh { font-size: var(--fs-title); font-weight: 800; color: #3a240e; margin-top: 0; }
   .prize-toast.enemy .pt-ja,
   .prize-toast.enemy .pt-zh { color: #7a231b; }
   .turn-banner .tb-ja,
-  .turn-banner .tb-zh { font-size: 18px; font-weight: 800; color: #fdf4df; margin-top: 0; transform: skewX(8deg); }
+  .turn-banner .tb-zh { font-size: var(--fs-h1); font-weight: 800; color: #fdf4df; margin-top: 0; transform: skewX(8deg); }
 
   /* 规则弹窗：单栏大字号 + 舒展行间距，日文与中文均可一页完整展示 */
-  #rulesModal .modal-box { max-width: 860px; max-height: 94vh; padding: 14px 22px; }
+  #rulesModal .modal-box { width: min(860px, calc(100vw - 24px)); max-width: 860px; max-height: 94vh; padding: 14px 22px; }
   #rulesModal .modal-head { padding-bottom: 8px; margin-bottom: 9px; gap: 10px; flex-wrap: wrap; }
-  #rulesModal .modal-head h2 { font-size: 20px; line-height: 1.25; }
+  #rulesModal .modal-head h2 { font-size: var(--fs-h1); line-height: 1.25; }
   .rules-single-wrap { margin-bottom: 10px; }
   .rules-block { padding: 13px 20px; }
-  .rules-block h3 { font-size: 15.5px; margin: 0 0 10px; }
-  .rules-list { font-size: 14px; line-height: 1.78; padding-left: 20px; }
-  .rules-list li { margin-bottom: 10px; }
+  .rules-block h3 { font-size: var(--fs-title); margin: 0 0 10px; }
+  .rules-list { font-size: var(--fs-body); line-height: 1.76; padding-left: 20px; }
+  .rules-list li { margin-bottom: 9px; }
   .rules-list li:last-child { margin-bottom: 0; }
-  .diff-picker { font-size: 14px; }
-  .diff-btn { font-size: 13.5px; padding: 7px 16px; }
-  #btnStartGame { font-size: 15px; padding: 9px 24px; }
+  .diff-picker { font-size: var(--fs-body); }
+  .diff-btn { font-size: var(--fs-ui); padding: 7px 16px; }
+  #btnStartGame { font-size: var(--fs-title); padding: 9px 24px; }
 
   /* 设置与图鉴弹窗：固定稳定尺寸与等高槽位，切换语言/TTS/ASR模型时外框与行列绝不上下左右跳动 */
   #settingsModal .modal-box {
@@ -3391,124 +3445,127 @@
     overflow-y: auto;
     scrollbar-gutter: stable;
   }
-  #rulesModal .modal-box { width: min(860px, calc(100vw - 24px)); }
-  .turn-pill { min-width: 172px; text-align: center; }
-  .lang-pill { min-width: 74px; }
-  .modal-head h2 { font-size: 18.5px; }
-  .cfg-section-title { font-size: 14.5px; }
-  .cfg-section-badge { font-size: 12px; }
+  .modal-head h2 { font-size: var(--fs-h2); }
+  .cfg-section-title { font-size: var(--fs-body); }
+  .cfg-section-badge { font-size: var(--fs-sub); }
   .cfg-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
   .cfg-field { min-height: 62px; }
-  .cfg-field label { font-size: 13.5px; min-height: 20px; }
+  .cfg-field label { font-size: var(--fs-ui); min-height: 20px; }
   .cfg-field input, .cfg-field select {
-    font-size: 14px;
+    font-size: var(--fs-body);
     height: 38px;
     padding: 6px 10px;
   }
   .cfg-hint-pill {
-    font-size: 13px;
+    font-size: var(--fs-sub);
     min-height: 38px;
     display: flex;
     align-items: center;
     padding: 6px 10px;
   }
-  .cfg-toggle-inline { font-size: 13.5px; }
+  .cfg-toggle-inline { font-size: var(--fs-ui); }
   /* 视觉掩码密钥框：替代 type=password 彻底杜绝浏览器误弹“保存密码”提示 */
   .secret-mask { -webkit-text-security: disc; text-security: disc; }
-  /* 重开/结束回合确认等次级弹窗字号放大，确保清晰易读 */
+  #cmdInput::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; }
+  /* 重开/结束回合确认等次级弹窗字号统一 */
   #resetConfirmModal .modal-box,
   #endTurnConfirmModal .modal-box { max-width: 460px; padding: 20px 24px; }
   #resetConfirmModal h2,
   #endTurnConfirmModal h2,
   .mobile-fs-title-ja,
-  .mobile-fs-title-zh { font-size: 19px !important; line-height: 1.35; }
+  .mobile-fs-title-zh { font-size: var(--fs-h1) !important; line-height: 1.35; }
   .mobile-fs-desc-ja,
-  .mobile-fs-desc-zh { font-size: 14.5px !important; line-height: 1.62; color: var(--ink); }
+  .mobile-fs-desc-zh { font-size: var(--fs-body) !important; line-height: 1.6; color: var(--ink); }
   .endturn-hint-ja,
-  .endturn-hint-zh { font-size: 14px !important; line-height: 1.5; color: var(--ink); font-weight: 600; }
-  .reset-confirm-actions .btn-sm { font-size: 14px; padding: 9px 18px; min-width: 132px; }
-  .codex-legend { font-size: 13.5px; }
-  .codex-skill-top { font-size: 14px; }
-  .codex-skill-desc { font-size: 12.5px; }
-  .codex-meta { font-size: 12.5px; }
-  .dlog-chip { font-size: 12.5px; padding: 3px 10px; }
-  .dlog-list { font-size: 13px; }
-  .dlog-meta { font-size: 11.5px; }
-  .dlog-detail { font-size: 11.5px; }
+  .endturn-hint-zh { font-size: var(--fs-body) !important; line-height: 1.5; color: var(--ink); font-weight: 600; }
+  .reset-confirm-actions .btn-sm { font-size: var(--fs-body); padding: 9px 18px; min-width: 132px; }
+  .codex-legend { font-size: var(--fs-ui); }
+  .codex-skill-top { font-size: var(--fs-body); }
+  .codex-skill-desc { font-size: var(--fs-sub); }
+  .codex-meta { font-size: var(--fs-sub); }
+  .dlog-chip { font-size: var(--fs-sub); padding: 3px 10px; }
+  .dlog-list { font-size: var(--fs-ui); }
+  .dlog-meta { font-size: var(--fs-micro); }
+  .dlog-detail { font-size: var(--fs-sub); }
 
-  /* ---------- 桌面端全屏单页自适应（860px / 780px / 700px 三档收紧留白，零垂直滚动条） ---------- */
-  @media (min-width: 821px) and (max-height: 860px) {
+  /* ---------- 中等宽度桌面屏（<= 1240px）顶栏与三列备战区防挤压 ---------- */
+  @media (min-width: 821px) and (max-width: 1240px) {
+    .topbar { flex-wrap: wrap; padding: 5px 10px; gap: 5px; }
+    .top-actions { flex-wrap: wrap; gap: 4px; }
+    .top-btn { padding: 3.5px 8px; }
+    .arena-grid { grid-template-columns: minmax(0, 1fr) clamp(268px, 25vw, 316px); gap: 6px; }
+    .slot-box.active-slot { width: clamp(310px, 70%, 440px); }
+    .hand-card, .hand-drop-placeholder { flex: 0 0 calc((100% - 20px) / 3.4); min-width: 184px; }
+  }
+
+  /* ---------- 桌面端矮屏自适应（按 0.5px 梯度统一微缩字号与槽高，保卡牌完整无溢出） ---------- */
+  @media (min-width: 821px) and (max-height: 840px) {
+    :root {
+      --fs-h1: 18px;
+      --fs-h2: 16.5px;
+      --fs-title: 14px;
+      --fs-body: 13px;
+      --fs-ui: 12px;
+      --fs-sub: 11px;
+      --fs-micro: 10px;
+    }
     body { padding: 5px 8px; }
     .table-shell { gap: 5px; }
     .topbar { padding: 4px 10px; }
-    .playmat { padding: 4px 8px; gap: 2px; }
+    .playmat { padding: 4px 8px; gap: 3px; }
     .field-center { gap: 3px; }
-    .slot-box { min-height: 80px; padding: 14px 4px 3px; }
-    .slot-box.active-slot { min-height: 90px; }
-    .card-head { padding: 3px 6px; }
-    .card-art { width: 24px; height: 24px; }
-    .card-art svg { width: 20px; height: 20px; }
-    .bench-row .card-art { width: 20px; height: 20px; }
-    .bench-row .card-art svg { width: 16px; height: 16px; }
-    .card-title-inline { font-size: 14px; }
-    .bench-row .card-title-inline { font-size: 12.5px; }
+    .slot-box { min-height: 104px; padding: 14px 4px 3px; }
+    .slot-box.active-slot { min-height: 112px; }
+    .card-head { padding: 3px 5px; }
+    .card-art { width: 22px; height: 22px; }
+    .card-art svg { width: 18px; height: 18px; }
+    .bench-row .card-art { width: 19px; height: 19px; }
+    .bench-row .card-art svg { width: 15px; height: 15px; }
     .token-row { min-height: 16px; }
-    .pip { width: 15px; height: 15px; }
+    .pip { width: 13.5px; height: 13.5px; }
     .skills-list { gap: 1.5px; padding: 1px 4px; }
-    .skill-line { font-size: 12.5px; padding: 2px 5px; line-height: 1.15; }
-    .bench-row .skill-line { font-size: 11.5px; padding: 1.5px 4px; }
-    .skill-dmg { font-size: 13.5px; }
-    .bench-row .skill-dmg { font-size: 12px; }
-    .hand-card { min-height: 78px; }
-    .hand-card .card-title-inline { font-size: 12.5px; }
-    .hand-card .skill-line { font-size: 11.5px; padding: 1.5px 4px; }
-    .card-desc .desc-ja, .card-desc .desc-zh { font-size: 12px; line-height: 1.25; }
+    .skill-line { padding: 2px 5px; min-height: 19px; }
+    .bench-row .skill-line { padding: 1.5px 4px; min-height: 18px; }
+    .hand-card, .hand-drop-placeholder { min-height: 84px; }
     .bubble { padding: 6px 9px; }
-    .bubble-ja, .bubble-zh { font-size: 13.5px; line-height: 1.38; }
-    .voice-hud { bottom: 102px; }
+    .voice-hud { bottom: 118px; }
     #rulesModal .modal-box { padding: 12px 18px; }
-    .rules-list { font-size: 13.5px; line-height: 1.68; }
-    .rules-list li { margin-bottom: 8px; }
+    .rules-list { line-height: 1.66; }
+    .rules-list li { margin-bottom: 7px; }
   }
-  @media (min-width: 821px) and (max-height: 740px) {
-    .slot-box { min-height: 70px; padding: 13px 4px 2px; }
-    .slot-box.active-slot { min-height: 78px; }
-    .prize-card { width: 23px; height: 33px; }
+  @media (min-width: 821px) and (max-height: 720px) {
+    .slot-box { min-height: 98px; padding: 13px 4px 3px; }
+    .slot-box.active-slot { min-height: 106px; }
+    .prize-card { width: 22px; height: 32px; }
     .pile-box { padding: 3px 3px; }
-    .card-head { padding: 2.5px 5px; }
-    .skill-line { font-size: 12px; padding: 1.5px 4px; }
-    .hand-card { min-height: 70px; }
-    .hand-actions .btn-sm { padding: 5px 6px; font-size: 12px; }
-  }
-  @media (min-width: 821px) and (max-height: 640px) {
-    .playmat { overflow-y: auto; }
+    .hand-card, .hand-drop-placeholder { min-height: 78px; }
+    .hand-actions .btn-sm { padding: 5px 6px; }
   }
 
-  /* ---------- 手机/小屏横屏恢复紧凑布局（防止被后置桌面大字号样式覆盖） ---------- */
+  /* ---------- 手机/小屏横屏恢复紧凑布局（统一 0.5px 字号梯度） ---------- */
   @media (max-height: 620px) and (orientation: landscape), (max-width: 960px) and (orientation: landscape) {
+    :root {
+      --fs-h2: 15px;
+      --fs-title: 13px;
+      --fs-body: 12.5px;
+      --fs-ui: 11.5px;
+      --fs-sub: 11px;
+      --fs-micro: 10px;
+    }
     .topbar { padding: 4px 8px; gap: 6px; }
-    .brand-title { font-size: 15px; }
     .brand-logo-svg { width: 22px; height: 22px; }
-    .turn-pill { font-size: 12px; padding: 2px 8px; }
-    .top-btn { font-size: 12px; min-height: 26px; padding: 3px 8px; }
-    .lang-pill { font-size: 11.5px; padding: 2px 7px; }
+    .turn-pill { padding: 2px 8px; min-width: 0; }
+    .top-btn { min-height: 26px; padding: 3px 8px; }
+    .lang-pill { padding: 2px 7px; min-width: 0; }
     .lang-badge-svg { width: 15px; height: 15px; }
     .arena-grid { grid-template-columns: minmax(0, 1fr) clamp(235px, 29vw, 285px); }
-    .slot-box { min-height: 76px; padding: 15px 4px 4px; }
-    .slot-box.active-slot { width: clamp(230px, 60%, 340px); min-height: 82px; }
-    .card-title-inline { font-size: 13px; }
-    .bench-row .card-title-inline { font-size: 11.5px; }
-    .skill-line { font-size: 11.5px; padding: 2px 5px; }
-    .skill-dmg { font-size: 12.5px; }
-    .hand-card { min-height: 78px; }
+    .slot-box { min-height: 96px; padding: 14px 4px 4px; }
+    .slot-box.active-slot { width: clamp(250px, 66%, 360px); min-height: 102px; }
+    .hand-card, .hand-drop-placeholder { min-height: 80px; }
     .hand-actions { flex: 0 0 92px; }
-    .hand-actions .btn-sm { font-size: 12px; padding: 5px 6px; }
     .side-panel { padding: 6px 8px; gap: 5px; }
     .bubble { padding: 5px 8px; }
-    .bubble-ja, .bubble-zh { font-size: 12.5px; line-height: 1.35; }
-    .notepad-log, .log-ja, .log-zh { font-size: 12px; }
-    .voice-hud { bottom: 92px; padding: 5px 12px; }
-    .voice-hud-body { font-size: 12px; }
+    .voice-hud { bottom: 96px; padding: 5px 12px; }
   }
 
   /* ---------- 手机竖屏单列防溢出布局（完整恢复竖屏适配并兼容 SVG 语言胶囊） ---------- */
@@ -3864,7 +3921,7 @@
         <div class="voice-controls-grid">
           <button class="btn-voice" id="btnLiveCall"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.46.57 3.58a1 1 0 0 1-.25 1.01l-2.2 2.2z"/></svg><span class="lang-ja">通話開始</span><span class="lang-zh">开始通话</span></button>
           <button class="btn-ptt" id="btnRecordVoice"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg><span class="lang-ja">単発</span><span class="lang-zh">单次</span></button>
-          <input type="text" id="cmdInput" placeholder="コマンド入力" />
+          <input type="search" id="cmdInput" name="kotodama_cmd_search" placeholder="コマンド入力" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" />
           <button class="btn-sm primary" id="btnSendCmd"><span class="lang-ja">送信</span><span class="lang-zh">发送</span></button>
         </div>
 
@@ -4062,7 +4119,7 @@
       <div class="cfg-grid">
         <div class="cfg-field">
           <label><span class="lang-ja">Vertex APIキー（空欄でローカル解析）</span><span class="lang-zh">Vertex API 密钥（留空走本地解析）</span></label>
-          <input type="text" id="apiKey" class="secret-mask" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" />
+          <input type="text" id="apiKey" class="secret-mask" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" disabled />
         </div>
         <div class="cfg-field">
           <label><span class="lang-ja">LLM モデル</span><span class="lang-zh">LLM 解析模型</span></label>
@@ -4120,11 +4177,11 @@
         <div class="cfg-grid">
           <div class="cfg-field">
             <label>AccessKey ID (AK)</label>
-            <input type="text" id="niaAk" class="secret-mask" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" />
+            <input type="text" id="niaAk" class="secret-mask" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" disabled />
           </div>
           <div class="cfg-field">
             <label>AccessKey Secret (SK)</label>
-            <input type="text" id="niaSk" class="secret-mask" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" />
+            <input type="text" id="niaSk" class="secret-mask" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" disabled />
           </div>
         </div>
       </div>

@@ -1496,6 +1496,8 @@
     chromeUtterBuf: "",
     chromeUtterTimer: null,
     resumeCallAfterRecord: false,
+    vadSimultaneousMode: false,
+    vadLoudBargeStreak: 0,
 
     /* 单次录音状态 */
     isRecording: false,
@@ -2786,7 +2788,8 @@
           clearTimeout(this.chromeResumeTimer);
           clearTimeout(this.chromeUtterTimer);
           this.chromeUtterBuf = "";
-          if (this.vadRecorder || this.vadCapturing || this.vadNiaSession) this.abortVadRecorder();
+          /* 全双工 Nia 模式下允许 TTS 边播边维持 ASR 流式识别，不中断正在进行的收音会话 */
+          if (this.vadRecorder || ((this.vadCapturing || this.vadNiaSession) && ConfigManager.data.asrMode !== "nia_asr")) this.abortVadRecorder();
           if (this.callActive && this.callMode === "chrome_asr" && this.callRec) {
             clearTimeout(this.recRestartTimer);
             try { this.callRec.onend = null; this.callRec.abort(); } catch (_) {}
@@ -3199,6 +3202,8 @@
     /** 中断当前尚未提交的 VAD 录音切片、Nia 流式会话与 PCM 采集缓冲 */
     abortVadRecorder() {
       this.vadCapturing = false;
+      this.vadSimultaneousMode = false;
+      this.vadLoudBargeStreak = 0;
       this.vadCaptureChunks = [];
       if (this.vadNiaSession) {
         try { this.vadNiaSession.abort(); } catch (_) {}
@@ -3321,55 +3326,114 @@
         const minPeak = Math.max(0.022, this.vadNoiseFloor * 2.6 + 0.007);
         const minLoudFrames = 4;
 
-        /* AEC3 护航下的高灵敏度 Barge-in：兼顾防爆音保护与随时开口秒打断 */
+        /* 全双工边播边识别（Nia 模式）：TTS 播放期间同步开启流式 ASR 试听，确认非回声有效人声后再平滑淡出打断 TTS */
         if (this.isSpeaking) {
           if (this.bargeInGuardUntil && now < this.bargeInGuardUntil) {
             this.vadBargeStreak = 0;
+            this.vadLoudBargeStreak = 0;
             this.updateVoiceWave(rms * 0.2, 0.08, false);
             return;
           }
-          const bargeThresh = Math.max(0.036, this.vadNoiseFloor * 3.0);
-          const strongBargeThresh = Math.max(0.062, this.vadNoiseFloor * 4.5);
-          if (rms > bargeThresh) {
-            this.vadBargeStreak += 1;
-            this.updateVoiceWave(rms, bargeThresh, true);
-          } else {
-            this.vadBargeStreak = 0;
-            this.updateVoiceWave(rms * 0.3, bargeThresh, false);
-          }
-          if (this.vadBargeStreak >= 3 || (rms > strongBargeThresh && this.vadBargeStreak >= 2)) {
-            this.vadBargeStreak = 0;
-            this.stopPlayback();
-            this.lastSpeakEndAt = 0;
-            this.vadSpeechStart = now;
-            this.vadLastLoud = now;
-            this.vadPeakRms = rms;
-            this.vadLoudFrames = 5;
-            BattleEngine.resetIdleTimer();
-            this.updateCallButtonUI("barge");
-            TableUI.showVoiceHud("listening", "…");
-            if (this.vadProcessor) {
-              this.vadCaptureChunks = [...this.vadPreRoll];
-              this.vadPreRoll = [];
-              this.vadCapturing = true;
-              if (ConfigManager.data.asrMode === "nia_asr") {
+          const useFullDuplexNia = Boolean(this.vadProcessor && ConfigManager.data.asrMode === "nia_asr");
+          if (useFullDuplexNia) {
+            const probeThresh = Math.max(0.022, this.vadNoiseFloor * 2.4 + 0.005);
+            const strongBargeThresh = Math.max(0.068, this.vadNoiseFloor * 4.8);
+            if (!this.vadCapturing) {
+              if (rms > probeThresh) {
+                this.vadBargeStreak += 1;
+                this.updateVoiceWave(rms, probeThresh, true);
+              } else {
+                this.vadBargeStreak = 0;
+                this.updateVoiceWave(rms * 0.3, probeThresh, false);
+              }
+              if (this.vadBargeStreak >= 2) {
+                this.vadBargeStreak = 0;
+                this.vadLoudBargeStreak = rms > strongBargeThresh ? 1 : 0;
+                this.vadSimultaneousMode = true;
+                this.vadSpeechStart = now;
+                this.vadLastLoud = now;
+                this.vadPeakRms = rms;
+                this.vadLoudFrames = 2;
+                this.vadCaptureChunks = [...this.vadPreRoll];
+                this.vadPreRoll = [];
+                this.vadCapturing = true;
                 if (this.vadNiaSession) { try { this.vadNiaSession.abort(); } catch (_) {} }
                 const niaSess = this.createNiaAsrSession({
                   lang: this.getEffectiveNiaAsrLang(),
                   onPartial: (txt) => {
-                    if (txt && $("cmdInput")) $("cmdInput").value = txt;
-                    if (txt) TableUI.showVoiceHud("listening", txt);
+                    const cleaned = this.stripSpokenEcho(txt);
+                    if (!cleaned || NLUEngine.isMeaninglessTranscript(cleaned) || this.isLikelySelfEcho(cleaned)) return;
+                    if (this.vadSimultaneousMode && this.isSpeaking) {
+                      this.vadSimultaneousMode = false;
+                      this.vadLoudBargeStreak = 0;
+                      this.fadeOutAndStopPlayback(100);
+                      this.lastSpeakEndAt = 0;
+                      BattleEngine.resetIdleTimer();
+                      this.updateCallButtonUI("barge");
+                      DebugLog.add("AEC", "边播边识别触发语义打断", cleaned);
+                    }
+                    if ($("cmdInput")) $("cmdInput").value = cleaned;
+                    TableUI.showVoiceHud("listening", cleaned);
                   }
                 });
                 const sr = ctx.sampleRate || 48000;
                 for (const c of this.vadCaptureChunks) niaSess.pushFloat32(c, sr);
                 this.vadNiaSession = niaSess;
               }
+              return;
             }
+            /* 已在边播边识别试听中：若持续大声插话（防高延迟网络首字偏慢），140ms 后也平滑淡出打断 TTS */
+            if (this.vadSimultaneousMode) {
+              if (rms > strongBargeThresh) {
+                this.vadLoudBargeStreak += 1;
+                if (this.vadLoudBargeStreak >= 4) {
+                  this.vadSimultaneousMode = false;
+                  this.vadLoudBargeStreak = 0;
+                  this.fadeOutAndStopPlayback(100);
+                  this.lastSpeakEndAt = 0;
+                  BattleEngine.resetIdleTimer();
+                  this.updateCallButtonUI("barge");
+                  TableUI.showVoiceHud("listening", "…");
+                  DebugLog.add("AEC", "强音量快速打断 TTS", `rms=${rms.toFixed(3)}`);
+                }
+              } else {
+                this.vadLoudBargeStreak = 0;
+              }
+            }
+            /* 落入下方活跃收音尾音判停逻辑，实现真正的边播边识别 */
+          } else {
+            const bargeThresh = Math.max(0.036, this.vadNoiseFloor * 3.0);
+            const strongBargeThresh = Math.max(0.062, this.vadNoiseFloor * 4.5);
+            if (rms > bargeThresh) {
+              this.vadBargeStreak += 1;
+              this.updateVoiceWave(rms, bargeThresh, true);
+            } else {
+              this.vadBargeStreak = 0;
+              this.updateVoiceWave(rms * 0.3, bargeThresh, false);
+            }
+            if (this.vadBargeStreak >= 3 || (rms > strongBargeThresh && this.vadBargeStreak >= 2)) {
+              this.vadBargeStreak = 0;
+              this.fadeOutAndStopPlayback(100);
+              this.lastSpeakEndAt = 0;
+              this.vadSpeechStart = now;
+              this.vadLastLoud = now;
+              this.vadPeakRms = rms;
+              this.vadLoudFrames = 5;
+              BattleEngine.resetIdleTimer();
+              this.updateCallButtonUI("barge");
+              TableUI.showVoiceHud("listening", "…");
+              if (this.vadProcessor) {
+                this.vadCaptureChunks = [...this.vadPreRoll];
+                this.vadPreRoll = [];
+                this.vadCapturing = true;
+              }
+            }
+            return;
           }
-          return;
+        } else {
+          this.vadBargeStreak = 0;
+          this.vadLoudBargeStreak = 0;
         }
-        this.vadBargeStreak = 0;
 
         const isActiveCapture = this.vadProcessor ? this.vadCapturing : Boolean(this.vadRecorder);
         this.updateVoiceWave(rms, startThresh, isActiveCapture || rms > startThresh);
@@ -3455,7 +3519,10 @@
           const tailSilenceMs = dur < 1200 ? 680 : 950;
           if (silence >= tailSilenceMs || dur >= 15000) {
             if (this.vadProcessor) {
+              const wasSimultaneous = Boolean(this.vadSimultaneousMode);
               this.vadCapturing = false;
+              this.vadSimultaneousMode = false;
+              this.vadLoudBargeStreak = 0;
               const pcmChunks = this.vadCaptureChunks;
               this.vadCaptureChunks = [];
               const niaSession = this.vadNiaSession;
@@ -3470,14 +3537,22 @@
                 if (niaSession) niaSession.abort();
                 return;
               }
-              SoundFX.play("tap");
+              if (!wasSimultaneous) SoundFX.play("tap");
               if (niaSession) {
                 const durCaptured = dur;
                 niaSession.finish().then((transcript) => {
-                  const clean = String(transcript || "").trim();
-                  if (!clean) {
-                    DebugLog.add("ASR", `SenseTime Nia 流式识别结果为空 (${durCaptured}ms)`, `frames=${loudFrames}, peak=${peak.toFixed(3)}`);
+                  const rawClean = String(transcript || "").trim();
+                  const clean = wasSimultaneous ? this.stripSpokenEcho(rawClean) : rawClean;
+                  if (!clean || (wasSimultaneous && (NLUEngine.isMeaninglessTranscript(clean) || this.isLikelySelfEcho(clean)))) {
+                    DebugLog.add(wasSimultaneous ? "AEC" : "ASR", wasSimultaneous ? `边播边识别忽略回声/杂音 (${durCaptured}ms)` : `SenseTime Nia 流式识别结果为空 (${durCaptured}ms)`, rawClean || `frames=${loudFrames}, peak=${peak.toFixed(3)}`);
                     return;
+                  }
+                  if (wasSimultaneous) {
+                    SoundFX.play("tap");
+                    if (this.isSpeaking) {
+                      this.fadeOutAndStopPlayback(100);
+                      this.lastSpeakEndAt = 0;
+                    }
                   }
                   if ($("cmdInput")) $("cmdInput").value = clean;
                   DebugLog.add("ASR", `SenseTime Nia 流式识别完成 (${durCaptured}ms)`, clean);
@@ -9131,12 +9206,29 @@
     }
   }
 
-  function syncSettingsForm() {
+  function clearSecretDomFields() {
+    ["apiKey", "niaAk", "niaSk"].forEach((id) => {
+      const el = $(id);
+      if (el) { el.value = ""; el.disabled = true; }
+    });
+  }
+
+  function closeSettingsModal() {
+    $("settingsModal")?.classList.remove("open");
+    clearSecretDomFields();
+  }
+
+  function syncSettingsForm(includeSecrets = false) {
     const c = ConfigManager.data;
-    if ($("apiKey")) $("apiKey").value = c.apiKey;
+    const modalOpen = includeSecrets || Boolean($("settingsModal")?.classList.contains("open"));
+    if (modalOpen) {
+      if ($("apiKey")) { $("apiKey").disabled = false; $("apiKey").value = c.apiKey; }
+      if ($("niaAk")) { $("niaAk").disabled = false; $("niaAk").value = c.niaAk; }
+      if ($("niaSk")) { $("niaSk").disabled = false; $("niaSk").value = c.niaSk; }
+    } else {
+      clearSecretDomFields();
+    }
     if ($("llmModel")) $("llmModel").value = c.llmModel;
-    if ($("niaAk")) $("niaAk").value = c.niaAk;
-    if ($("niaSk")) $("niaSk").value = c.niaSk;
     if ($("niaAsrLang")) $("niaAsrLang").value = VoiceEngine.getEffectiveNiaAsrLang();
     if ($("ttsEngine")) $("ttsEngine").value = c.ttsEngine;
     if ($("ttsModel")) $("ttsModel").value = c.ttsModel;
@@ -9352,16 +9444,16 @@
     $("btnStartGame").addEventListener("click", closeRulesAndGuide);
 
     $("btnOpenSettings").addEventListener("click", () => {
-      syncSettingsForm();
       $("settingsModal").classList.add("open");
+      syncSettingsForm(true);
     });
-    $("btnCloseSettings").addEventListener("click", () => $("settingsModal").classList.remove("open"));
+    $("btnCloseSettings").addEventListener("click", () => closeSettingsModal());
     $("settingsModal")?.addEventListener("click", (e) => {
-      if (e.target === $("settingsModal")) $("settingsModal").classList.remove("open");
+      if (e.target === $("settingsModal")) closeSettingsModal();
     });
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && $("settingsModal")?.classList.contains("open")) {
-        $("settingsModal").classList.remove("open");
+        closeSettingsModal();
       }
     });
 
@@ -9478,7 +9570,7 @@
         syncSettingsForm();
         TableUI.showToast("初期設定・標準カードデータに戻しました", "已恢复默认配置与标准卡表");
       } else {
-        $("settingsModal")?.classList.remove("open");
+        closeSettingsModal();
         $("dataLoadModal")?.classList.add("open");
       }
     });
