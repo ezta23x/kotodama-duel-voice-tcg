@@ -42,6 +42,12 @@
     sword: '<svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.92 5H5l9 9 1-.94m4.96 6.06l-.84.84a.996.996 0 0 1-1.41 0l-3.12-3.12-2.68 2.66-1.41-1.41 1.42-1.42L3 7.75V3h4.75l8.92 8.92 1.42-1.42 1.41 1.41-2.67 2.67 3.12 3.12c.4.4.4 1.03.01 1.42z"/></svg>',
     warn: '<svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>',
     bolt: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11 21h-1l1-7H7.5c-.88 0-.33-.75-.31-.78C8.48 10.94 10.42 7.54 13.01 3h1l-1 7h3.51c.4 0 .62.19.4.66C12.97 17.55 11 21 11 21z"/></svg>',
+    recycle: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>',
+    healPlus: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 10h-5V5h-4v5H5v4h5v5h4v-5h5z"/></svg>',
+    drawCard: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 3H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 14H9V6h9v11zM4 7H2v13c0 1.1.9 2 2 2h12v-2H4V7z"/></svg>',
+    splash: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2l2.2 5.4L20 6l-3.6 4.8L22 14l-5.8.6L18 20l-5.2-2.6L10 22l-.6-5.8L4 17l3.2-4.8L2 9l5.8-.6L6 3l5.2 2.8z"/></svg>',
+    prizeStar: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.5l2.7 5.9 6.5.7-4.8 4.4 1.3 6.4L12 16.7 6.3 19.9l1.3-6.4-4.8-4.4 6.5-.7z"/></svg>',
+    prizeCheck: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg>',
     hudWave: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect class="voice-hud-wave-bar" x="2" y="9" width="2.6" height="6" rx="1.3" fill="currentColor"/><rect class="voice-hud-wave-bar" x="6.5" y="5" width="2.6" height="14" rx="1.3" fill="currentColor"/><rect class="voice-hud-wave-bar" x="11" y="3" width="2.6" height="18" rx="1.3" fill="currentColor"/><rect class="voice-hud-wave-bar" x="15.5" y="6" width="2.6" height="12" rx="1.3" fill="currentColor"/><rect class="voice-hud-wave-bar" x="20" y="9" width="2.6" height="6" rx="1.3" fill="currentColor"/></svg>',
     hudSpinner: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="36 22"/></svg>',
     check: '<svg class="btn-icon" style="color:#7ee09b;" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>'
@@ -1498,6 +1504,9 @@
     resumeCallAfterRecord: false,
     vadSimultaneousMode: false,
     vadLoudBargeStreak: 0,
+    vadLastAsrText: "",
+    vadLastAsrChangeAt: 0,
+    vadGotFinal: false,
 
     /* 单次录音状态 */
     isRecording: false,
@@ -3089,14 +3098,14 @@
               const t = String(msg.text || "").trim();
               if (t) {
                 lastPartial = t;
-                if (onPartial) onPartial(getTranscript());
+                if (onPartial) onPartial(getTranscript(), false);
               }
             } else if (msg.type === "final") {
               const t = String(msg.text || "").trim();
               if (t) finalSegments.push(t);
               lastPartial = "";
               const preview = getTranscript();
-              if (preview && onPartial) onPartial(preview);
+              if (preview && onPartial) onPartial(preview, true);
               if (ending && endSent) {
                 clearTimeout(endWaitTimer);
                 endWaitTimer = setTimeout(() => resolveDone(), 260);
@@ -3199,11 +3208,21 @@
       };
     },
 
+    /** 判断当前识别文本结尾是否停在连接词/助词上，避免在玩家连招或思考停顿时过早截断 */
+    isIncompleteTrailingPhrase(text) {
+      const s = String(text || "").trim().replace(/[、，,]+$/, "");
+      if (!s) return true;
+      return /(?:然后|接着|之后|并且|而且|但是|不过|顺便|先把|先给|再把|再给|再|把|给|向|对|用|让|派|换|贴|の|を|に|へ|で|と|が|は|も|から|まで|て|して|そして|それから|あとで|そのあと)$/.test(s);
+    },
+
     /** 中断当前尚未提交的 VAD 录音切片、Nia 流式会话与 PCM 采集缓冲 */
     abortVadRecorder() {
       this.vadCapturing = false;
       this.vadSimultaneousMode = false;
       this.vadLoudBargeStreak = 0;
+      this.vadLastAsrText = "";
+      this.vadLastAsrChangeAt = 0;
+      this.vadGotFinal = false;
       this.vadCaptureChunks = [];
       if (this.vadNiaSession) {
         try { this.vadNiaSession.abort(); } catch (_) {}
@@ -3322,7 +3341,9 @@
         for (let i = 0; i < pcm.length; i++) sum += pcm[i] * pcm[i];
         const rms = Math.sqrt(sum / pcm.length);
         const startThresh = Math.max(0.018, this.vadNoiseFloor * 2.4 + 0.006);
-        const contThresh = Math.max(0.011, this.vadNoiseFloor * 1.6 + 0.004);
+        const contThresh = this.isSpeaking
+          ? Math.max(0.018, this.vadNoiseFloor * 2.0 + 0.006)
+          : Math.max(0.013, this.vadNoiseFloor * 1.7 + 0.004);
         const minPeak = Math.max(0.022, this.vadNoiseFloor * 2.6 + 0.007);
         const minLoudFrames = 4;
 
@@ -3350,6 +3371,9 @@
                 this.vadBargeStreak = 0;
                 this.vadLoudBargeStreak = rms > strongBargeThresh ? 1 : 0;
                 this.vadSimultaneousMode = true;
+                this.vadLastAsrText = "";
+                this.vadLastAsrChangeAt = 0;
+                this.vadGotFinal = false;
                 this.vadSpeechStart = now;
                 this.vadLastLoud = now;
                 this.vadPeakRms = rms;
@@ -3360,9 +3384,14 @@
                 if (this.vadNiaSession) { try { this.vadNiaSession.abort(); } catch (_) {} }
                 const niaSess = this.createNiaAsrSession({
                   lang: this.getEffectiveNiaAsrLang(),
-                  onPartial: (txt) => {
+                  onPartial: (txt, isFinal) => {
                     const cleaned = this.stripSpokenEcho(txt);
                     if (!cleaned || NLUEngine.isMeaninglessTranscript(cleaned) || this.isLikelySelfEcho(cleaned)) return;
+                    if (cleaned !== this.vadLastAsrText) {
+                      this.vadLastAsrText = cleaned;
+                      this.vadLastAsrChangeAt = Date.now();
+                    }
+                    if (isFinal) this.vadGotFinal = true;
                     if (this.vadSimultaneousMode && this.isSpeaking) {
                       this.vadSimultaneousMode = false;
                       this.vadLoudBargeStreak = 0;
@@ -3449,6 +3478,9 @@
           }
           if (this.vadHitStreak >= 2) {
             this.vadHitStreak = 0;
+            this.vadLastAsrText = "";
+            this.vadLastAsrChangeAt = 0;
+            this.vadGotFinal = false;
             this.vadSpeechStart = now;
             this.vadLastLoud = now;
             this.vadPeakRms = rms;
@@ -3464,9 +3496,15 @@
                 if (this.vadNiaSession) { try { this.vadNiaSession.abort(); } catch (_) {} }
                 const niaSess = this.createNiaAsrSession({
                   lang: this.getEffectiveNiaAsrLang(),
-                  onPartial: (txt) => {
-                    if (txt && $("cmdInput")) $("cmdInput").value = txt;
-                    if (txt) TableUI.showVoiceHud("listening", txt);
+                  onPartial: (txt, isFinal) => {
+                    const cleanTxt = String(txt || "").trim();
+                    if (cleanTxt && cleanTxt !== this.vadLastAsrText) {
+                      this.vadLastAsrText = cleanTxt;
+                      this.vadLastAsrChangeAt = Date.now();
+                    }
+                    if (isFinal && cleanTxt) this.vadGotFinal = true;
+                    if (cleanTxt && $("cmdInput")) $("cmdInput").value = cleanTxt;
+                    if (cleanTxt) TableUI.showVoiceHud("listening", cleanTxt);
                   }
                 });
                 const sr = ctx.sampleRate || 48000;
@@ -3516,13 +3554,21 @@
           }
           const dur = now - this.vadSpeechStart;
           const silence = now - this.vadLastLoud;
-          const tailSilenceMs = dur < 1200 ? 680 : 950;
-          if (silence >= tailSilenceMs || dur >= 15000) {
+          const incompleteTail = this.vadLastAsrText ? this.isIncompleteTrailingPhrase(this.vadLastAsrText) : false;
+          const tailSilenceMs = incompleteTail ? 1350 : (this.vadGotFinal ? 620 : (dur < 1200 ? 720 : 960));
+          const asrIdleMs = this.vadLastAsrChangeAt ? (now - this.vadLastAsrChangeAt) : 0;
+          const asrStableLimit = incompleteTail ? 1950 : (this.vadGotFinal ? 900 : 1350);
+          /* 声学静音 + ASR 文本稳定双信号联合判停：不过短不截断连招，微弱底噪下也能可靠自动提交 */
+          const asrTextStableDone = Boolean(this.vadLastAsrText && dur >= 500 && asrIdleMs >= asrStableLimit && rms < Math.max(0.032, this.vadNoiseFloor * 2.8));
+          if ((dur >= 380 && silence >= tailSilenceMs) || asrTextStableDone || dur >= 10000) {
             if (this.vadProcessor) {
               const wasSimultaneous = Boolean(this.vadSimultaneousMode);
               this.vadCapturing = false;
               this.vadSimultaneousMode = false;
               this.vadLoudBargeStreak = 0;
+              this.vadLastAsrText = "";
+              this.vadLastAsrChangeAt = 0;
+              this.vadGotFinal = false;
               const pcmChunks = this.vadCaptureChunks;
               this.vadCaptureChunks = [];
               const niaSession = this.vadNiaSession;
@@ -4019,11 +4065,26 @@
           const zeroGain = ctx.createGain();
           zeroGain.gain.value = 0;
           TableUI.showVoiceHud("listening", "…");
+          const singleStartAt = Date.now();
+          let singleSpeechAt = 0;
+          let singleLastLoudAt = 0;
+          let singleLastRms = 0;
+          let singleLastText = "";
+          let singleLastTextAt = 0;
+          let singleGotFinal = false;
+          let singleAutoTimer = null;
           const session = this.createNiaAsrSession({
             lang: this.getEffectiveNiaAsrLang(),
-            onPartial: (txt) => {
-              if (txt && $("cmdInput")) $("cmdInput").value = txt;
-              if (txt) TableUI.showVoiceHud("listening", txt);
+            onPartial: (txt, isFinal) => {
+              const cleanTxt = String(txt || "").trim();
+              if (cleanTxt && cleanTxt !== singleLastText) {
+                singleLastText = cleanTxt;
+                singleLastTextAt = Date.now();
+                if (!singleSpeechAt) singleSpeechAt = singleLastTextAt;
+              }
+              if (isFinal && cleanTxt) singleGotFinal = true;
+              if (cleanTxt && $("cmdInput")) $("cmdInput").value = cleanTxt;
+              if (cleanTxt) TableUI.showVoiceHud("listening", cleanTxt);
             }
           });
           this.singleNiaSession = session;
@@ -4031,6 +4092,15 @@
           proc.onaudioprocess = (ev) => {
             if (stopped) return;
             const input = ev.inputBuffer.getChannelData(0);
+            let sumSq = 0;
+            for (let i = 0; i < input.length; i++) sumSq += input[i] * input[i];
+            const rms = Math.sqrt(sumSq / input.length);
+            singleLastRms = rms;
+            if (rms > 0.016) {
+              const tNow = Date.now();
+              if (!singleSpeechAt) singleSpeechAt = tNow;
+              singleLastLoudAt = tNow;
+            }
             const copy = new Float32Array(input.length);
             copy.set(input);
             session.pushFloat32(copy, ctx.sampleRate || 48000);
@@ -4039,9 +4109,41 @@
           proc.connect(zeroGain);
           zeroGain.connect(ctx.destination);
 
+          /* 单次模式智能自动提交：说完停顿后自动结束并提交，连接词结尾自动宽限，也可随时手动点发送 */
+          singleAutoTimer = setInterval(() => {
+            if (stopped) return;
+            const tNow = Date.now();
+            const totalElapsed = tNow - singleStartAt;
+            if (!singleSpeechAt && !singleLastText) {
+              if (totalElapsed >= 7000 && this.isRecording && this.singleNiaStop) {
+                this.isRecording = false;
+                btn.classList.remove("recording");
+                btn.innerHTML = `${SVG_ICONS.mic}${escapeHtml(t("単発", "单次"))}`;
+                const fn = this.singleNiaStop; this.singleNiaStop = null; fn(false);
+              }
+              return;
+            }
+            const speechDur = tNow - (singleSpeechAt || singleStartAt);
+            const silenceMs = singleLastLoudAt ? (tNow - singleLastLoudAt) : 0;
+            const incomplete = singleLastText ? this.isIncompleteTrailingPhrase(singleLastText) : false;
+            const tailLimit = incomplete ? 1350 : (singleGotFinal ? 680 : 880);
+            const textIdleMs = singleLastTextAt ? (tNow - singleLastTextAt) : 0;
+            const textLimit = incomplete ? 1900 : (singleGotFinal ? 950 : 1350);
+            const shouldAutoSubmit = (speechDur >= 450 && singleLastText && silenceMs >= tailLimit)
+              || (speechDur >= 550 && singleLastText && textIdleMs >= textLimit && singleLastRms < 0.032)
+              || totalElapsed >= 12000;
+            if (shouldAutoSubmit && this.isRecording && this.singleNiaStop) {
+              this.isRecording = false;
+              btn.classList.remove("recording");
+              btn.innerHTML = `${SVG_ICONS.mic}${escapeHtml(t("単発", "单次"))}`;
+              const fn = this.singleNiaStop; this.singleNiaStop = null; fn(false);
+            }
+          }, 100);
+
           this.singleNiaStop = async (silentAbort = false) => {
             if (stopped) return;
             stopped = true;
+            if (singleAutoTimer) { clearInterval(singleAutoTimer); singleAutoTimer = null; }
             try { proc.disconnect(); proc.onaudioprocess = null; } catch (_) {}
             try { zeroGain.disconnect(); } catch (_) {}
             try { src.disconnect(); } catch (_) {}
@@ -6110,8 +6212,11 @@
           TableUI.spawnSlotVfx(targetSlot, "energy");
           TableUI.spawnFloatText(
             targetSlot,
-            newlyUnlocked.length ? `✨ ${newlyUnlocked[0].name_ja} 解放！` : `${ELEM_ICON[itemDef.element] || "★"} +1 エネ`,
-            "energy"
+            newlyUnlocked.length
+              ? t(`${newlyUnlocked[0].name_ja} 解放！`, `${newlyUnlocked[0].name_zh} 解锁！`)
+              : t(`${ELEM_ICON[itemDef.element] || ""} +1 エネ`, `${ELEM_ICON[itemDef.element] || ""} +1 能量`),
+            "energy",
+            newlyUnlocked.length ? "sparkle" : (itemDef.element || "any")
           );
           if (s.recentlyUnlocked) {
             setTimeout(() => {
@@ -6174,7 +6279,7 @@
           TableUI.renderAll();
           SoundFX.play("tap");
           TableUI.flashAnim(`player_bench_${emptyIdx}`, "anim-enter");
-          TableUI.spawnFloatText(`player_bench_${emptyIdx}`, def.is_ex ? "★ ex登場！" : "登場！", "energy");
+          TableUI.spawnFloatText(`player_bench_${emptyIdx}`, def.is_ex ? t("ex登場！", "ex 登场！") : t("登場！", "登场！"), "energy", def.is_ex ? "prizeStar" : null);
           await this.announceAndReact(
             `${def.name_ja}をベンチ（${POS_JA[emptyIdx]}）に出しました。${def.is_ex ? "（きぜつ時サイド2枚）" : ""}`,
             `已将${def.name_zh}放入备战区（${POS_ZH[emptyIdx]}）。${def.is_ex ? "（被击倒送 2 张奖赏卡）" : ""}`,
@@ -6243,7 +6348,7 @@
             SoundFX.play("heal");
             TableUI.flashAnim(targetSlot, "anim-heal");
             TableUI.spawnSlotVfx(targetSlot, "heal");
-            TableUI.spawnFloatText(targetSlot, `+${healed} HP`, "heal");
+            TableUI.spawnFloatText(targetSlot, `+${healed} HP`, "heal", "healPlus");
             await this.announceAndReact(
               `きずぐすり使用！${tDef.name_ja}のHPを${healed}回復しました。`,
               `使用伤药！${tDef.name_zh}回复了 ${healed} HP。`,
@@ -6287,7 +6392,7 @@
             TableUI.renderAll();
             SoundFX.play("switch");
             TableUI.flashAnim("enemy_active", "anim-enter");
-            TableUI.spawnFloatText("enemy_active", "強制交代！", "guard");
+            TableUI.spawnFloatText("enemy_active", t("強制交代！", "强制换人！"), "guard", "swapChip");
             await this.announceAndReact(
               `よびだし笛！相手の${picked.def.name_ja}をバトル場へ引きずり出しました！`,
               `发动召唤笛！强行将对手的${picked.def.name_zh}拉上战斗区！`,
@@ -6335,7 +6440,7 @@
             SoundFX.play("unlock");
             TableUI.flashAnim("player_active", "anim-powerup");
             TableUI.spawnSlotVfx("player_active", "energy");
-            TableUI.spawnFloatText("player_active", `⚔️ 攻撃+${boostVal}！`, "energy");
+            TableUI.spawnFloatText("player_active", t(`攻撃+${boostVal}！`, `攻击+${boostVal}！`), "energy", "sword");
             await this.announceAndReact(
               `パワーバッジ使用！このターンの攻撃ダメージが+${boostVal}されます！`,
               `使用力量徽章！本回合攻击伤害 +${boostVal}！`,
@@ -6356,7 +6461,7 @@
               const rDef = SpecEngine.getItem(recoveredId);
               TableUI.renderAll();
               SoundFX.play("energy");
-              TableUI.spawnFloatText("player_active", "♻️ エネ回収！", "energy");
+              TableUI.spawnFloatText("player_active", t("エネ回収！", "能量回收！"), "energy", "recycle");
               await this.announceAndReact(
                 `エネ回収！トラッシュから${rDef ? rDef.name_ja : "エネルギー"}を手札に戻しました。`,
                 `使用能量回收！从弃牌区取回了${rDef ? rDef.name_zh : "1 张能量"}。`,
@@ -6382,7 +6487,7 @@
             const rDef = SpecEngine.getItem(searchedId);
             TableUI.renderAll();
             SoundFX.play("energy");
-            TableUI.spawnFloatText("player_active", "♻️ エネ探索！", "energy");
+            TableUI.spawnFloatText("player_active", t("エネ探索！", "检索能量！"), "energy", "recycle");
             await this.announceAndReact(
               `エネ回収！山札から${rDef ? rDef.name_ja : "エネルギー"}を手札に加えました。`,
               `使用能量回收！从牌库检索了${rDef ? rDef.name_zh : "1 张能量"}加入手牌。`,
@@ -6445,7 +6550,7 @@
           TableUI.renderAll();
           SoundFX.play("switch");
           TableUI.flashAnim("player_active", "anim-enter");
-          TableUI.spawnFloatText("player_active", "交代！", "guard");
+          TableUI.spawnFloatText("player_active", t("交代！", "换人！"), "guard", "swapChip");
           await this.announceAndReact(
             `エネを${retreatCost}枚捨て、${picked.def.name_ja}と交代しました。`,
             `弃置 ${retreatCost} 点能量，换${picked.def.name_zh}进入战斗区。`,
@@ -6472,7 +6577,7 @@
           TableUI.renderAll();
           SoundFX.play("guard");
           TableUI.flashAnim("player_active", "anim-guard");
-          TableUI.spawnFloatText("player_active", "防御 -30", "guard");
+          TableUI.spawnFloatText("player_active", t("防御 -30", "防御 -30"), "guard", "shield");
           await this.announceAndReact(
             "防御態勢に入りました（次の被ダメージ-30）。ターン終了です。",
             "进入防御姿态（下回合受击 -30），回合结束。",
@@ -6645,17 +6750,17 @@
           TableUI.flashAnim(targetSlot, "anim-hit");
           if (dmg >= 40 || weakBonus || chantBonus || splashedSlots.length > 0) TableUI.shakePlaymat();
           TableUI.spawnSlotVfx(targetSlot, actDef.element);
-          TableUI.spawnFloatText(targetSlot, weakBonus ? `-${dmg} 弱点!` : `-${dmg}`, (dmg >= 50 || weakBonus || chantBonus) ? "crit" : "dmg");
+          TableUI.spawnFloatText(targetSlot, weakBonus ? t(`-${dmg} 弱点!`, `-${dmg} 弱点!`) : `-${dmg}`, (dmg >= 50 || weakBonus || chantBonus) ? "crit" : "dmg", weakBonus ? "bolt" : null);
           for (const sl of splashedSlots) {
             TableUI.flashAnim(sl, "anim-hit");
-            TableUI.spawnFloatText(sl, `-${splashVal} 拡散`, "dmg");
+            TableUI.spawnFloatText(sl, t(`-${splashVal} 拡散`, `-${splashVal} 溅射`), "dmg", "splash");
           }
-          if (chantBonus) TableUI.spawnFloatText("player_active", "✨ 言霊共鳴 +10！", "energy");
-          if (guardVal > 0) TableUI.spawnFloatText("player_active", `被ダメ -${guardVal}`, "guard");
-          if (healedAmt > 0) { SoundFX.play("heal"); TableUI.spawnFloatText("player_active", `+${healedAmt} HP`, "heal"); }
-          if (drawnCards.length > 0) TableUI.spawnFloatText("player_active", `+${drawnCards.length} ドロー`, "energy");
-          if (recoilVal > 0) TableUI.spawnFloatText("player_active", `反動 -${recoilVal}`, "dmg");
-          if (discardedCount > 0) TableUI.spawnFloatText("player_active", `エネ -${discardedCount}`, "dmg");
+          if (chantBonus) TableUI.spawnFloatText("player_active", t("言霊共鳴 +10！", "言灵共鸣 +10！"), "energy", "sparkle");
+          if (guardVal > 0) TableUI.spawnFloatText("player_active", t(`被ダメ -${guardVal}`, `减伤 -${guardVal}`), "guard", "shield");
+          if (healedAmt > 0) { SoundFX.play("heal"); TableUI.spawnFloatText("player_active", `+${healedAmt} HP`, "heal", "healPlus"); }
+          if (drawnCards.length > 0) TableUI.spawnFloatText("player_active", t(`+${drawnCards.length} ドロー`, `抽 +${drawnCards.length} 牌`), "energy", "drawCard");
+          if (recoilVal > 0) TableUI.spawnFloatText("player_active", t(`反動 -${recoilVal}`, `反伤 -${recoilVal}`), "dmg", "warn");
+          if (discardedCount > 0) TableUI.spawnFloatText("player_active", t(`エネ -${discardedCount}`, `弃能 -${discardedCount}`), "dmg", "bolt");
 
           const notesJa = [];
           const notesZh = [];
@@ -7397,16 +7502,16 @@
       TableUI.flashAnim(targetSlot, "anim-hit");
       if (dmg >= 40 || weakBonus || splashedSlotsE.length > 0) TableUI.shakePlaymat();
       TableUI.spawnSlotVfx(targetSlot, actDef.element);
-      TableUI.spawnFloatText(targetSlot, weakBonus ? `-${dmg} 弱点!` : `-${dmg}`, (dmg >= 50 || weakBonus) ? "crit" : "dmg");
+      TableUI.spawnFloatText(targetSlot, weakBonus ? t(`-${dmg} 弱点!`, `-${dmg} 弱点!`) : `-${dmg}`, (dmg >= 50 || weakBonus) ? "crit" : "dmg", weakBonus ? "bolt" : null);
       for (const sl of splashedSlotsE) {
         TableUI.flashAnim(sl, "anim-hit");
-        TableUI.spawnFloatText(sl, `-${splashValE} 拡散`, "dmg");
+        TableUI.spawnFloatText(sl, t(`-${splashValE} 拡散`, `-${splashValE} 溅射`), "dmg", "splash");
       }
-      if (guardVal > 0) TableUI.spawnFloatText("enemy_active", `被ダメ -${guardVal}`, "guard");
-      if (healedE > 0) { SoundFX.play("heal"); TableUI.spawnFloatText("enemy_active", `+${healedE} HP`, "heal"); }
-      if (drawnE > 0) TableUI.spawnFloatText("enemy_active", `+${drawnE} ドロー`, "energy");
-      if (recoilValE > 0) TableUI.spawnFloatText("enemy_active", `反動 -${recoilValE}`, "dmg");
-      if (discardedCountE > 0) TableUI.spawnFloatText("enemy_active", `エネ -${discardedCountE}`, "dmg");
+      if (guardVal > 0) TableUI.spawnFloatText("enemy_active", t(`被ダメ -${guardVal}`, `减伤 -${guardVal}`), "guard", "shield");
+      if (healedE > 0) { SoundFX.play("heal"); TableUI.spawnFloatText("enemy_active", `+${healedE} HP`, "heal", "healPlus"); }
+      if (drawnE > 0) TableUI.spawnFloatText("enemy_active", t(`+${drawnE} ドロー`, `抽 +${drawnE} 牌`), "energy", "drawCard");
+      if (recoilValE > 0) TableUI.spawnFloatText("enemy_active", t(`反動 -${recoilValE}`, `反伤 -${recoilValE}`), "dmg", "warn");
+      if (discardedCountE > 0) TableUI.spawnFloatText("enemy_active", t(`エネ -${discardedCountE}`, `弃能 -${discardedCountE}`), "dmg", "bolt");
 
       const eNotesJa = [];
       const eNotesZh = [];
@@ -7461,7 +7566,7 @@
           if (s.enemy.active) {
             s.enemy.active.hp = Math.max(0, s.enemy.active.hp - 20);
             TableUI.renderAll();
-            TableUI.spawnFloatText("enemy_active", "⚡ 疲労 -20", "dmg");
+            TableUI.spawnFloatText("enemy_active", t("疲労 -20", "疲劳 -20"), "dmg", "bolt");
             TableUI.appendLog("相手の山札が空のため疲労ダメージ20！", "对手牌库已空，主战怪兽受到 20 点疲劳伤害！");
             if (!(await this.matchDelay(420, seq))) return;
             await this.checkKnockOuts();
@@ -7643,7 +7748,7 @@
               s.enemy.trash.push("item_power");
               hardBoost = 20;
               TableUI.appendLog("レンはサポート『パワーバッジ』を使用！（攻撃+20）", "对手莲使用支援卡「力量徽章」！（本回合攻击 +20）");
-              TableUI.spawnFloatText("enemy_active", "⚔️ 攻撃+20！", "energy");
+              TableUI.spawnFloatText("enemy_active", t("攻撃+20！", "攻击+20！"), "energy", "sword");
               TableUI.renderAll();
               if (!(await this.matchDelay(320, seq))) return;
             } else if (hardPlan.supp && hardPlan.supp.type === "flute" && s.enemy.hand.includes("item_flute") && s.player.bench[hardPlan.supp.benchIdx]) {
@@ -7659,7 +7764,7 @@
               TableUI.renderAll();
               SoundFX.play("switch");
               TableUI.flashAnim("player_active", "anim-enter");
-              TableUI.spawnFloatText("player_active", "強制交代！", "guard");
+              TableUI.spawnFloatText("player_active", t("強制交代！", "强制换人！"), "guard", "swapChip");
               TableUI.appendLog(`レンはサポート『よびだし笛』で${pulledDef.name_ja}を引きずり出した！`, `对手莲发动支援卡「召唤笛」，强行将你的${pulledDef.name_zh}拉上战斗区！`);
               if (!(await this.matchDelay(480, seq))) return;
             }
@@ -7680,7 +7785,7 @@
               TableUI.renderAll();
               SoundFX.play("guard");
               TableUI.flashAnim("enemy_active", "anim-guard");
-              TableUI.spawnFloatText("enemy_active", "🛡️ 防御 -30", "guard");
+              TableUI.spawnFloatText("enemy_active", t("防御 -30", "防御 -30"), "guard", "shield");
               const ja = "レンは防御態勢に入りターンを終了した。";
               const zh = "对手莲进入防御姿态并结束了回合。";
               const guardCallJa = "ここは守りを固めておくぜ。";
@@ -7710,7 +7815,7 @@
             if (s.player.active) {
               s.player.active.hp = Math.max(0, s.player.active.hp - 20);
               TableUI.renderAll();
-              TableUI.spawnFloatText("player_active", t("疲労 -20", "疲劳 -20"), "dmg");
+              TableUI.spawnFloatText("player_active", t("疲労 -20", "疲劳 -20"), "dmg", "bolt");
               TableUI.appendLog("自分の山札が空のため疲労ダメージ20！", "己方牌库已空，主战怪兽受到 20 点疲劳伤害！");
               if (!(await this.matchDelay(420, seq))) return;
               await this.checkKnockOuts();
@@ -7826,7 +7931,7 @@
               s.enemy.trash.push("item_power");
               s.enemy.attackBoost = (s.enemy.attackBoost || 0) + 20;
               TableUI.appendLog("レンはサポート『パワーバッジ』を使用！（攻撃+20）", "对手莲使用支援卡「力量徽章」！（本回合攻击 +20）");
-              TableUI.spawnFloatText("enemy_active", "⚔️ 攻撃+20！", "energy");
+              TableUI.spawnFloatText("enemy_active", t("攻撃+20！", "攻击+20！"), "energy", "sword");
               TableUI.renderAll();
               if (!(await this.matchDelay(320, seq))) return;
             }
@@ -7842,7 +7947,7 @@
             TableUI.renderAll();
             SoundFX.play("guard");
             TableUI.flashAnim("enemy_active", "anim-guard");
-            TableUI.spawnFloatText("enemy_active", "🛡️ 防御 -30", "guard");
+            TableUI.spawnFloatText("enemy_active", t("防御 -30", "防御 -30"), "guard", "shield");
             const ja = "レンは防御態勢に入りターンを終了した。";
             const zh = "对手莲进入防御姿态并结束了回合。";
             const guardCallJa = "ここは守りを固めておくぜ。";
@@ -7872,7 +7977,7 @@
           if (s.player.active) {
             s.player.active.hp = Math.max(0, s.player.active.hp - 20);
             TableUI.renderAll();
-            TableUI.spawnFloatText("player_active", "⚡ 疲労 -20", "dmg");
+            TableUI.spawnFloatText("player_active", t("疲労 -20", "疲劳 -20"), "dmg", "bolt");
             TableUI.appendLog("山札が空のため疲労ダメージ20！", "己方牌库已空，主战怪兽受到 20 点疲劳伤害！");
             if (!(await this.matchDelay(420, seq))) return;
             await this.checkKnockOuts();
@@ -7985,13 +8090,14 @@
       this.spawnFloatText(slot, t(jaLabel, zhLabel), "warn");
     },
 
-    /** 在目标槽位上方生成浮动战斗数值/状态文字 */
-    spawnFloatText(slot, text, kind = "dmg") {
+    /** 在目标槽位上方生成带矢量 SVG 图标的浮动战斗数值/状态文字 */
+    spawnFloatText(slot, text, kind = "dmg", iconKey = null) {
       const slotEl = this.getSlotEl(slot);
       if (!slotEl || !text) return;
       const badge = document.createElement("div");
       badge.className = `float-text ${kind}`;
-      badge.textContent = text;
+      const iconSvg = iconKey && SVG_ICONS[iconKey] ? `<span class="float-icon">${SVG_ICONS[iconKey]}</span>` : "";
+      badge.innerHTML = `${iconSvg}<span>${escapeHtml(text)}</span>`;
       slotEl.appendChild(badge);
       setTimeout(() => badge.remove(), 960);
     },
@@ -8031,14 +8137,15 @@
       if (!isEnemy) {
         const namesJa = prizeCards.map((c) => `「${c.ja}」`).join("・");
         const namesZh = prizeCards.map((c) => `「${c.zh}」`).join("、");
-        ja = `★ サイド ${count}枚獲得！（${takenTotal}/${TOTAL_PRIZES}）${namesJa ? ` 手札へ：${namesJa}` : ""}`;
+        ja = `サイド ${count}枚獲得！（${takenTotal}/${TOTAL_PRIZES}）${namesJa ? ` 手札へ：${namesJa}` : ""}`;
         zh = `获得 ${count} 张奖赏卡！（进度 ${takenTotal}/${TOTAL_PRIZES}）${namesZh ? ` 已加入手牌：${namesZh}` : ""}`;
       } else {
         ja = `相手がサイドを ${count}枚獲得！（相手 ${takenTotal}/${TOTAL_PRIZES}）`;
         zh = `对手获得 ${count} 张奖赏卡！（对手进度 ${takenTotal}/${TOTAL_PRIZES}）`;
       }
+      const starHtml = `<span class="toast-icon">${SVG_ICONS.prizeStar}</span>`;
       el.className = "prize-toast" + (isEnemy ? " enemy" : "");
-      el.innerHTML = `<div class="pt-ja">${escapeHtml(ja)}</div><div class="pt-zh" lang="zh-CN">${escapeHtml(zh)}</div>`;
+      el.innerHTML = `<div class="pt-ja">${starHtml}${escapeHtml(ja)}</div><div class="pt-zh" lang="zh-CN">${starHtml}${escapeHtml(zh)}</div>`;
       void el.offsetWidth;
       el.classList.add("show");
       this._prizeToastTimer = setTimeout(() => el.classList.remove("show"), 2800);
@@ -8666,11 +8773,11 @@
       const prizeLeftTip = escapeHtml(t("残りサイド", "未拿取"));
       $("enemyPrizes").innerHTML = prizeIdx.map((i) => {
         const taken = i < enemyTaken;
-        return `<div class="prize-card ${taken ? "taken enemy-taken" : ""}" title="${taken ? prizeTakenTip : prizeLeftTip}">${taken ? "✓" : "★"}</div>`;
+        return `<div class="prize-card ${taken ? "taken enemy-taken" : ""}" title="${taken ? prizeTakenTip : prizeLeftTip}">${taken ? SVG_ICONS.prizeCheck : SVG_ICONS.prizeStar}</div>`;
       }).join("");
       $("playerPrizes").innerHTML = prizeIdx.map((i) => {
         const taken = i < playerTaken;
-        return `<div class="prize-card ${taken ? "taken" : ""}" title="${taken ? prizeTakenTip : prizeLeftTip}">${taken ? "✓" : "★"}</div>`;
+        return `<div class="prize-card ${taken ? "taken" : ""}" title="${taken ? prizeTakenTip : prizeLeftTip}">${taken ? SVG_ICONS.prizeCheck : SVG_ICONS.prizeStar}</div>`;
       }).join("");
       const epc = $("enemyPrizeCount");
       if (epc) {
