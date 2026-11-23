@@ -3639,6 +3639,322 @@
     .rules-list li { margin-bottom: 9px; }
     .rules-head-right { width: 100%; justify-content: space-between; }
   }
+
+  /* =========================================================================
+     10. 新版立体桌游牌桌与三段式右侧 HUD 布局重构（舒展卡牌比例、零扁平感）
+     ========================================================================= */
+  .arena-grid {
+    grid-template-columns: minmax(0, 1fr) clamp(304px, 24vw, 376px);
+    gap: clamp(8px, 0.8vw, 12px);
+  }
+  .playmat {
+    padding: 8px 12px 7px;
+    gap: 5px;
+    background:
+      radial-gradient(ellipse at 50% 42%, rgba(255, 248, 228, 0.36) 0%, transparent 56%),
+      radial-gradient(ellipse at 50% 48%, var(--mat-center) 0%, var(--mat-mid) 62%, var(--mat-edge) 100%);
+  }
+
+  /* 对手台词融入牌桌顶部横条：增强动漫对战临场感，彻底释放右侧栏 1/3 高度 */
+  .rival-table-bar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 5px 12px;
+    border-radius: 10px;
+    background: linear-gradient(90deg, rgba(116, 50, 42, 0.92) 0%, rgba(86, 36, 30, 0.88) 100%);
+    border: 1.5px solid rgba(217, 138, 120, 0.65);
+    box-shadow: 0 3px 10px rgba(48, 22, 16, 0.24), inset 0 1px 0 rgba(255, 232, 220, 0.16);
+    color: #fff6ed;
+  }
+  .rival-table-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: rgba(255, 242, 224, 0.16);
+    border: 1px solid rgba(246, 198, 146, 0.45);
+    font-size: var(--fs-sub);
+    font-weight: 800;
+    color: #ffe2b8;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .rival-table-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: var(--fs-body);
+    font-weight: 700;
+    line-height: 1.35;
+    color: #fff8f0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .rival-table-text .bubble-ja,
+  .rival-table-text .bubble-zh {
+    font-size: inherit;
+    color: inherit;
+    line-height: inherit;
+  }
+
+  /* 敌我半场：轻量边角奖赏/牌库列，把横向与纵向空间最大化让给怪兽卡 */
+  .side-half {
+    grid-template-columns: clamp(66px, 5.2vw, 76px) minmax(0, 1fr) clamp(62px, 4.8vw, 72px);
+    gap: clamp(6px, 0.6vw, 10px);
+  }
+
+  /* 对手备战区轻量化为紧凑状态条（隐藏冗余长技能行，点击/悬停可看详情），瞬间释放 55px+ 纵向高度 */
+  #enemyBenchRow .slot-box {
+    min-height: clamp(72px, 9.6dvh, 86px);
+    padding: 13px 5px 4px;
+  }
+  #enemyBenchRow .skills-list {
+    display: none;
+  }
+  #enemyBenchRow .card {
+    justify-content: center;
+    gap: 3px;
+  }
+  #enemyBenchRow .card-head {
+    padding: 3px 6px;
+  }
+
+  /* 敌我主战区「面对面」视觉重心放大：舒展立绘卡面，彻底告别扁平横条 */
+  .slot-box.active-slot {
+    width: clamp(370px, 68%, 540px);
+    min-height: clamp(134px, 18.2dvh, 156px);
+    padding: 16px 7px 6px;
+    border: 2px solid var(--gold);
+    background: rgba(255, 249, 232, 0.44);
+    box-shadow: 0 5px 16px rgba(74, 48, 22, 0.16), inset 0 1px 6px rgba(156, 111, 28, 0.14);
+  }
+  .slot-box.active-slot .card-art {
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+  }
+  .slot-box.active-slot .card-art svg {
+    width: 28px;
+    height: 28px;
+  }
+  .slot-box.active-slot .card-head {
+    padding: 5px 8px;
+  }
+  .slot-box.active-slot .skills-list {
+    gap: 3.5px;
+    padding: 2px 6px 2px;
+  }
+  .slot-box.active-slot .skill-line {
+    padding: 3.5px 7px;
+    min-height: 26px;
+  }
+
+  /* 己方备战区保持舒展三卡位 */
+  #playerBenchRow .slot-box {
+    min-height: clamp(112px, 15dvh, 132px);
+  }
+
+  /* 底部手牌区：100% 全宽展示 + 更有实体卡牌纵深比例的卡片与悬停抬升 */
+  .hand-section {
+    padding-top: 5px;
+    gap: 3px;
+  }
+  .hand-body {
+    display: block;
+  }
+  .hand-cards {
+    padding: 11px 6px 5px;
+    gap: 10px;
+  }
+  .hand-card,
+  .hand-drop-placeholder {
+    flex: 0 0 clamp(184px, 19.2%, 234px);
+    min-width: 184px;
+    max-width: 234px;
+    min-height: 108px;
+    border-radius: 10px;
+  }
+  .hand-card .card-head {
+    padding: 5px 7px;
+  }
+  .hand-card .card-art {
+    width: 26px;
+    height: 26px;
+  }
+  .hand-card .card-art svg {
+    width: 22px;
+    height: 22px;
+  }
+  .hand-card .card-desc {
+    padding: 5px 8px 6px;
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+  .hand-card .skills-list {
+    gap: 3px;
+    padding: 2px 6px 4px;
+  }
+  .hand-card:hover {
+    transform: translateY(-10px) scale(1.03);
+  }
+
+  /* 右侧三段式游戏 HUD：顶部语音与裁判 → 中部「日志/Tips」舒展双标签页 → 底部战术按键与指令输入 */
+  .side-panel {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .side-voice-top {
+    flex-shrink: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    gap: 6px;
+  }
+  .side-tabs-bar {
+    flex-shrink: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 3px;
+    border-radius: 10px;
+    background: #e7d8ba;
+    border: 1px solid #c8ae82;
+    box-shadow: inset 0 1px 3px rgba(74, 48, 22, 0.14);
+  }
+  .side-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #5e4429;
+    font-family: inherit;
+    font-size: var(--fs-sub);
+    font-weight: 800;
+    padding: 5px 8px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .side-tab-btn:hover:not(.active) {
+    background: rgba(255, 252, 244, 0.62);
+    color: #2f2115;
+  }
+  .side-tab-btn.active {
+    background: linear-gradient(180deg, #fffdf8 0%, #f5ebd5 100%);
+    border-color: #c5a571;
+    color: #3a2615;
+    box-shadow: 0 1px 4px rgba(58, 36, 16, 0.16);
+  }
+  .side-tab-pane {
+    display: none;
+    flex: 1 1 0;
+    min-height: 0;
+    flex-direction: column;
+    gap: 6px;
+    overflow: hidden;
+  }
+  .side-tab-pane.active {
+    display: flex;
+  }
+  .side-tab-pane .notepad-log {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+  .side-tab-pane .live-tip-box {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 12px;
+  }
+  .side-bottom-dock {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    border-top: 1.5px solid #d7c39f;
+    padding-top: 8px;
+  }
+  .tactical-actions-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+  }
+  .tactical-actions-row .btn-sm {
+    padding: 8.5px 8px;
+    font-size: var(--fs-ui);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .tactical-actions-row .btn-defend {
+    background: linear-gradient(180deg, #eff5f3 0%, #d5e4e1 100%);
+    border-color: #6b9694;
+    color: #20494b;
+    box-shadow: 0 2px 5px rgba(32, 73, 75, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  }
+  .tactical-actions-row .btn-defend:hover {
+    background: linear-gradient(180deg, #f5faf8 0%, #deece9 100%);
+    border-color: #4f7f7d;
+  }
+  .tactical-actions-row .btn-endturn {
+    background: linear-gradient(180deg, #cd9638 0%, #a97520 100%);
+    border-color: #8c5f17;
+    color: #fffdf8;
+    box-shadow: 0 2px 7px rgba(140, 95, 23, 0.28), inset 0 1px 0 rgba(255, 246, 214, 0.36);
+  }
+  .tactical-actions-row .btn-endturn:hover {
+    background: linear-gradient(180deg, #d8a040 0%, #b57e24 100%);
+    border-color: #7d5312;
+  }
+  .cmd-input-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    gap: 6px;
+  }
+  .cmd-input-row input {
+    width: 100%;
+    min-width: 0;
+    padding: 7.5px 10px;
+    border: 1.5px solid #c9b086;
+    border-radius: 8px;
+    font-size: var(--fs-body);
+    font-family: inherit;
+    background: #fffdf7;
+    color: var(--ink);
+    box-shadow: inset 0 1px 3px rgba(84, 56, 24, 0.1);
+  }
+  .cmd-input-row input:focus {
+    outline: none;
+    border-color: var(--gold-deep);
+    box-shadow: inset 0 1px 3px rgba(84, 56, 24, 0.08), 0 0 0 2.5px rgba(198, 146, 44, 0.22);
+  }
+  .cmd-input-row .btn-sm {
+    padding: 7.5px 14px;
+    font-size: var(--fs-ui);
+    white-space: nowrap;
+  }
+
+  @media (min-width: 821px) and (max-height: 840px) {
+    .rival-table-bar { padding: 4px 10px; }
+    #enemyBenchRow .slot-box { min-height: 66px; }
+    .slot-box.active-slot { min-height: 120px; }
+    #playerBenchRow .slot-box { min-height: 104px; }
+    .hand-card, .hand-drop-placeholder { min-height: 96px; }
+  }
+  @media (max-width: 820px) and (orientation: portrait) {
+    .rival-table-text { white-space: normal; }
+    #enemyBenchRow .slot-box { min-height: 76px; }
+    .side-tab-pane { min-height: 160px; max-height: 220px; }
+  }
 </style>
 </head>
 <body data-lang="ja">
@@ -3789,7 +4105,16 @@
         </div>
       </div>
 
-      <!-- 对手半场 -->
+      <!-- 对手台词融入牌桌顶部横条 -->
+      <div class="rival-table-bar">
+        <span class="rival-table-badge"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg><span class="lang-ja">相手レン</span><span class="lang-zh">对手 莲</span></span>
+        <div class="rival-table-text">
+          <span class="bubble-ja" id="rivalJa">「さあ、手加減なしで行くぜ！」</span>
+          <span class="bubble-zh" id="rivalZh" lang="zh-CN">“来吧，我可不会手下留情！”</span>
+        </div>
+      </div>
+
+      <!-- 对手半场（紧凑状态备战区 + 视觉放大主战区） -->
       <div class="side-half">
         <div class="zone-col">
           <div class="zone-label"><span class="lang-ja">相手サイド</span><span class="lang-zh">对手奖赏卡</span></div>
@@ -3826,7 +4151,7 @@
         </div>
       </div>
 
-      <!-- 己方半场 -->
+      <!-- 己方半场（视觉放大主战区 + 舒展备战区） -->
       <div class="side-half">
         <div class="zone-col">
           <div class="zone-label"><span class="lang-ja">自分サイド</span><span class="lang-zh">己方奖赏卡</span></div>
@@ -3853,7 +4178,7 @@
         </div>
       </div>
 
-      <!-- 己方手牌区与右侧防御/回合结束操作列 -->
+      <!-- 100% 全宽实体比例手牌区 -->
       <div class="hand-section">
         <div class="hand-header">
           <div class="zone-label" style="text-align:left;"><span class="lang-ja">手札</span><span class="lang-zh">手牌</span></div>
@@ -3861,15 +4186,11 @@
         </div>
         <div class="hand-body">
           <div class="hand-cards" id="playerHand"></div>
-          <div class="hand-actions">
-            <button class="btn-sm btn-defend" id="btnDefend"><span><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg><span class="lang-ja">防御態勢</span><span class="lang-zh">防御姿态</span></span></button>
-            <button class="btn-sm btn-endturn" id="btnEndTurn"><span><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18l8.5-6L6 6v12zm10-12v12h2V6h-2z"/></svg><span class="lang-ja">ターン終了</span><span class="lang-zh">结束回合</span></span></button>
-          </div>
         </div>
       </div>
     </section>
 
-    <!-- 右侧：语音通话、单语言对局记录与实时 Tips 建议 -->
+    <!-- 右侧：三段式游戏 HUD（语音/裁判 → 日志/Tips 双标签页 → 战术按钮与指令输入） -->
     <aside class="side-panel">
       <!-- 实时语音与 AI 链路调试 Log 抽屉（默认收起，不占牌桌空间） -->
       <div class="debug-log-drawer" id="debugLogDrawer">
@@ -3893,15 +4214,15 @@
         </div>
       </div>
 
+      <!-- 顶部：语音主控与裁判播报 -->
       <div class="panel-title">
-        <span><span class="lang-ja">音声・対局ログ</span><span class="lang-zh">语音・对局日志</span></span>
+        <span><span class="lang-ja">音声コントロール</span><span class="lang-zh">语音控制台</span></span>
         <span style="display:inline-flex;align-items:center;"><span class="voice-wave-meter" id="voiceWaveMeter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span class="call-state-badge" id="callStateBadge">待機</span></span>
       </div>
 
-      <div class="bubble rival">
-        <div class="bubble-role"><span class="lang-ja">相手レン</span><span class="lang-zh">对手 莲</span></div>
-        <div class="bubble-ja" id="rivalJa">「さあ、手加減なしで行くぜ！」</div>
-        <div class="bubble-zh" id="rivalZh" lang="zh-CN">“来吧，我可不会手下留情！”</div>
+      <div class="side-voice-top">
+        <button class="btn-voice" id="btnLiveCall"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.46.57 3.58a1 1 0 0 1-.25 1.01l-2.2 2.2z"/></svg><span class="lang-ja">通話開始</span><span class="lang-zh">开始通话</span></button>
+        <button class="btn-ptt" id="btnRecordVoice"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg><span class="lang-ja">単発</span><span class="lang-zh">单次</span></button>
       </div>
 
       <div class="bubble">
@@ -3917,29 +4238,36 @@
         <div class="pending-btns" id="pendingBtns"></div>
       </div>
 
-      <!-- 单语言对局日志 -->
-      <div class="log-wrap">
-        <div class="log-bar"><span class="lang-ja">対局ログ</span><span class="lang-zh">对局日志</span></div>
+      <!-- 中部：对局日志 / 战术 Tips 双标签切换区 -->
+      <div class="side-tabs-bar" role="tablist">
+        <button type="button" class="side-tab-btn active" id="tabBtnLog" role="tab" aria-selected="true"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg><span class="lang-ja">対局ログ</span><span class="lang-zh">对局日志</span></button>
+        <button type="button" class="side-tab-btn" id="tabBtnTip" role="tab" aria-selected="false"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21h6v-1H9v1zm3-19a7 7 0 0 0-4 12.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26A7 7 0 0 0 12 2z"/></svg><span class="lang-ja">戦術 Tips</span><span class="lang-zh">战术 Tips</span></button>
+      </div>
+
+      <div class="side-tab-pane active" id="sideTabLog">
         <div class="notepad-log" id="matchLog"></div>
       </div>
 
-      <!-- 语音通话 / 输入框 / 实时 Tips 建议 -->
-      <div class="voice-dock">
-        <div class="voice-controls-grid">
-          <button class="btn-voice" id="btnLiveCall"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.46.57 3.58a1 1 0 0 1-.25 1.01l-2.2 2.2z"/></svg><span class="lang-ja">通話開始</span><span class="lang-zh">开始通话</span></button>
-          <button class="btn-ptt" id="btnRecordVoice"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg><span class="lang-ja">単発</span><span class="lang-zh">单次</span></button>
-          <input type="search" id="cmdInput" name="kotodama_cmd_search" placeholder="コマンド入力" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" />
-          <button class="btn-sm primary" id="btnSendCmd"><span class="lang-ja">送信</span><span class="lang-zh">发送</span></button>
-        </div>
-
-        <!-- 实时战术建议（本地即时刷新 + 按需 AI 深度分析） -->
+      <div class="side-tab-pane" id="sideTabTip">
         <div class="live-tip-box" id="liveTipBox">
           <div class="live-tip-label" style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
             <span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21h6v-1H9v1zm3-19a7 7 0 0 0-4 12.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26A7 7 0 0 0 12 2z"/></svg>Tips<span id="liveTipAiTag" style="display:none;margin-left:5px;font-size:11px;padding:0 5px;border-radius:4px;background:rgba(46,107,71,0.14);color:var(--ok);">AI</span></span>
-            <button class="btn-sm" id="btnAiTip" style="padding:2px 8px;font-size:11.5px;"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/></svg><span class="lang-ja">AI戦術</span><span class="lang-zh">AI战术</span></button>
+            <button class="btn-sm" id="btnAiTip" style="padding:3px 9px;font-size:12px;"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/></svg><span class="lang-ja">AI戦術</span><span class="lang-zh">AI战术</span></button>
           </div>
           <div class="live-tip-ja" id="liveTipJa"></div>
           <div class="live-tip-zh" id="liveTipZh" lang="zh-CN"></div>
+        </div>
+      </div>
+
+      <!-- 底部：战术操作大按钮与文本指令输入 -->
+      <div class="side-bottom-dock">
+        <div class="tactical-actions-row">
+          <button class="btn-sm btn-defend" id="btnDefend"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg><span class="lang-ja">防御態勢</span><span class="lang-zh">防御姿态</span></button>
+          <button class="btn-sm btn-endturn" id="btnEndTurn"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18l8.5-6L6 6v12zm10-12v12h2V6h-2z"/></svg><span class="lang-ja">ターン終了</span><span class="lang-zh">结束回合</span></button>
+        </div>
+        <div class="cmd-input-row">
+          <input type="search" id="cmdInput" name="kotodama_cmd_search" placeholder="コマンド入力" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" />
+          <button class="btn-sm primary" id="btnSendCmd"><span class="lang-ja">送信</span><span class="lang-zh">发送</span></button>
         </div>
       </div>
     </aside>

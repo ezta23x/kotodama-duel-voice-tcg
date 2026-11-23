@@ -9572,6 +9572,19 @@
       });
     });
 
+    /* 右侧面板「对局日志 / 战术 Tips」双标签切换 */
+    const switchSideTab = (tab) => {
+      const isTip = tab === "tip";
+      $("tabBtnLog")?.classList.toggle("active", !isTip);
+      $("tabBtnTip")?.classList.toggle("active", isTip);
+      $("tabBtnLog")?.setAttribute("aria-selected", String(!isTip));
+      $("tabBtnTip")?.setAttribute("aria-selected", String(isTip));
+      $("sideTabLog")?.classList.toggle("active", !isTip);
+      $("sideTabTip")?.classList.toggle("active", isTip);
+    };
+    $("tabBtnLog")?.addEventListener("click", () => switchSideTab("log"));
+    $("tabBtnTip")?.addEventListener("click", () => switchSideTab("tip"));
+
     /* 用户手动调整 ASR 语种时标记 manual 锁，避免后续切界面语言覆盖其手动偏好 */
     let settingsAsrLangTouched = false;
     $("niaAsrLang")?.addEventListener("change", () => { settingsAsrLangTouched = true; });
