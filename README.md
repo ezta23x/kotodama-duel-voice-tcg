@@ -257,7 +257,7 @@ flowchart TD
 
 - **全链路调试日志**：点击顶栏 `Log` 打开调试抽屉，支持按 `ALL / ASR / NLU / TTS / AEC / ERR` 过滤，以及一键复制或导出 `log.json`（导出内容不含任何密钥）。
 - **浏览器存储键**：
-  - `localStorage["elemental_table_api_cfg_v13"]`：LLM / ASR / TTS 引擎、密钥、音色、无响应秒数（默认 `15`）、难度等用户配置
+  - `localStorage["elemental_table_api_cfg_v14"]`：LLM / ASR / TTS 引擎、密钥、音色、无响应秒数（默认 `15`）、难度等用户配置
   - `localStorage["kotodama_duel_imported_gamedata_v2"]`：页面手动导入的 `gamedata.json` 覆盖缓存
 - **公开发布安全提示**：当前演示版为方便开箱体验内置了默认测试密钥。如用于正式对外公开部署，建议将 `app.js` 中的默认 Key 置空，或将云端推理与语音鉴权改为经由后端代理转发，避免前端密钥被滥用。
 

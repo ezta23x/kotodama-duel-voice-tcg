@@ -93,7 +93,7 @@
     item_recycle: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#e8f4ee"/><path d="M20,9 A11,11 0 1 1 10,24" fill="none" stroke="#2e6b47" stroke-width="3" stroke-linecap="round"/><polygon points="20,5 25,10 18,13" fill="#2e6b47"/><polygon points="18,14 23,14 20,20 24,20 17,28 19,21 15,21" fill="#d48c1d"/></svg>'
   };
 
-  const STORAGE_KEY_CFG  = "elemental_table_api_cfg_v13";
+  const STORAGE_KEY_CFG  = "elemental_table_api_cfg_v14";
   const STORAGE_KEY_DATA = "kotodama_duel_imported_gamedata_v2";
   const STORAGE_KEY_MD   = "elemental_table_imported_md_v1";
 
@@ -127,8 +127,8 @@
     niaSk: _decodeBuiltinNiaSk(),
     niaAsrLang: "",
     ttsEngine: "nia_tts",
-    niaVoiceReferee: "female_luna",
-    niaVoiceRival: "male_haru",
+    niaVoiceReferee: "female_xiaowan",
+    niaVoiceRival: "male_zichen",
     voiceReferee: "Kore",
     voiceRival: "Fenrir",
     chromeVoiceURI: "",
@@ -1241,24 +1241,24 @@
     /* 各 TTS 引擎可用音色目录（切换语音模型时同一组音色下拉框自动切换可选列表） */
     VOICE_CATALOG: {
       nia_tts: [
-        { value: "female_luna", label: "Luna · 温柔少女（日/中/英 · 推荐裁判）" },
-        { value: "female_meihe", label: "美和 · 清澈女声（日语）" },
-        { value: "female_lora", label: "Lora · 温柔青年（日语）" },
-        { value: "female_shuying", label: "疏影 · 知性女声（日语）" },
-        { value: "female_xiaowan", label: "小婉 · 轻柔女声（日语）" },
-        { value: "male_haru", label: "Haru · 低沉松弛青年（日/英 · 推荐对手）" },
-        { value: "male_shantian", label: "山田 · 温柔成年男声（日语）" },
-        { value: "male_youzhen", label: "悠真 · 爽朗青年男声（日语）" },
-        { value: "male_zichen", label: "子宸 · 沉稳男声（日语）" }
+        { value: "female_xiaowan", label: "小婉 · 轻柔女声" },
+        { value: "female_luna", label: "Luna · 温柔少女" },
+        { value: "female_meihe", label: "美和 · 清澈女声" },
+        { value: "female_lora", label: "Lora · 温柔青年" },
+        { value: "female_shuying", label: "疏影 · 知性女声" },
+        { value: "male_zichen", label: "子宸 · 沉稳男声" },
+        { value: "male_haru", label: "Haru · 低沉松弛青年" },
+        { value: "male_shantian", label: "山田 · 温柔成年男声" },
+        { value: "male_youzhen", label: "悠真 · 爽朗青年男声" }
       ],
       vertex_tts: [
-        { value: "Kore", label: "Kore（清脆女声 · 推荐裁判）" },
-        { value: "Fenrir", label: "Fenrir（低沉男声 · 推荐对手）" },
-        { value: "Zephyr", label: "Zephyr（明亮轻快）" },
-        { value: "Leda", label: "Leda（温和女声）" },
-        { value: "Aoede", label: "Aoede（柔和女声）" },
-        { value: "Puck", label: "Puck（活力少年）" },
-        { value: "Charon", label: "Charon（稳重男声）" }
+        { value: "Kore", label: "Kore" },
+        { value: "Fenrir", label: "Fenrir" },
+        { value: "Zephyr", label: "Zephyr" },
+        { value: "Leda", label: "Leda" },
+        { value: "Aoede", label: "Aoede" },
+        { value: "Puck", label: "Puck" },
+        { value: "Charon", label: "Charon" }
       ]
     },
 
@@ -1538,8 +1538,8 @@
     async fetchNiaTtsAudioBuffer(text, role = "referee") {
       const cfg = ConfigManager.data;
       const voiceId = role === "rival"
-        ? (cfg.niaVoiceRival || "male_haru")
-        : (cfg.niaVoiceReferee || "female_luna");
+        ? (cfg.niaVoiceRival || "male_zichen")
+        : (cfg.niaVoiceReferee || "female_xiaowan");
       const cacheKey = `nia|${voiceId}|${text}`;
       if (this.audioCache.has(cacheKey)) return this.audioCache.get(cacheKey);
       if (this.inflightCache.has(cacheKey)) return await this.inflightCache.get(cacheKey);
@@ -1779,8 +1779,8 @@
       const t0 = Date.now();
       const cfg = ConfigManager.data;
       const voiceId = role === "rival"
-        ? (cfg.niaVoiceRival || "male_haru")
-        : (cfg.niaVoiceReferee || "female_luna");
+        ? (cfg.niaVoiceRival || "male_zichen")
+        : (cfg.niaVoiceReferee || "female_xiaowan");
       const cacheKey = `nia|${voiceId}|${text}`;
       const cached = this.audioCache.has(cacheKey);
       const buf = await this.fetchNiaTtsAudioBuffer(text, role);
