@@ -179,19 +179,20 @@ flowchart TD
   ```
 - **核心替换点（`VoiceEngine`）**：
   - `startContinuousAsrCall()` / `stopCall()`：全双工持续通话启停。
-  - `spawnContinuousRec()`：当前封装 Web Speech API；对接自研流式 ASR（如 WebSocket PCM）时，在收到 final transcript 后调用 `this.callCallback({ text, fromVoice: true })`。
+  - `createNiaAsrSession()`：内置 WebSocket 16kHz PCM 流式 ASR 接入实现（默认接入 SenseTime Nia），收到 final transcript 后调用 `this.callCallback({ text, fromVoice: true })`。
+  - `spawnContinuousRec()`：浏览器 Web Speech API 降级通道。
   - `toggleRecord()`：单次按键录音入口。
-  - `startVadMonitor()`：本地 `AudioContext + AnalyserNode` 人声检测与插话打断（`stopPlayback()`）。
+  - `startVadMonitor()`：本地 `AudioContext + AnalyserNode` 人声检测、650ms 预缓冲与插话打断（`stopPlayback()`）。
 
 #### ② 语音合成（TTS）
 - **统一播报入口**：`await VoiceEngine.speak(textJa, role)`（`role`: `"referee" | "rival"`）。
 - **核心替换点（`VoiceEngine`）**：
-  - `fetchTtsAudioBuffer(text, role)`：**推荐直接替换此方法**，请求自研 TTS 并返回标准 Web Audio `AudioBuffer`，即可无痛复用整套 `ensureAecOutput()` WebRTC AEC3 回声消除、队列与插话打断机制。
+  - `fetchNiaTtsAudioBuffer(text, role)` / `fetchTtsAudioBuffer(text, role)`：分别为 WebSocket 24kHz PCM（默认 SenseTime Nia）与 REST（Vertex Gemini）TTS 接入实现；替换为任意自研 TTS 并返回标准 Web Audio `AudioBuffer`，即可复用整套 `ensureAecOutput()` WebRTC AEC3 回声消除、LRU 缓存、预取与插话打断机制。
   - `speakChrome(text, role)`：浏览器本地 `speechSynthesis` 离线降级通道。
 
 #### ③ 大模型 / 意图识别（NLU / LLM）
-- **请求封装（`ConfigManager`）**：`buildRestUrl(model)`、`buildAuthHeaders()`。
-- **解析逻辑（`NLUEngine`）**：`localParse(...)`（本地规则 + 模糊索引）与 `parse(...)`（云端调用，由 `SpecEngine.buildSystemPrompt()` 自动拼装 System Prompt）。
+- **请求封装（`ConfigManager`）**：`buildRestUrl(model)`、`buildAuthHeaders()`（Gemini LLM），以及 `generateNiaJwt()`（HS256 JWT 签发）。
+- **解析逻辑（`NLUEngine`）**：`localParse(...)`（本地规则 + 模糊索引）与 `parse(...)`（云端 Gemini 兜底，由 `SpecEngine.buildSystemPrompt()` 自动拼装 System Prompt）。
 - **标准输出协议（支持单步或多步连招 `actions`）**：
   ```json
   {
@@ -213,9 +214,9 @@ flowchart TD
   ```
 
 #### ④ 视口与交互扩展
-- `BattleEngine`：包含 `normal` / `hard` 两档 AI 决策逻辑。
-- `TableUI`：卡牌、动画与双语提示渲染。
-- `MobileViewportManager`：负责手机端（含手机切 PC 模式）识别、全屏 API 切换与会话级引导弹窗控制。
+- `BattleEngine`：包含 `normal`（稳健常规）与 `hard`（整回合联合连招搜索 + 2 回合局势评估）两档 AI 决策引擎。
+- `TableUI`：卡牌、特效标签、动效与双语提示渲染。
+- `MobileViewportManager`：负责手机端（含手机切 PC 模式）识别与顶栏全屏切换按钮状态同步。
 
 </details>
 
@@ -226,7 +227,7 @@ flowchart TD
 | --- | --- | --- |
 | `schemaVersion` | `string` | 数据结构版本号（当前 `"2.0"`） |
 | `rules` | `{ ja: string[], zh: string[] }` | 规则弹窗展示的双语条目（支持 `**加粗**`） |
-| `decks` | `{ player: string[], enemy: string[] }` | 双方初始 20 张标准牌组 |
+| `decks` | `{ player: string[], enemy: string[] }` | 双方初始 26 张标准牌组 |
 | `monsters` | `Monster[]` | 怪兽定义（`id`、`side`、`name_ja/zh`、`element`、`hp`、`is_ex`、`skills[]`、`aliases[]`） |
 | `items` | `Item[]` | 能量 / 道具 / 支援者定义（`category`、`effect_type`、`desc_ja/zh`、`aliases[]`） |
 | `rivalLines` | `Record<string, { ja, zh }[]>` | 按事件分组的对手台词池（自动轮换） |
@@ -234,12 +235,14 @@ flowchart TD
 | `asrCorrections` | `{ standard, variants[], meaning }[]` | 日语同音误识别与中文别名纠错词典 |
 
 #### 内置参数化效果（免改代码调数值）
-在 `items[].effect_type` 或 `monsters[].skills[].effect` 中可直接修改数字后缀：
-- `heal_ally_30` → 改为 `heal_ally_50` 回复 50 HP
-- `draw_2` → 改为 `draw_3` 抽 3 张牌
-- `boost_20` → 改为 `boost_30` 本回合增伤 +30
-- `guard_20` → 改为 `guard_40` 下一次受击减伤 40
-- `discard_self_1` → 释放技能后弃置自身 N 张能量（支持任意正整数后缀）
+在 `items[].effect_type` 或 `monsters[].skills[].effect` 中可直接组合或修改数字后缀：
+- `heal_ally_30` / `heal_self_20` → 回复己方或自身指定数值 HP
+- `draw_1` / `draw_2` → 发动技能或使用道具时抽指定张数卡牌
+- `boost_20` → 本回合攻击增伤指定数值
+- `guard_20` / `guard_30` → 发动后下回合受击减伤指定数值
+- `bench_splash_10` / `bench_splash_20` → 攻击同时对对手全体备战怪兽造成溅射伤害
+- `recoil_20` → 发动技能后自身承受指定数值反伤
+- `discard_self_1` → 释放技能后弃置自身指定数量能量
 - `switch_enemy_bench` → 强制将对手 1 只备战怪兽拉上战斗区
 - `recover_energy` → 从弃牌区（空时从牌库）取回 1 张能量到手牌
 
@@ -252,11 +255,10 @@ flowchart TD
 <details>
 <summary><strong>4. 调试日志、浏览器存储键与安全部署建议</strong></summary>
 
-- **全链路调试日志**：点击顶栏 `Log` 打开调试抽屉，支持按 `ALL / ASR / NLU / TTS / AEC / ERR` 过滤，以及一键复制或导出 `log.json`。
+- **全链路调试日志**：点击顶栏 `Log` 打开调试抽屉，支持按 `ALL / ASR / NLU / TTS / AEC / ERR` 过滤，以及一键复制或导出 `log.json`（导出内容不含任何密钥）。
 - **浏览器存储键**：
-  - `localStorage["elemental_table_api_cfg_v12"]`：API Key、模型、音色、无响应秒数（默认 `15`）、难度等用户配置
+  - `localStorage["elemental_table_api_cfg_v13"]`：LLM / ASR / TTS 引擎、密钥、音色、无响应秒数（默认 `15`）、难度等用户配置
   - `localStorage["kotodama_duel_imported_gamedata_v2"]`：页面手动导入的 `gamedata.json` 覆盖缓存
-  - `sessionStorage["kotodama_mobile_fs_prompted_v1"]`：记录当前会话是否已提示过手机端横屏全屏建议
-- **公开发布安全提示**：当前演示版为方便开箱体验内置了默认测试密钥。如用于正式对外公开部署，建议将 `app.js` 中的默认 Key 置空，或将云端推理与 TTS 请求改为经由后端代理转发，避免前端密钥被滥用。
+- **公开发布安全提示**：当前演示版为方便开箱体验内置了默认测试密钥。如用于正式对外公开部署，建议将 `app.js` 中的默认 Key 置空，或将云端推理与语音鉴权改为经由后端代理转发，避免前端密钥被滥用。
 
 </details>
