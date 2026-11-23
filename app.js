@@ -301,7 +301,7 @@
       if (!list) return;
       const rows = this.filter === "ALL" ? this.entries : this.entries.filter((e) => e.cat === this.filter);
       if (rows.length === 0) {
-        list.innerHTML = '<div class="dlog-empty" style="text-align:center;color:var(--ink-sub);padding:18px 8px;">ログはまだありません<span class="zh-inline" lang="zh-CN">（暂无 Log）</span></div>';
+        list.innerHTML = `<div class="dlog-empty" style="text-align:center;color:var(--ink-sub);padding:18px 8px;">${escapeHtml(t("ログはまだありません", "暂无调试日志"))}</div>`;
         return;
       }
       list.innerHTML = rows.map((e) => this.formatItemHtml(e)).join("");
@@ -311,6 +311,7 @@
   /* ---------- 非阻塞首次操作引导引擎（浮动提示 + 可选语音，永不阻塞点击与发声） ---------- */
   const GuideEngine = {
     shown: new Set(),
+    lastGuideKey: null,
     _hideTimer: null,
     _pendingTimer: null,
     _hideUntil: 0,
@@ -321,6 +322,7 @@
 
     reset() {
       this.shown.clear();
+      this.lastGuideKey = null;
       this.hide(true);
     },
 
@@ -330,6 +332,26 @@
       const on = this.isEnabled();
       btn.classList.toggle("guide-on", on);
       btn.innerHTML = `${SVG_ICONS.guide}${escapeHtml(on ? t("ガイド ON", "引导 ON") : t("ガイド OFF", "引导 OFF"))}`;
+    },
+
+    /** 根据当前盘面阶段智能选择最应展示的引导项（用于关闭引导后重新开启时立即恢复） */
+    pickContextualGuideKey() {
+      const s = (typeof BattleEngine !== "undefined") ? BattleEngine.state : null;
+      if (!s || s.gameOver) return this.lastGuideKey || "setup_starter";
+      if (s.phase === "setup") return "setup_starter";
+      if (!s.energyUsedThisTurn && Array.isArray(s.player?.hand) && s.player.hand.some((id) => id.startsWith("energy_"))) {
+        return "first_turn_energy";
+      }
+      const act = s.player?.active;
+      const actDef = act ? SpecEngine.getMonster(act.id) : null;
+      if (act && actDef && actDef.skills.some((sk) => BattleEngine.canPayCost(act.energies, sk.cost))) {
+        return "first_skill_ready";
+      }
+      const hasHandMon = Array.isArray(s.player?.hand) && s.player.hand.some((id) => Boolean(SpecEngine.getMonster(id)));
+      const hasEmptyBench = Array.isArray(s.player?.bench) && s.player.bench.includes(null);
+      if (hasHandMon && hasEmptyBench) return "first_bench_play";
+      if (this.lastGuideKey && this.MESSAGES[this.lastGuideKey]) return this.lastGuideKey;
+      return "first_turn_energy";
     },
 
     toggle() {
@@ -343,8 +365,9 @@
         this.shown.clear();
         this._hideUntil = 0;
         TableUI.showToast("ガイドモードをONにしました", "已开启引导模式");
-        if (BattleEngine.state?.phase === "setup") {
-          this.trigger("setup_starter", true);
+        const restoreKey = this.pickContextualGuideKey();
+        if (restoreKey) {
+          this.trigger(restoreKey, true);
         }
       }
     },
@@ -411,9 +434,10 @@
 
     /** 触发指定步骤的首次非阻塞引导（旧引导完成撤回动画后再弹出新引导） */
     trigger(key, speakVoice = true) {
-      if (!this.isEnabled() || this.shown.has(key)) return;
       const msg = this.MESSAGES[key];
       if (!msg) return;
+      this.lastGuideKey = key;
+      if (!this.isEnabled() || this.shown.has(key)) return;
       this.shown.add(key);
       const box = $("guideFloat");
       if (box && box.classList.contains("show")) {
@@ -974,11 +998,94 @@
       return prev[n];
     },
 
+    /* 业界拼音音素归并表（平翘舌 zh/z、ch/c、sh/s，前后鼻音 in/ing、en/eng、an/ang，n/l 统一映射，零依赖解决“蕾丝→雷狮”等中文 ASR 同音/近音误识别） */
+    ZH_PHONETIC_MAP: (() => {
+      const groups = {
+        lei: "雷蕾类累垒泪擂磊", si: "狮丝思师诗施湿司私死四似斯撕",
+        yan: "炎严盐延演眼烟岩颜言研沿掩燕", hu: "狐湖虎胡壶呼护忽弧糊",
+        sui: "水睡税岁碎随遂虽", gui: "龟贵规鬼归硅桂柜跪",
+        long: "龙隆笼拢聋咙弄农", quan: "犬圈权全拳泉劝券",
+        pao: "泡跑炮抛袍刨", yu: "鱼雨玉语羽宇欲遇域愈",
+        dian: "电点店垫殿典颠", niao: "鸟尿袅",
+        cang: "沧仓藏苍舱昌厂场唱", hai: "海害孩还亥", sa: "鲨沙杀纱傻啥萨",
+        huo: "火活货伙获或豁", hua: "花化华画话划滑",
+        dan: "弹蛋单淡但担胆诞", qiang: "枪强墙抢腔呛",
+        tie: "铁贴帖叠", jia: "甲假加家架价佳驾", ke: "壳可克客科刻课颗",
+        ji: "击鸡基机极级急集寄技记给济计", ting: "霆停挺听庭廷亭厅",
+        tu: "突图途土吐兔涂", xi: "袭西希吸洗喜戏系细席息",
+        san: "伤商尚上山闪善扇三散", yao: "药要咬摇耀腰遥邀",
+        bu: "补不步部布捕", bao: "包宝报抱爆薄保",
+        zao: "召找照造早遭澡招朝", huan: "唤换环还欢缓幻患", di: "笛敌迪底地弟第低递",
+        li: "力丽利理立里离例粒", liang: "量亮良凉粮两辆", hui: "徽灰回会挥毁汇惠", zang: "章张长障掌帐脏藏",
+        neng: "能嫩农", sou: "收手首守受售瘦搜",
+        bao2: "暴爆抱报", feng: "风封峰蜂疯丰", lang: "浪朗狼廊郎",
+        chong: "冲充重虫崇", zhuang: "撞装壮状庄", pen: "喷盆", se: "射设社色涩涉",
+        xuan: "旋宣悬选轩", wo: "涡窝我握卧", shan: "闪善扇山", xing: "星兴行形型醒"
+      };
+      const map = Object.create(null);
+      for (const [code, chars] of Object.entries(groups)) {
+        const normCode = code.replace(/\d+$/, "");
+        for (const ch of chars) map[ch] = normCode;
+      }
+      return map;
+    })(),
+
+    /** 将中文片段转为模糊拼音音素序列（无法映射的字符保留原文，保留边界避免跨词误拼） */
+    toZhPhonetic(str) {
+      const clean = String(str || "").replace(/[\s　「」『』（）()【】\[\]、，。.,！!？?・\-ー]/g, "");
+      if (!clean || !/[\u4e00-\u9fff]/.test(clean)) return "";
+      const out = [];
+      for (const ch of clean) {
+        out.push(this.ZH_PHONETIC_MAP[ch] || ch.toLowerCase());
+      }
+      return out.join("|");
+    },
+
+    /** 日语 Mora 音拍归一化（片假名→平假名、去长音、统一 じ/ぢ・ず/づ・お/を、合并长元音） */
+    toJaPhonetic(str) {
+      return this.normalizeText(str)
+        .replace(/ぢ/g, "じ")
+        .replace(/づ/g, "ず")
+        .replace(/を/g, "お")
+        .replace(/おう|おお/g, "お")
+        .replace(/えい|ええ/g, "え")
+        .replace(/うう/g, "う")
+        .replace(/ああ/g, "あ")
+        .replace(/いい/g, "い")
+        .replace(/っ/g, "");
+    },
+
+    /** 去浊音/半浊音用于 4 拍以上日语词的宽容音素匹配（如 ひのきずね → ひのきつね） */
+    stripJaVoicing(str) {
+      const map = {
+        が:"か",ぎ:"き",ぐ:"く",げ:"け",ご:"こ",
+        ざ:"さ",じ:"し",ず:"す",ぜ:"せ",ぞ:"そ",
+        だ:"た",ぢ:"ち",づ:"つ",で:"て",ど:"と",
+        ば:"は",び:"ひ",ぶ:"ふ",べ:"へ",ぼ:"ほ",
+        ぱ:"は",ぴ:"ひ",ぷ:"ふ",ぺ:"へ",ぽ:"ほ"
+      };
+      return String(str || "").replace(/[が-ござ-ぞだ-どば-ぽ]/g, (c) => map[c] || c);
+    },
+
+    /** 判断原文是否带有卡牌操作语境（用于门控 2 字中文同音模糊匹配，防日常闲聊误触发） */
+    hasGameActionContext(rawText) {
+      return /(出|放|派|上|下|备战|贴|能|打|攻|用|换|撤|拉|奶|回血|治疗|技能|招|前排|后排|战斗区|左|中|右|防御|ベンチ|エネ|攻撃|交代|回復|使う|出す|貼|付)/.test(String(rawText || ""));
+    },
+
     fuzzyScore(inputNorm, aliasNorm) {
       if (!inputNorm || !aliasNorm) return 0;
       if (inputNorm.includes(aliasNorm)) return 1.0;
       const alen = aliasNorm.length;
-      /* 3字及以下短词仅允许精确包含匹配（已在上方返回 1.0），避免短音节 1 字误差撞车误触发无关卡牌 */
+      /* 日语 4 拍以上支持音拍归一化与清浊音宽容匹配 */
+      const inJa = this.toJaPhonetic(inputNorm);
+      const alJa = this.toJaPhonetic(aliasNorm);
+      if (alJa.length >= 3 && inJa.includes(alJa)) return 0.96;
+      if (alJa.length >= 4) {
+        const inBase = this.stripJaVoicing(inJa);
+        const alBase = this.stripJaVoicing(alJa);
+        if (inBase.includes(alBase)) return 0.92;
+      }
+      /* 3字及以下短词字面仅允许精确包含（避免短词 1 字编辑距离撞车），同音词由 matchFromIndex 音素通道在语境下单独处理 */
       if (alen <= 3 || inputNorm.length < alen) return 0;
       if (inputNorm.length <= alen) {
         const d = this.levenshtein(inputNorm, aliasNorm);
@@ -1019,22 +1126,40 @@
     },
 
     buildFuzzyIndex() {
+      const makeZhPhonetics = (names) => {
+        const res = [];
+        const seen = new Set();
+        for (const n of names) {
+          const clean = String(n || "").replace(/[\s\-a-zA-Z0-9]/g, "");
+          if (clean.length >= 2 && /^[\u4e00-\u9fff]+$/.test(clean)) {
+            const ph = this.toZhPhonetic(clean);
+            if (ph && !seen.has(ph)) {
+              seen.add(ph);
+              res.push({ ph, charLen: clean.length });
+            }
+          }
+        }
+        return res;
+      };
       this.fuzzyIndex.monsters = this.monsters.map((m) => ({
         item: m,
-        aliases: this.collectAliasesFor([m.name_ja, m.name_zh, ...(Array.isArray(m.aliases) ? m.aliases : [])])
+        aliases: this.collectAliasesFor([m.name_ja, m.name_zh, ...(Array.isArray(m.aliases) ? m.aliases : [])]),
+        zhPhonetics: makeZhPhonetics([m.name_zh, ...(Array.isArray(m.aliases) ? m.aliases : [])])
       }));
       this.fuzzyIndex.skills = [];
       for (const m of this.monsters) {
         for (const sk of m.skills) {
           this.fuzzyIndex.skills.push({
             item: { ...sk, ownerId: m.id, ownerSide: m.side, ownerNameJa: m.name_ja },
-            aliases: this.collectAliasesFor([sk.name_ja, sk.name_zh, ...(Array.isArray(sk.aliases) ? sk.aliases : [])])
+            aliases: this.collectAliasesFor([sk.name_ja, sk.name_zh, ...(Array.isArray(sk.aliases) ? sk.aliases : [])]),
+            zhPhonetics: makeZhPhonetics([sk.name_zh, ...(Array.isArray(sk.aliases) ? sk.aliases : [])])
           });
         }
       }
       this.fuzzyIndex.items = this.items.map((it) => ({
         item: it,
-        aliases: this.collectAliasesFor([it.name_ja, it.name_zh, ...(Array.isArray(it.aliases) ? it.aliases : [])])
+        aliases: this.collectAliasesFor([it.name_ja, it.name_zh, ...(Array.isArray(it.aliases) ? it.aliases : [])]),
+        zhPhonetics: makeZhPhonetics([it.name_zh, ...(Array.isArray(it.aliases) ? it.aliases : [])])
       }));
       this.buildTypoMatcher();
     },
@@ -1091,9 +1216,12 @@
     },
 
     matchFromIndex(entries, rawText, minScore = 0.78, preferIds = null) {
-      const norm = this.normalizeText(this.applyLocalTypoFix(rawText));
+      const fixed = this.applyLocalTypoFix(rawText);
+      const norm = this.normalizeText(fixed);
       if (!norm) return null;
       const activeSet = preferIds || this.getActiveCardIdSet();
+      const inZhPh = this.toZhPhonetic(fixed);
+      const hasActionCtx = this.hasGameActionContext(fixed);
       let best = null;
       for (const entry of entries) {
         const itemId = entry.item?.id || entry.item?.ownerId || "";
@@ -1104,6 +1232,20 @@
           const rankScore = score + (inActive ? 0.03 : 0);
           if (!best || rankScore > best.rankScore || (rankScore === best.rankScore && alias.length > best.aliasLen)) {
             best = { item: entry.item, score, rankScore, aliasLen: alias.length };
+          }
+        }
+        /* 中文拼音音素通道：解决“蕾丝→雷狮”“严虎→炎狐”“上药→伤药”等平翘舌/同音误识别；2字短词要求场上/手牌存在或具动作语境 */
+        if (inZhPh && Array.isArray(entry.zhPhonetics)) {
+          const paddedIn = `|${inZhPh}|`;
+          for (const zp of entry.zhPhonetics) {
+            if (zp.charLen <= 2 && !inActive && !hasActionCtx) continue;
+            if (paddedIn.includes(`|${zp.ph}|`)) {
+              const score = zp.charLen >= 3 ? 0.94 : 0.91;
+              const rankScore = score + (inActive ? 0.03 : 0);
+              if (!best || rankScore > best.rankScore || (rankScore === best.rankScore && zp.charLen > best.aliasLen)) {
+                best = { item: entry.item, score, rankScore, aliasLen: zp.charLen };
+              }
+            }
           }
         }
       }
@@ -1733,14 +1875,18 @@
             ws.binaryType = "arraybuffer";
             ws.onopen = () => {
               try {
+                /* 按角色注入差异化韵律参数：裁判清脆利落，对手「莲」更有热血挑衅张力 */
+                const personaProsody = role === "rival"
+                  ? { speed: 1.12, volume: 2, pitch: -2 }
+                  : { speed: 1.06, volume: 0, pitch: 1 };
                 ws.send(JSON.stringify({
                   type: "start",
                   config: {
                     voice_id: voiceId,
                     language: niaLang,
-                    speed: 1.0,
-                    volume: 0,
-                    pitch: 0,
+                    speed: personaProsody.speed,
+                    volume: personaProsody.volume,
+                    pitch: personaProsody.pitch,
                     format: "pcm",
                     sample_rate: 24000,
                     stream_output: true,
@@ -2030,24 +2176,40 @@
           }, Math.max(4500, remainMs + 3000));
         };
 
+        /* 抖动缓冲合并队列：首次攒够 ~180ms (8640B) 开播、播放中按 ~120ms (5760B) 批处理，彻底消除 20ms 微包卡顿与爆音 */
+        const INITIAL_PREBUF_BYTES = 8640;
+        const BATCH_FLUSH_BYTES = 5760;
+        let pendingChunks = [];
+        let pendingBytesLen = 0;
+
         const checkAllFinished = () => {
           if (settled) return;
           if (token !== this.speakToken) { cancelPlayback(); return; }
-          if (streamDone && endedCount >= scheduledCount) {
+          if (streamDone && pendingBytesLen === 0 && endedCount >= scheduledCount) {
             finishOk();
           }
         };
 
-        const schedulePcmChunk = (u8) => {
-          if (settled || token !== this.speakToken || !u8 || u8.byteLength === 0) return;
-          let bytes = u8;
+        const flushPcmBatch = (force = false) => {
+          if (settled || token !== this.speakToken || pendingBytesLen === 0) return;
+          const threshold = startedPlayback ? BATCH_FLUSH_BYTES : INITIAL_PREBUF_BYTES;
+          if (!force && pendingBytesLen < threshold) return;
+
+          const total = pendingBytesLen + (carryByte !== null ? 1 : 0);
+          const merged = new Uint8Array(total);
+          let off = 0;
           if (carryByte !== null) {
-            const combined = new Uint8Array(u8.byteLength + 1);
-            combined[0] = carryByte;
-            combined.set(u8, 1);
-            bytes = combined;
+            merged[off++] = carryByte;
             carryByte = null;
           }
+          for (const c of pendingChunks) {
+            merged.set(c, off);
+            off += c.byteLength;
+          }
+          pendingChunks = [];
+          pendingBytesLen = 0;
+
+          let bytes = merged;
           if (bytes.byteLength % 2 === 1) {
             carryByte = bytes[bytes.byteLength - 1];
             bytes = bytes.subarray(0, bytes.byteLength - 1);
@@ -2058,21 +2220,30 @@
           const dv = new DataView(bytes.buffer, bytes.byteOffset, sampleCount * 2);
           const float32 = new Float32Array(sampleCount);
           for (let i = 0; i < sampleCount; i++) float32[i] = dv.getInt16(i * 2, true) / 32768;
-          const buf = ctx.createBuffer(1, sampleCount, 24000);
-          buf.copyToChannel(float32, 0);
 
           const now = ctx.currentTime;
+          let didUnderrun = false;
           if (!startedPlayback) {
             startedPlayback = true;
-            nextPlayTime = now + 0.08;
+            nextPlayTime = now + 0.12;
             if (!loggedFirst) {
               loggedFirst = true;
               const ttfa = Date.now() - t0;
               DebugLog.add("TTS", `SenseTime Nia 流式 TTS (${role}/${voiceId}, 首声 ${ttfa}ms)`, text);
             }
-          } else if (nextPlayTime < now + 0.02) {
-            nextPlayTime = now + 0.03;
+          } else if (nextPlayTime < now + 0.015) {
+            nextPlayTime = now + 0.05;
+            didUnderrun = true;
           }
+
+          /* 仅在首包或网络欠载重同步时加 2ms 微淡入，杜绝边界咔哒爆音 */
+          if (didUnderrun || scheduledCount === 0) {
+            const fade = Math.min(48, sampleCount);
+            for (let i = 0; i < fade; i++) float32[i] *= i / fade;
+          }
+
+          const buf = ctx.createBuffer(1, sampleCount, 24000);
+          buf.copyToChannel(float32, 0);
 
           const src = ctx.createBufferSource();
           const entry = { src, resolve: null };
@@ -2092,13 +2263,21 @@
           rearmGuard();
         };
 
+        const enqueuePcmChunk = (u8) => {
+          if (settled || token !== this.speakToken || !u8 || u8.byteLength === 0) return;
+          pendingChunks.push(u8);
+          pendingBytesLen += u8.byteLength;
+          flushPcmBatch(false);
+        };
+
         const onStreamEvent = (type, payload) => {
           if (settled) return;
           if (token !== this.speakToken) { cancelPlayback(); return; }
           if (type === "chunk") {
-            schedulePcmChunk(payload);
+            enqueuePcmChunk(payload);
           } else if (type === "done") {
             streamDone = true;
+            flushPcmBatch(true);
             if (scheduledCount === 0) {
               if (payload && payload.duration > 0) {
                 finishOk();
@@ -2111,6 +2290,7 @@
             }
           } else if (type === "error") {
             streamDone = true;
+            flushPcmBatch(true);
             if (scheduledCount > 0) {
               rearmGuard();
               checkAllFinished();
@@ -2123,12 +2303,13 @@
         this.activeStreamCancels.push(cancelPlayback);
         rearmGuard();
 
-        /* 先立即调度后台预取阶段已到达的 PCM 分片（实现 0ms 无缝接播） */
+        /* 合并调度后台预取阶段已到达的 PCM 分片（平滑衔接零卡顿） */
         const existingChunks = s.chunks.slice();
-        for (const c of existingChunks) schedulePcmChunk(c);
+        for (const c of existingChunks) enqueuePcmChunk(c);
 
         if (s.done) {
           streamDone = true;
+          flushPcmBatch(true);
           if (s.error && scheduledCount === 0) {
             finishErr(s.error);
           } else {
@@ -2263,7 +2444,7 @@
         }
       }
 
-      this.prefetch(spokenText, role, lang);
+      if (!opts.deferPrefetch) this.prefetch(spokenText, role, lang);
 
       const myToken = this.speakToken;
       return new Promise((resolve) => {
@@ -2872,9 +3053,14 @@
         const minPeak = Math.max(0.022, this.vadNoiseFloor * 2.6 + 0.007);
         const minLoudFrames = 4;
 
-        /* AEC3 护航下的高门限 Barge-in：仅在 TTS 正在播报期要求高门限，播完立即恢复正常灵敏度杜绝吞首音 */
+        /* AEC3 护航下的高门限 Barge-in：提高外放防误打断阈值，并保护开局裁判+对手首句不被扬声器回声误掐断 */
         if (this.isSpeaking) {
-          const bargeThresh = Math.max(0.055, this.vadNoiseFloor * 4.2);
+          if (this.bargeInGuardUntil && now < this.bargeInGuardUntil) {
+            this.vadBargeStreak = 0;
+            this.updateVoiceWave(rms * 0.2, 0.1, false);
+            return;
+          }
+          const bargeThresh = Math.max(0.085, this.vadNoiseFloor * 5.5);
           if (rms > bargeThresh) {
             this.vadBargeStreak += 1;
             this.updateVoiceWave(rms, bargeThresh, true);
@@ -2882,7 +3068,7 @@
             this.vadBargeStreak = 0;
             this.updateVoiceWave(rms * 0.3, bargeThresh, false);
           }
-          if (this.vadBargeStreak >= 5) {
+          if (this.vadBargeStreak >= 7) {
             this.vadBargeStreak = 0;
             this.stopPlayback();
             this.lastSpeakEndAt = 0;
@@ -5302,9 +5488,10 @@
       return false;
     },
 
-    /** 非阻塞双语播报：不打断正在播放的语音，清理陈旧积压队列（若本次不含新对手台词则保留最新 1 条待播对手台词） */
+    /** 非阻塞双语播报：错峰预取对手语音防双 WS 争抢，保护开局首句不被回声误打断 */
     announceAndReact(ja, zh, rivalEvent, customRival = null, opts = {}) {
       const priority = opts.priority || "normal";
+      const lang = getUiLang();
       const spokenReferee = t(opts.speakJa || ja, opts.speakZh || zh);
       const rJa = (customRival && customRival.ja) || (rivalEvent ? SpecEngine.getRivalLine(rivalEvent).ja : "");
       const rZh = (customRival && customRival.zh) || (rivalEvent ? SpecEngine.getRivalLine(rivalEvent).zh : "");
@@ -5316,10 +5503,18 @@
 
       if (rJa || rZh) {
         TableUI.setRival(rJa, rZh);
-        if (spokenRival) VoiceEngine.prefetch(spokenRival, "rival");
       }
-      if (spokenReferee) VoiceEngine.speak(spokenReferee, "referee", { priority });
-      if (spokenRival) VoiceEngine.speak(spokenRival, "rival", { priority: priority === "high" ? "high" : "normal" });
+      if (priority === "high" && spokenReferee && spokenRival) {
+        /* 开局或高优双人连播时给予 3.2s 防外放回声自打断窗口，杜绝对手第一句话被吞 */
+        VoiceEngine.bargeInGuardUntil = Math.max(VoiceEngine.bargeInGuardUntil || 0, Date.now() + 3200);
+      }
+      if (spokenReferee) VoiceEngine.speak(spokenReferee, "referee", { priority, lang });
+      if (spokenRival) {
+        const rivalPriority = priority === "high" ? "high" : "normal";
+        VoiceEngine.speak(spokenRival, "rival", { priority: rivalPriority, lang, deferPrefetch: true });
+        /* 错峰 350ms 预取对手语音，避免 0ms 并发两条 Nia TTS WS 互相争抢带宽导致丢句或卡顿 */
+        setTimeout(() => { VoiceEngine.prefetch(spokenRival, "rival", lang); }, 350);
+      }
       return Promise.resolve();
     },
 
@@ -8535,7 +8730,45 @@
     syncDifficultyUi();
   }
 
-  /** 全局语言切换（同步 DOM、规则页、设置弹窗、TTS 音色目录、ASR 语种与全牌桌文案） */
+  /** 同步所有 <select> 下拉框选项为当前纯净单语言（HTML <option> 不支持内部 span 隐藏，必须动态更新） */
+  function syncSelectOptionsLanguage() {
+    const setOptMap = (selectId, labels) => {
+      const sel = $(selectId);
+      if (!sel || !sel.options) return;
+      for (let i = 0; i < sel.options.length; i++) {
+        const opt = sel.options[i];
+        if (Object.prototype.hasOwnProperty.call(labels, opt.value)) {
+          opt.textContent = labels[opt.value];
+        }
+      }
+    };
+    setOptMap("aiDifficulty", {
+      normal: t("ふつう", "普通"),
+      hard: t("むずかしい", "困难")
+    });
+    setOptMap("niaAsrLang", {
+      "": t("自動判別（日・中）", "自动双语识别"),
+      ja: t("日本語 (ja)", "日语 (ja)"),
+      zh: t("中国語 (zh)", "中文 (zh)")
+    });
+    setOptMap("asrLang", {
+      "ja-JP": t("日本語 (ja-JP)", "日语 (ja-JP)"),
+      "zh-CN": t("中国語 (zh-CN)", "中文 (zh-CN)")
+    });
+    setOptMap("asrMode", {
+      nia_asr: "SenseTime Nia",
+      gemini_audio: t("Gemini 音声直接解析", "Gemini 音频直传"),
+      chrome_asr_llm: t("Chrome 音声認識 → Gemini", "Chrome 识别 → Gemini"),
+      chrome_local: t("オフラインローカル解析", "离线本地解析")
+    });
+    setOptMap("ttsEngine", {
+      nia_tts: "SenseTime Nia TTS",
+      vertex_tts: "Vertex Gemini TTS",
+      chrome_tts: t("Chrome 標準音声", "浏览器内置语音")
+    });
+  }
+
+  /** 全局语言切换（同步 DOM、规则页、设置弹窗与下拉框、TTS 音色目录、ASR 语种与全牌桌文案） */
   function applyUiLanguage(lang, opts = {}) {
     const next = lang === "zh" ? "zh" : "ja";
     const prev = ConfigManager.data.uiLang;
@@ -8565,6 +8798,7 @@
     if ($("btnAiTip") && !$("btnAiTip").disabled) {
       $("btnAiTip").innerHTML = `${SVG_ICONS.sparkle}${escapeHtml(t("AI戦術", "AI分析"))}`;
     }
+    syncSelectOptionsLanguage();
     GuideEngine.syncButton();
     VoiceEngine.updateCallButtonUI();
     MobileViewportManager.syncUi();
