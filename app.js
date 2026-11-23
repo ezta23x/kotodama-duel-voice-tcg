@@ -4368,14 +4368,17 @@
       const firstDraw = this.drawCard("player", 1);
       const drawJa = firstDraw[0] ? `1ターン目のドローで「${firstDraw[0].ja}」を引きました。` : "";
       const drawZh = firstDraw[0] ? `第 1 回合抽到了「${firstDraw[0].zh}」。` : "";
-      const ja = `バトル開始！自分は${def.name_ja}、相手は${eStarterDef ? eStarterDef.name_ja : "モンスター"}でスタート！${drawJa}`;
+      const startVoiceJa = `バトル開始！自分は${def.name_ja}、相手は${eStarterDef ? eStarterDef.name_ja : "モンスター"}でスタート！`;
+      const ja = `${startVoiceJa}${drawJa}`;
       const zh = `对战正式开始！己方首发${def.name_zh}，对手派出${eStarterDef ? eStarterDef.name_zh : "怪兽"}！${drawZh}`;
       TableUI.renderAll();
       SoundFX.play("tap");
       TableUI.flashAnim("player_active", "anim-enter");
       TableUI.flashAnim("enemy_active", "anim-enter");
       TableUI.showTurnBanner("⚔️ ターン 1：あなたの番", "第 1 回合：你的回合", false);
-      this.announceAndReact(ja, zh, def.is_ex ? "play_ex" : "start");
+      /* 选定首发后立即终止已过时的“请选择首发”引导语音，并以高优播报裁判开幕 + 对手开场第一句话 */
+      VoiceEngine.stopPlayback();
+      this.announceAndReact(ja, zh, def.is_ex ? "play_ex" : "start", null, { priority: "high", speakJa: startVoiceJa });
       if (def.is_ex) GuideEngine.trigger("first_ex_card", false);
       else GuideEngine.trigger("first_turn_energy", false);
       this.resetIdleTimer(true);
@@ -5135,6 +5138,7 @@
     /** 非阻塞双语播报：不打断正在播放的语音，清理陈旧积压队列（若本次不含新对手台词则保留最新 1 条待播对手台词） */
     announceAndReact(ja, zh, rivalEvent, customRival = null, opts = {}) {
       const priority = opts.priority || "normal";
+      const spokenRefereeJa = opts.speakJa || ja;
       const rJa = (customRival && customRival.ja) || (rivalEvent ? SpecEngine.getRivalLine(rivalEvent).ja : "");
       const rZh = (customRival && customRival.zh) || (rivalEvent ? SpecEngine.getRivalLine(rivalEvent).zh : "");
       if (priority !== "low") VoiceEngine.clearQueuedOnly(true, !rJa);
@@ -5146,7 +5150,7 @@
         TableUI.setRival(rJa, rZh);
         VoiceEngine.prefetch(rJa, "rival");
       }
-      VoiceEngine.speak(ja, "referee", { priority });
+      VoiceEngine.speak(spokenRefereeJa, "referee", { priority });
       if (rJa) VoiceEngine.speak(rJa, "rival", { priority: priority === "high" ? "high" : "normal" });
       return Promise.resolve();
     },
