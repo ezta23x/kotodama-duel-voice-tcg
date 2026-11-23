@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>言霊デュエル（言灵对决）</title>
+<title>言霊デュエル</title>
+<script>window.__bootStartAt = Date.now();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;600;700;800;900&family=Noto+Serif+SC:wght@600;700;900&family=Shippori+Mincho:wght@600;700;800&display=swap" />
@@ -12,10 +13,10 @@
      1. 经典暖木酒馆与羊皮纸桌游色系（明亮温润、低饱和、高可读 60-30-10）
      ========================================================================= */
   :root {
-    --font-ja: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", "BIZ UDPGothic", "Meiryo", "Yu Gothic UI", sans-serif;
+    --font-ja: "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "BIZ UDPGothic", "Yu Gothic UI", "Meiryo", sans-serif;
     --font-zh: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
-    --font-display-ja: "Shippori Mincho", "Hiragino Mincho ProN", "Yu Mincho", "Noto Sans JP", serif;
-    --font-display-zh: "Noto Serif SC", "Songti SC", "STSong", "Noto Sans SC", serif;
+    --font-display-ja: "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "BIZ UDPGothic", "Yu Gothic UI", "Meiryo", sans-serif;
+    --font-display-zh: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
     --wood-1: #6b4b30;
     --wood-2: #4f3520;
     --wood-bar-1: #5c3f27;
@@ -62,6 +63,8 @@
     height: 100dvh;
     overflow: hidden;
     font-family: var(--font-ja);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }
@@ -155,9 +158,9 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
-    gap: 8px 10px;
-    padding: 6px 14px;
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 5px 12px;
     background: linear-gradient(180deg, var(--wood-bar-1) 0%, var(--wood-bar-2) 100%);
     border: 1.5px solid #9e7c49;
     border-radius: 11px;
@@ -167,8 +170,9 @@
   .brand {
     display: flex;
     align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
+    gap: 8px;
+    flex-wrap: nowrap;
+    min-width: 0;
   }
   .brand-title {
     font-size: 16px;
@@ -271,13 +275,12 @@
       0 10px 26px rgba(34, 20, 9, 0.34),
       inset 0 0 0 3px rgba(255, 246, 224, 0.34),
       inset 0 0 34px rgba(124, 88, 43, 0.22);
-    padding: 6px 10px 6px;
+    padding: 5px 10px 5px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    gap: 4px;
-    overflow-y: auto;
-    overflow-x: hidden;
+    gap: 3px;
+    overflow: hidden;
   }
   .playmat.anim-shake {
     animation: matShake 0.26s cubic-bezier(.36,.07,.19,.97);
@@ -290,10 +293,10 @@
   }
 
   .side-half {
-    flex: 1 0 auto;
+    flex: 1 1 0;
     min-height: 0;
     display: grid;
-    grid-template-columns: 80px minmax(0, 1fr) 72px;
+    grid-template-columns: 78px minmax(0, 1fr) 72px;
     gap: 8px;
     align-items: center;
   }
@@ -314,7 +317,7 @@
   }
   .zh-line {
     display: block;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 600;
     color: var(--ink-sub);
   }
@@ -355,7 +358,7 @@
     color: #9c3329;
   }
   .prize-count-pill {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 800;
     text-align: center;
     padding: 2px 6px;
@@ -482,7 +485,7 @@
   .pile-chip.item { border-left: 4px solid var(--ok); }
   .pile-chip-left { display: flex; align-items: center; gap: 6px; min-width: 0; }
   .pile-chip-name { font-weight: 700; color: var(--ink); line-height: 1.25; }
-  .pile-chip-zh { display: block; font-size: 10px; font-weight: 500; color: var(--ink-sub); }
+  .pile-chip-zh { display: block; font-size: 12px; font-weight: 500; color: var(--ink-sub); }
   .pile-chip-qty {
     flex-shrink: 0;
     font-size: 11px;
@@ -502,8 +505,8 @@
     border: 1px dashed #ccb58d;
   }
   .pile-box strong { font-size: 14.5px; color: #362415; line-height: 1.1; }
-  .pile-box .pile-ja { font-size: 10px; font-weight: 700; color: #543b24; line-height: 1.15; }
-  .pile-box .pile-zh { font-size: 9.5px; color: var(--ink-sub); line-height: 1.15; }
+  .pile-box .pile-ja { font-size: 12px; font-weight: 700; color: #543b24; line-height: 1.15; }
+  .pile-box .pile-zh { font-size: 11px; color: var(--ink-sub); line-height: 1.15; }
 
   /* 战斗区与三格备战区（统一相对比例卡槽：主战区固定宽稳态、备战区三格等宽等高、绝不忽大忽小或截断） */
   .field-center {
@@ -562,7 +565,7 @@
     position: absolute;
     top: 2px;
     left: 7px;
-    font-size: 9.5px;
+    font-size: 11px;
     font-weight: 700;
     color: #6b5236;
   }
@@ -594,7 +597,7 @@
     border-radius: 999px;
     background: linear-gradient(180deg, #634329 0%, #4d331d 100%);
     border: 1px solid #b58d4d;
-    font-size: 10.5px;
+    font-size: 12px;
     font-weight: 700;
     color: #fbf2dd;
     white-space: nowrap;
@@ -606,7 +609,7 @@
     gap: 5px;
   }
   .limit-pill {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
     padding: 2px 8px;
     border-radius: 999px;
@@ -662,7 +665,7 @@
   .guide-body { min-width: 0; flex: 1; }
   .guide-tag {
     display: inline-block;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 800;
     color: var(--ok);
     margin-bottom: 3px;
@@ -772,6 +775,14 @@
   .card.anim-heal { animation: cardHeal 0.65s ease; }
   .card.anim-enter { animation: cardEnter 0.4s cubic-bezier(.2,.9,.3,1); }
   .card.anim-guard { animation: cardGuardFlash 0.52s ease; }
+  .card.anim-deny, .slot-box.anim-deny { animation: cardDenyShake 0.42s cubic-bezier(.36,.07,.19,.97); }
+  @keyframes cardDenyShake {
+    0%, 100% { transform: translateX(0); }
+    18% { transform: translateX(-6px); box-shadow: 0 0 0 2.5px rgba(184, 69, 58, 0.78), var(--shadow); }
+    40% { transform: translateX(6px); }
+    62% { transform: translateX(-4px); }
+    82% { transform: translateX(3px); }
+  }
   @keyframes cardHit {
     0% { transform: translateX(0) scale(1); }
     15% { transform: translateX(-8px) rotate(-2.5deg) scale(0.97); box-shadow: 0 0 0 2.5px rgba(184, 69, 58, 0.72), var(--shadow); }
@@ -840,6 +851,7 @@
   .float-text.heal { background: var(--ok); color: #fff; }
   .float-text.energy { background: #5a3e26; color: #fbf3df; border: 1px solid var(--gold); font-size: 12.5px; }
   .float-text.guard { background: var(--water); color: #fff; font-size: 12.5px; }
+  .float-text.warn { background: #8f2d24; color: #fff6e8; border: 1.5px solid #f0b084; font-size: 13px; }
   .float-text.ko { background: #462f1c; color: #f8e1a2; border: 1px solid var(--gold); font-size: 14.5px; }
   @keyframes floatUpFade {
     0% { opacity: 0; transform: translate(-50%, 8px) scale(0.76); }
@@ -883,7 +895,7 @@
     color: #fdf4df;
     text-align: center;
     box-shadow: 0 12px 26px rgba(42, 24, 10, 0.42);
-    transition: opacity 0.22s ease, transform 0.24s cubic-bezier(.22,.85,.36,1);
+    transition: opacity 0.32s ease, transform 0.36s cubic-bezier(.22,.85,.36,1);
   }
   .turn-banner.show {
     opacity: 1;
@@ -959,7 +971,7 @@
     color: var(--ink-sub);
   }
   .hp-badge {
-    font-size: 10.5px;
+    font-size: 12px;
     font-weight: 800;
     color: #9e2d24;
     background: #fffdf8;
@@ -1017,7 +1029,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 9px;
+    font-size: 11px;
     font-weight: 800;
     color: #fff;
     border: 1px solid rgba(48, 30, 12, 0.2);
@@ -1052,7 +1064,7 @@
   }
 
   .dmg-chip {
-    font-size: 9.5px;
+    font-size: 11px;
     font-weight: 800;
     padding: 0 5px;
     border-radius: 999px;
@@ -1060,7 +1072,7 @@
     color: #fff;
   }
   .guard-chip {
-    font-size: 9.5px;
+    font-size: 11px;
     font-weight: 800;
     padding: 0 5px;
     border-radius: 999px;
@@ -1068,7 +1080,7 @@
     color: #fff;
   }
   .weak-chip {
-    font-size: 9px;
+    font-size: 11px;
     font-weight: 600;
     padding: 0 5px;
     border-radius: 999px;
@@ -1087,7 +1099,7 @@
     display: block;
   }
   .boost-chip {
-    font-size: 9.5px;
+    font-size: 11px;
     font-weight: 800;
     padding: 0 5px;
     border-radius: 999px;
@@ -1095,7 +1107,7 @@
     color: #fff;
   }
   .ex-chip {
-    font-size: 9px;
+    font-size: 11px;
     font-weight: 800;
     padding: 1px 5px;
     border-radius: 999px;
@@ -1125,7 +1137,7 @@
     justify-content: space-between;
     align-items: center;
     gap: 4px;
-    font-size: 10.5px;
+    font-size: 12px;
     line-height: 1.2;
     padding: 2px 5px;
     border-radius: 6px;
@@ -1135,7 +1147,7 @@
     transition: background 0.16s ease, border-color 0.16s ease, transform 0.14s ease, opacity 0.16s ease;
   }
   .bench-row .skill-line {
-    font-size: 9.5px;
+    font-size: 11px;
     padding: 2px 4px;
   }
   .skill-line.ready {
@@ -1179,7 +1191,7 @@
     color: #fff;
   }
   .skill-dmg { font-size: 11px; font-weight: 800; color: #2b1d12; white-space: nowrap; }
-  .skill-note { font-size: 9px; color: var(--ink-sub); font-weight: 600; }
+  .skill-note { font-size: 11px; color: var(--ink-sub); font-weight: 600; }
   .skill-tag {
     font-size: 8.5px;
     font-weight: 700;
@@ -1343,7 +1355,7 @@
     color: #8c5f17;
   }
   .hand-drop-placeholder .drop-slot-zh {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 600;
     color: #9e7430;
   }
@@ -1367,7 +1379,7 @@
     50% { box-shadow: 0 0 0 4px rgba(47, 122, 83, 0.16), 0 10px 22px rgba(58, 36, 16, 0.28); }
   }
   .setup-pick-tag {
-    font-size: 9px;
+    font-size: 11px;
     font-weight: 700;
     color: #fff;
     background: var(--ok);
@@ -1384,8 +1396,8 @@
     line-height: 1.25;
     padding: 2px 6px 2px;
   }
-  .card-desc .desc-ja { font-size: 10.5px; font-weight: 600; color: var(--ink); }
-  .card-desc .desc-zh { font-size: 9.5px; color: var(--ink-sub); border-top: 1px dashed rgba(112, 79, 41, 0.18); padding-top: 2px; }
+  .card-desc .desc-ja { font-size: 12px; font-weight: 600; color: var(--ink); }
+  .card-desc .desc-zh { font-size: 11px; color: var(--ink-sub); border-top: 1px dashed rgba(112, 79, 41, 0.18); padding-top: 2px; }
 
   /* =========================================================================
      5. 右侧羊皮纸手账面板（明亮耐看，与左侧沙石棋盘自然一体）
@@ -1463,7 +1475,7 @@
   .dlog-chip {
     cursor: pointer;
     font-family: inherit;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
     padding: 2px 8px;
     border-radius: 999px;
@@ -1511,7 +1523,7 @@
     justify-content: space-between;
     align-items: center;
     gap: 6px;
-    font-size: 9.5px;
+    font-size: 11px;
     font-weight: 700;
     color: var(--ink-sub);
     margin-bottom: 2px;
@@ -1520,7 +1532,7 @@
   .dlog-detail {
     margin-top: 2px;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace, var(--font-zh), var(--font-ja);
-    font-size: 9.5px;
+    font-size: 11px;
     color: #5e4a36;
     white-space: pre-wrap;
     max-height: 84px;
@@ -1533,7 +1545,7 @@
     border-top: 1.5px solid #d7c39f;
     padding-top: 6px;
   }
-  .dlog-foot .btn-sm { padding: 5px 4px; font-size: 10.5px; white-space: nowrap; }
+  .dlog-foot .btn-sm { padding: 5px 4px; font-size: 12px; white-space: nowrap; }
   .panel-title {
     flex-shrink: 0;
     display: flex;
@@ -1554,7 +1566,7 @@
   }
   .call-state-badge {
     flex-shrink: 0;
-    font-size: 9.5px;
+    font-size: 11px;
     font-weight: 700;
     padding: 2px 7px;
     border-radius: 999px;
@@ -1624,7 +1636,7 @@
     border-left-color: #b55446;
   }
   .bubble-role {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 800;
     color: #42606f;
     margin-bottom: 2px;
@@ -1659,7 +1671,7 @@
   }
   .pending-bar.open { display: flex; }
   .pending-ja { font-size: 11.5px; font-weight: 700; color: #543714; line-height: 1.35; }
-  .pending-zh { font-size: 10.5px; color: #7b5a2e; line-height: 1.32; border-top: 1px dashed rgba(156, 111, 28, 0.28); padding-top: 3px; }
+  .pending-zh { font-size: 12px; color: #7b5a2e; line-height: 1.32; border-top: 1px dashed rgba(156, 111, 28, 0.28); padding-top: 3px; }
   .pending-btns { display: flex; flex-wrap: wrap; gap: 4px; }
 
   /* 对局记录区 */
@@ -1695,7 +1707,7 @@
   }
   .log-entry:last-child { border-bottom: none; }
   .log-ja { color: var(--ink); font-weight: 600; }
-  .log-zh { color: var(--ink-sub); font-size: 10.5px; margin-top: 1px; }
+  .log-zh { color: var(--ink-sub); font-size: 12px; margin-top: 1px; }
 
   /* 底部语音通话、输入框与实时 Tips 建议区 */
   .voice-dock {
@@ -1827,7 +1839,7 @@
     box-shadow: 0 2px 4px rgba(58, 36, 16, 0.14), inset 0 1px 0 rgba(255, 252, 244, 0.78);
     transition: background 0.14s, border-color 0.14s, box-shadow 0.14s, transform 0.12s;
   }
-  .btn-sm .btn-zh { font-size: 10.5px; font-weight: 500; color: var(--ink-sub); }
+  .btn-sm .btn-zh { font-size: 12px; font-weight: 500; color: var(--ink-sub); }
   .btn-sm:hover:where(:not(:disabled)) {
     border-color: #9e7c49;
     background: linear-gradient(180deg, #fffaf0 0%, #f2e2c4 100%);
@@ -1877,7 +1889,7 @@
     box-shadow: 0 2px 5px rgba(64, 42, 20, 0.08), inset 0 1px 0 rgba(255, 254, 249, 0.85);
   }
   .live-tip-label {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 800;
     color: var(--ok);
     margin-bottom: 2px;
@@ -1888,7 +1900,7 @@
     color: var(--ink);
   }
   .live-tip-zh {
-    font-size: 10.5px;
+    font-size: 12px;
     color: var(--ink-sub);
     margin-top: 1px;
   }
@@ -2002,7 +2014,7 @@
     align-items: center;
     gap: 6px;
     padding: 0 9px;
-    font-size: 10.5px;
+    font-size: 12px;
     color: var(--ink-sub);
   }
   .codex-skills {
@@ -2028,11 +2040,11 @@
     font-size: 11.5px;
   }
   .codex-skill-desc {
-    font-size: 10px;
+    font-size: 12px;
     color: var(--ink-sub);
   }
   .side-tag {
-    font-size: 9.5px;
+    font-size: 11px;
     font-weight: 700;
     padding: 1px 6px;
     border-radius: 999px;
@@ -2216,7 +2228,7 @@
     color: #3a2615;
   }
   .cfg-section-badge {
-    font-size: 10.5px;
+    font-size: 12px;
     font-weight: 700;
     padding: 2px 7px;
     border-radius: 999px;
@@ -2266,7 +2278,7 @@
   }
   .cfg-toggle-inline input { margin: 0; cursor: pointer; accent-color: #a97520; }
   .cfg-voice-tag {
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
     color: #8c5f17;
     margin-left: 4px;
@@ -2419,7 +2431,7 @@
     .slot-box.active-slot { min-height: 78px; }
     .card { padding: 0 0 3px; gap: 2px; }
     .card-head { padding: 3px 5px; }
-    .skill-line { font-size: 10px; }
+    .skill-line { font-size: 12px; }
     .hand-card { min-height: 66px; }
     .bubble { padding: 5px 7px; }
     .bubble-ja { font-size: 11.5px; }
@@ -2464,17 +2476,17 @@
       grid-template-columns: 60px minmax(0, 1fr) 56px;
       gap: 5px;
     }
-    .zone-label { font-size: 10px; }
-    .zh-line { font-size: 9.5px; }
-    .prize-card { width: 18px; height: 28px; font-size: 10px; }
-    .prize-count-pill { font-size: 9.5px; padding: 1px 4px; }
+    .zone-label { font-size: 12px; }
+    .zh-line { font-size: 11px; }
+    .prize-card { width: 18px; height: 28px; font-size: 12px; }
+    .prize-count-pill { font-size: 11px; padding: 1px 4px; }
     .pile-box { width: 56px; padding: 4px 2px; }
     .slot-box.active-slot { width: clamp(230px, 72%, 380px); min-height: 92px; }
     .slot-box { min-height: 86px; padding: 13px 4px 4px; }
     .bench-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
     /* 保持与 PC 同级的卡面与技能可读字号，避免手机横屏变蚂蚁字 */
     .card-title-inline { font-size: 11.5px; }
-    .skill-line { font-size: 10.5px; padding: 2px 4px; }
+    .skill-line { font-size: 12px; padding: 2px 4px; }
     .hand-section { flex-shrink: 0; }
     .hand-cards { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
     .hand-card { flex: 0 0 156px; min-width: 146px; min-height: 76px; }
@@ -2503,7 +2515,7 @@
     .log-wrap { flex: 1 0 88px; min-height: 88px; }
     .voice-dock { flex-shrink: 0; }
     .live-tip-ja { font-size: 11.5px; }
-    .live-tip-zh { font-size: 10.5px; }
+    .live-tip-zh { font-size: 12px; }
 
     .modal-backdrop { padding: 8px; }
     .modal-box, #rulesModal .modal-box, #codexModal .modal-box {
@@ -2565,7 +2577,7 @@
       gap: 4px 8px;
     }
     .brand-title { font-size: 13.5px; }
-    .turn-pill { font-size: 10.5px; padding: 2px 8px; white-space: normal; line-height: 1.25; max-width: 100%; }
+    .turn-pill { font-size: 12px; padding: 2px 8px; white-space: normal; line-height: 1.25; max-width: 100%; }
     .top-actions {
       width: 100%;
       min-width: 0;
@@ -2636,10 +2648,10 @@
     }
     .side-half > .zone-col:first-child .zone-label {
       text-align: left;
-      font-size: 10px;
+      font-size: 12px;
       line-height: 1.15;
     }
-    .side-half > .zone-col:first-child .zh-line { font-size: 9px; }
+    .side-half > .zone-col:first-child .zh-line { font-size: 11px; }
     .side-half > .zone-col:last-child {
       grid-column: 2;
       grid-row: 1;
@@ -2658,8 +2670,8 @@
     }
 
     .prize-stack { gap: 3px; }
-    .prize-card { width: 16px; height: 24px; font-size: 9px; }
-    .prize-count-pill { font-size: 9.5px; padding: 1px 5px; }
+    .prize-card { width: 16px; height: 24px; font-size: 11px; }
+    .prize-count-pill { font-size: 11px; padding: 1px 5px; }
     .pile-box {
       width: auto;
       min-width: 54px;
@@ -2667,7 +2679,7 @@
       gap: 0;
     }
     .pile-box strong { font-size: 12.5px; }
-    .pile-box .pile-ja { font-size: 9px; }
+    .pile-box .pile-ja { font-size: 11px; }
     .pile-box .pile-zh { font-size: 8.5px; }
 
     /* 主战区全宽，备战区改为横向滑动大卡槽（每张约 165–205px，与 PC 同级可读性） */
@@ -2715,7 +2727,7 @@
       scroll-snap-align: start;
     }
     .card-title-inline { font-size: 11.5px; }
-    .skill-line { font-size: 10.5px; padding: 3px 5px; }
+    .skill-line { font-size: 12px; padding: 3px 5px; }
 
     /* 中心分界线与次数牌自然居中换行，避免撑破右侧 */
     .mat-divider {
@@ -2731,12 +2743,12 @@
       justify-content: center;
       gap: 4px;
     }
-    .limit-pill { font-size: 9.5px; padding: 2px 6px; }
+    .limit-pill { font-size: 11px; padding: 2px 6px; }
 
     /* 手牌区：标题提示自动折行，手牌大卡横向流畅滑动（必须重置 flex: 0 0 auto，避免 column 下 flex-basis:0 把手牌压扁为 0px） */
     .hand-section { width: 100%; max-width: 100%; min-width: 0; }
     .hand-header { flex-wrap: wrap; gap: 3px 6px; }
-    #handSelectionHint { text-align: left; font-size: 10px; line-height: 1.35; }
+    #handSelectionHint { text-align: left; font-size: 12px; line-height: 1.35; }
     .hand-body { flex-direction: column; gap: 6px; width: 100%; max-width: 100%; min-width: 0; }
     .hand-cards {
       flex: 0 0 auto;
@@ -2858,60 +2870,1256 @@
       line-height: 1.25;
     }
     .reset-confirm-actions .btn-sm .zh-inline {
-      font-size: 10.5px;
+      font-size: 12px;
       white-space: nowrap;
     }
   }
   /* 5 柱实时声波条与实时斩杀/威胁 HUD 样式 */
-  .voice-wave-meter { display: inline-flex; align-items: flex-end; gap: 2px; height: 14px; margin-right: 4px; vertical-align: middle; }
+  .voice-wave-meter { display: inline-flex; align-items: flex-end; gap: 2px; height: 15px; margin-right: 5px; vertical-align: middle; }
   .voice-wave-meter i { display: block; width: 2.5px; height: 20%; border-radius: 2px; background: #a89982; transition: height 0.06s ease, background 0.15s ease; }
   .voice-wave-meter.active i { background: var(--ok); }
-  .eff-dmg { font-size: 9.5px; font-weight: 800; color: #b54524; margin-left: 1px; }
-  .lethal-tag { font-size: 9px; font-weight: 800; padding: 0 5px; border-radius: 999px; background: linear-gradient(135deg, #c9861f, #a64b1e); color: #fffdf8; margin-right: 3px; white-space: nowrap; }
-  .threat-chip { font-size: 9px; font-weight: 800; padding: 1px 5px; border-radius: 999px; background: rgba(184, 52, 42, 0.14); color: #a62b22; border: 1px solid rgba(184, 52, 42, 0.35); margin-right: 3px; white-space: nowrap; }
+  .eff-dmg { font-size: 11px; font-weight: 800; color: #b54524; margin-left: 2px; }
+  .lethal-tag { font-size: 11px; font-weight: 800; padding: 1px 6px; border-radius: 999px; background: linear-gradient(135deg, #c9861f, #a64b1e); color: #fffdf8; margin-right: 3px; white-space: nowrap; display: inline-flex; align-items: center; gap: 2px; }
+  .threat-chip { font-size: 11px; font-weight: 800; padding: 1px 6px; border-radius: 999px; background: rgba(184, 52, 42, 0.14); color: #a62b22; border: 1px solid rgba(184, 52, 42, 0.35); margin-right: 3px; white-space: nowrap; display: inline-flex; align-items: center; gap: 2px; }
+
+  /* =========================================================================
+     8. v1.2.0 升级：防闪屏黑金遮罩 / 矢量 SVG Logo / 全局单语言切换 / 大字号重排 / 语音 HUD / 防触控板后退
+     ========================================================================= */
+  html, body, .app-shell, .table-shell, .playmat, .hand-cards, .bench-row {
+    overscroll-behavior-x: none;
+    overscroll-behavior-y: none;
+  }
+
+  /* 首帧防闪屏：数据与规则弹窗渲染完成前隐藏底层牌桌与弹窗，仅展示黑金纹章预遮罩 */
+  body:not(.app-ready) .app-shell,
+  body:not(.app-ready) .modal-backdrop {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+  .app-shell {
+    transition: opacity 0.22s ease;
+  }
+  .boot-splash {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background:
+      radial-gradient(circle at 50% 44%, rgba(212, 166, 76, 0.08) 0%, transparent 42%),
+      radial-gradient(ellipse at 50% 48%, #222124 0%, #17171a 52%, #0e0e10 100%);
+    color: #f6e6c2;
+    overflow: hidden;
+    will-change: opacity;
+    transition: opacity 0.45s ease, visibility 0.45s ease;
+  }
+  .boot-splash::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.11;
+    background-image:
+      repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0px, rgba(255, 255, 255, 0.03) 1px, transparent 1px, transparent 6px),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.85'/%3E%3C/svg%3E");
+    background-size: auto, 140px 140px;
+  }
+  .boot-splash > * {
+    position: relative;
+    z-index: 1;
+  }
+  .boot-splash.fade-out {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .boot-splash-emblem {
+    width: 88px;
+    height: 88px;
+    filter: drop-shadow(0 0 22px rgba(212, 166, 76, 0.46));
+    animation: bootEmblemEnter 0.52s cubic-bezier(.22, 1.08, .36, 1) both, bootEmblemPulse 2.2s ease-in-out 0.52s infinite;
+  }
+  .boot-splash-title {
+    font-family: var(--font-display-ja);
+    font-size: 25px;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    color: #f8e5b8;
+    text-shadow: 0 2px 14px rgba(198, 146, 44, 0.44);
+    animation: bootTextFadeUp 0.48s ease 0.12s both;
+  }
+  .boot-splash-sub {
+    font-size: 12px;
+    letter-spacing: 0.24em;
+    color: rgba(235, 207, 149, 0.76);
+    text-transform: uppercase;
+    animation: bootTextFadeUp 0.48s ease 0.22s both;
+  }
+  @keyframes bootEmblemEnter {
+    0% { opacity: 0; transform: scale(0.78) rotate(-10deg); }
+    100% { opacity: 1; transform: scale(1) rotate(0deg); }
+  }
+  @keyframes bootTextFadeUp {
+    0% { opacity: 0; transform: translateY(8px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes bootEmblemPulse {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 18px rgba(212, 166, 76, 0.38)); }
+    50% { transform: scale(1.05); filter: drop-shadow(0 0 30px rgba(236, 189, 92, 0.66)); }
+  }
+
+  /* 全局单语言统一字体栈与显隐控制（默认 ja，切换 zh 立即全局纯净生效，杜绝明朝/黑体或中日字形混杂） */
+  body[data-lang="ja"],
+  body[data-lang="ja"] .brand-title,
+  body[data-lang="ja"] .vs-badge,
+  body[data-lang="ja"] .modal-head h2,
+  body[data-lang="ja"] .rules-block h3,
+  body[data-lang="ja"] .turn-banner,
+  body[data-lang="ja"] .prize-toast,
+  body[data-lang="ja"] .boot-splash-title,
+  body[data-lang="ja"] #gameOverTitleJa { font-family: var(--font-ja); }
+  body[data-lang="zh"],
+  body[data-lang="zh"] .brand-title,
+  body[data-lang="zh"] .vs-badge,
+  body[data-lang="zh"] .modal-head h2,
+  body[data-lang="zh"] .rules-block h3,
+  body[data-lang="zh"] .turn-banner,
+  body[data-lang="zh"] .prize-toast,
+  body[data-lang="zh"] #gameOverTitleZh { font-family: var(--font-zh); }
+  body[data-lang="ja"] .lang-zh,
+  body[data-lang="ja"] .zh-inline,
+  body[data-lang="ja"] .zh-sub,
+  body[data-lang="ja"] .zh-line,
+  body[data-lang="ja"] .btn-zh,
+  body[data-lang="ja"] .pile-zh,
+  body[data-lang="ja"] .bubble-zh,
+  body[data-lang="ja"] .pending-zh,
+  body[data-lang="ja"] .live-tip-zh,
+  body[data-lang="ja"] .guide-zh,
+  body[data-lang="ja"] .log-zh,
+  body[data-lang="ja"] .desc-zh,
+  body[data-lang="ja"] .pt-zh,
+  body[data-lang="ja"] .tb-zh,
+  body[data-lang="ja"] .pile-chip-zh,
+  body[data-lang="ja"] .drop-slot-zh,
+  body[data-lang="ja"] .endturn-hint-zh,
+  body[data-lang="ja"] .mobile-fs-title-zh,
+  body[data-lang="ja"] .mobile-fs-desc-zh,
+  body[data-lang="ja"] #gameOverTitleZh,
+  body[data-lang="ja"] #gameOverDescZh,
+  body[data-lang="ja"] #gameOverZhWrap,
+  body[data-lang="ja"] #rulesBlockZh {
+    display: none !important;
+  }
+  body[data-lang="zh"] .lang-ja,
+  body[data-lang="zh"] .pile-ja,
+  body[data-lang="zh"] .bubble-ja,
+  body[data-lang="zh"] .pending-ja,
+  body[data-lang="zh"] .live-tip-ja,
+  body[data-lang="zh"] .guide-ja,
+  body[data-lang="zh"] .log-ja,
+  body[data-lang="zh"] .desc-ja,
+  body[data-lang="zh"] .pt-ja,
+  body[data-lang="zh"] .tb-ja,
+  body[data-lang="zh"] .drop-slot-ja,
+  body[data-lang="zh"] .endturn-hint-ja,
+  body[data-lang="zh"] .mobile-fs-title-ja,
+  body[data-lang="zh"] .mobile-fs-desc-ja,
+  body[data-lang="zh"] #gameOverTitleJa,
+  body[data-lang="zh"] #gameOverDescJa,
+  body[data-lang="zh"] #rulesBlockJa {
+    display: none !important;
+  }
+  body[data-lang="zh"] .brand-title,
+  body[data-lang="zh"] .vs-badge,
+  body[data-lang="zh"] .modal-head h2,
+  body[data-lang="zh"] .rules-block h3,
+  body[data-lang="zh"] .turn-banner,
+  body[data-lang="zh"] .prize-toast,
+  body[data-lang="zh"] #gameOverTitleZh {
+    font-family: var(--font-display-zh);
+  }
+
+  /* 矢量 SVG 品牌纹章与语言切换胶囊 */
+  .brand-logo-svg {
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    filter: drop-shadow(0 2px 5px rgba(24, 13, 5, 0.45));
+  }
+  .rules-brand-head {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    min-width: 0;
+  }
+  .rules-brand-logo {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    filter: drop-shadow(0 2px 6px rgba(92, 60, 22, 0.28));
+  }
+  .rules-head-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .lang-switch {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(34, 21, 10, 0.34);
+    border: 1.5px solid rgba(212, 166, 76, 0.56);
+    border-radius: 999px;
+    padding: 2px;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .lang-switch.light {
+    background: #eadbc0;
+    border-color: #c4a472;
+    box-shadow: inset 0 1px 3px rgba(74, 48, 22, 0.14);
+  }
+  .lang-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    border: none;
+    background: transparent;
+    color: rgba(251, 243, 224, 0.84);
+    font-family: inherit;
+    font-size: 12.5px;
+    font-weight: 700;
+    line-height: 1.2;
+    padding: 4px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+  }
+  .lang-switch.light .lang-pill {
+    color: #5e4429;
+    font-size: 13px;
+    padding: 5px 12px;
+  }
+  .lang-pill:hover:not(.active) {
+    background: rgba(255, 248, 232, 0.14);
+    color: #fffdf8;
+  }
+  .lang-switch.light .lang-pill:hover:not(.active) {
+    background: rgba(255, 252, 244, 0.65);
+    color: #2f2115;
+  }
+  .lang-pill.active {
+    background: linear-gradient(180deg, #d7a13b 0%, #ad791e 100%);
+    color: #fffdf8;
+    box-shadow: 0 2px 6px rgba(34, 20, 9, 0.3), inset 0 1px 0 rgba(255, 246, 214, 0.4);
+  }
+  .lang-badge-svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    display: block;
+  }
+
+  /* 实时语音收音 HUD 浮层（非遮挡式，位于牌桌底部操作区上方居中） */
+  .voice-hud {
+    position: absolute;
+    left: 50%;
+    bottom: 138px;
+    transform: translate(-50%, 10px) scale(0.96);
+    z-index: 48;
+    pointer-events: none;
+    opacity: 0;
+    max-width: min(560px, calc(100% - 28px));
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    border-radius: 999px;
+    background: rgba(34, 23, 13, 0.9);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1.5px solid rgba(212, 166, 76, 0.72);
+    color: #fdf4df;
+    box-shadow: 0 10px 26px rgba(24, 14, 6, 0.42), inset 0 1px 0 rgba(255, 240, 204, 0.18);
+    transition: opacity 0.18s ease, transform 0.2s cubic-bezier(.22, 1.12, .36, 1), border-color 0.2s ease, background 0.2s ease;
+  }
+  .voice-hud.show {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  .voice-hud.hud-listening {
+    border-color: rgba(88, 196, 136, 0.85);
+    background: rgba(24, 38, 29, 0.92);
+  }
+  .voice-hud.hud-fast {
+    border-color: rgba(238, 189, 79, 0.92);
+    background: rgba(45, 33, 14, 0.94);
+  }
+  .voice-hud.hud-llm {
+    border-color: rgba(138, 178, 245, 0.86);
+    background: rgba(24, 30, 48, 0.94);
+  }
+  .voice-hud-icon {
+    width: 22px;
+    height: 22px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #7ee09b;
+  }
+  .voice-hud.hud-fast .voice-hud-icon { color: #f6cd62; }
+  .voice-hud.hud-llm .voice-hud-icon { color: #9fc2ff; }
+  .voice-hud-icon svg { width: 20px; height: 20px; display: block; }
+  .voice-hud.hud-listening .voice-hud-wave-bar {
+    transform-origin: center;
+    animation: hudWaveBar 0.85s ease-in-out infinite;
+  }
+  .voice-hud.hud-listening .voice-hud-wave-bar:nth-child(2) { animation-delay: 0.14s; }
+  .voice-hud.hud-listening .voice-hud-wave-bar:nth-child(3) { animation-delay: 0.28s; }
+  .voice-hud.hud-listening .voice-hud-wave-bar:nth-child(4) { animation-delay: 0.18s; }
+  .voice-hud.hud-listening .voice-hud-wave-bar:nth-child(5) { animation-delay: 0.06s; }
+  @keyframes hudWaveBar {
+    0%, 100% { transform: scaleY(0.45); opacity: 0.72; }
+    50% { transform: scaleY(1.15); opacity: 1; }
+  }
+  .voice-hud.hud-llm .voice-hud-icon svg {
+    animation: hudSpin 1.1s linear infinite;
+  }
+  @keyframes hudSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  .voice-hud-body {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+    font-size: 13.5px;
+    line-height: 1.35;
+  }
+  .voice-hud-label {
+    font-weight: 800;
+    white-space: nowrap;
+    flex-shrink: 0;
+    color: #f6e1ae;
+  }
+  .voice-hud.hud-listening .voice-hud-label { color: #8be8a8; }
+  .voice-hud.hud-fast .voice-hud-label { color: #ffd970; }
+  .voice-hud.hud-llm .voice-hud-label { color: #b5d1ff; }
+  .voice-hud-text {
+    font-weight: 600;
+    color: #fffdf8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* =========================================================================
+     9. 全站 0.5px 梯度字号体系 + 防溢出牌桌与卡牌比例自适配
+     ========================================================================= */
+  :root {
+    --fs-display: 24px;   /* 启动遮罩主标题 */
+    --fs-h1: 19px;        /* 主弹窗/确认弹窗标题、回合横幅 */
+    --fs-h2: 17.5px;      /* 顶部品牌标题、设置/图鉴/弃牌弹窗标题 */
+    --fs-title: 15px;     /* 主战区怪兽名、奖赏浮层、主开始按钮 */
+    --fs-body: 14px;      /* 气泡对话、规则正文、语音通话/输入、设置输入、主战区伤害 */
+    --fs-ui: 13px;        /* 常规按钮、日志、战术建议、手牌/备战卡名、主战区技能、HP */
+    --fs-sub: 12px;       /* 备战/手牌技能、卡牌效果、次数牌、区域标签、状态胶囊 */
+    --fs-micro: 10.5px;   /* 卡槽角标、能量圆片、属性/状态/技能徽章 */
+  }
+
+  .boot-splash-title { font-size: var(--fs-display); }
+  .boot-splash-sub { font-size: var(--fs-sub); }
+
+  .table-shell { max-width: 1620px; }
+  .topbar { padding: 5px 12px; gap: 6px; }
+  .brand-title { font-size: var(--fs-h2); }
+  .turn-pill { font-size: var(--fs-ui); padding: 3px 12px; min-width: 168px; text-align: center; }
+  .top-actions { flex-wrap: nowrap; gap: 5px; }
+  .top-btn { font-size: var(--fs-sub); min-height: 29px; padding: 4px 10px; gap: 4px; }
+  .lang-pill { font-size: var(--fs-sub); min-width: 72px; }
+  .lang-switch.light .lang-pill { font-size: var(--fs-ui); }
+
+  /* 牌桌主舞台：左侧对战垫与右侧面板均衡比例，窄屏/矮屏绝不截断卡牌 */
+  .arena-grid { grid-template-columns: minmax(0, 1fr) clamp(288px, 23vw, 356px); gap: clamp(6px, 0.7vw, 10px); }
+  .playmat { overflow-y: auto; overflow-x: hidden; padding: 5px 9px; gap: 4px; }
+  .side-half { grid-template-columns: clamp(68px, 5.4vw, 78px) minmax(0, 1fr) clamp(64px, 5vw, 74px); gap: clamp(5px, 0.55vw, 8px); }
+
+  .zone-label { font-size: var(--fs-sub); }
+  .prize-card { width: clamp(21px, 1.7vw, 27px); height: clamp(30px, 4dvh, 40px); font-size: var(--fs-ui); }
+  .prize-count-pill { font-size: var(--fs-micro); padding: 1.5px 6px; }
+  .pile-box { width: clamp(62px, 4.9vw, 74px); padding: 4px 3px; }
+  .pile-box strong { font-size: var(--fs-title); }
+  .pile-box .pile-ja, .pile-box .pile-zh { font-size: var(--fs-micro); font-weight: 700; color: #543b24; line-height: 1.15; }
+
+  /* 空/满卡槽等高基准 + height:auto 防溢出保护：怪兽上场无跳动，多标签/长名也绝不裁切 */
+  .field-center { gap: clamp(4px, 0.5dvh, 7px); }
+  .bench-row { gap: clamp(5px, 0.55vw, 8px); }
+  .slot-box {
+    padding: 15px 5px 4px;
+    height: auto;
+    min-height: clamp(114px, 15.6dvh, 134px);
+  }
+  .slot-box.active-slot {
+    width: clamp(350px, 64%, 520px);
+    height: auto;
+    min-height: clamp(124px, 17dvh, 144px);
+  }
+  .slot-box > .card { height: auto; min-height: 100%; justify-content: space-between; }
+  .slot-tag { top: 2px; left: 7px; font-size: var(--fs-micro); }
+  .slot-empty { font-size: var(--fs-ui); }
+
+  .vs-badge { font-size: var(--fs-sub); padding: 2px 12px; }
+  .limit-pill { font-size: var(--fs-sub); padding: 2px 8px; }
+
+  /* 卡牌内部防挤压排版：头部单行对齐、备战/手牌技能单行防折行溢出 */
+  .card { gap: 2px; padding: 0 0 4px; }
+  .card-head { padding: 3.5px 6px; gap: 5px; }
+  .card-head-right { flex-direction: row; align-items: center; gap: 4px; }
+  .card-art { width: 26px; height: 26px; }
+  .card-art svg { width: 22px; height: 22px; }
+  .bench-row .card-art { width: 22px; height: 22px; }
+  .bench-row .card-art svg { width: 18px; height: 18px; }
+  .hand-card .card-art { width: 22px; height: 22px; }
+  .hand-card .card-art svg { width: 18px; height: 18px; }
+
+  .card-title-inline { font-size: var(--fs-title); line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bench-row .card-title-inline { font-size: var(--fs-ui); }
+  .hand-card .card-title-inline { font-size: var(--fs-ui); }
+  .hp-badge { font-size: var(--fs-ui); padding: 1px 6px; }
+  .bench-row .hp-badge { font-size: var(--fs-sub); padding: 1px 5px; }
+  .hand-card .hp-badge { font-size: var(--fs-sub); padding: 1px 5px; }
+  .hp-track { height: 4.5px; }
+
+  .token-row { min-height: 18px; padding: 0 6px; gap: 2px 4px; flex-wrap: nowrap; overflow: hidden; }
+  .token-chips { flex-wrap: nowrap; gap: 2.5px; flex-shrink: 0; }
+  .energy-pips { flex-wrap: nowrap; gap: 2px; min-width: 0; }
+  .pip { width: 15px; height: 15px; font-size: var(--fs-micro); flex-shrink: 0; }
+  .pip svg { width: 9.5px; height: 9.5px; }
+  .bench-row .pip, .hand-card .pip { width: 14px; height: 14px; }
+  .bench-row .pip svg, .hand-card .pip svg { width: 9px; height: 9px; }
+  .dmg-chip, .guard-chip, .boost-chip, .weak-chip, .ex-chip, .supporter-chip, .lethal-tag, .threat-chip {
+    font-size: var(--fs-micro);
+    padding: 0.5px 4.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .skills-list { gap: 2px; padding: 1.5px 5px 1px; }
+  .skill-line {
+    font-size: var(--fs-ui);
+    line-height: 1.2;
+    padding: 2.5px 6px;
+    flex-wrap: nowrap;
+    min-height: 22px;
+  }
+  .skill-left { flex-wrap: nowrap; overflow: hidden; min-width: 0; gap: 3px; }
+  .skill-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .bench-row .skill-line { font-size: var(--fs-sub); padding: 2px 4.5px; min-height: 20px; }
+  .skill-dmg { font-size: var(--fs-body); }
+  .bench-row .skill-dmg { font-size: var(--fs-ui); }
+  .eff-dmg { font-size: var(--fs-micro); }
+  .skill-tag, .skill-ready-tag { font-size: var(--fs-micro); padding: 0.5px 4px; flex-shrink: 0; }
+
+  .hand-section { padding-top: 3px; gap: 3px; }
+  .hand-cards { padding: 8px 4px 4px; gap: 8px; }
+  .hand-card,
+  .hand-drop-placeholder {
+    flex: 0 0 calc((100% - 28px) / 4.2);
+    min-width: 196px;
+    max-width: 248px;
+    min-height: 94px;
+    height: auto;
+  }
+  .hand-card .skill-line { font-size: var(--fs-sub); padding: 2px 5px; min-height: 20px; }
+  .hand-card .skill-dmg { font-size: var(--fs-ui); }
+  .card-desc { padding: 3px 7px 3px; }
+  .card-desc .desc-ja,
+  .card-desc .desc-zh {
+    font-size: var(--fs-sub);
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.32;
+    border-top: none;
+    padding-top: 0;
+  }
+  .setup-pick-tag { font-size: var(--fs-micro); padding: 1px 7px; }
+  .hand-actions { flex: 0 0 108px; gap: 5px; }
+  .hand-actions .btn-sm { font-size: var(--fs-ui); padding: 6px 8px; }
+
+  /* 右侧面板：统一字号梯度，气泡与战报层次清晰 */
+  .side-panel { padding: 9px 11px; gap: 6px; }
+  .panel-title { font-size: var(--fs-body); padding-bottom: 6px; }
+  .call-state-badge { font-size: var(--fs-sub); padding: 2.5px 8px; }
+  .bubble { padding: 8px 11px; }
+  .bubble-role { font-size: var(--fs-sub); margin-bottom: 2px; }
+  .bubble-ja,
+  .bubble-zh {
+    font-size: var(--fs-body);
+    font-weight: 700;
+    color: var(--ink);
+    line-height: 1.44;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+  .pending-ja,
+  .pending-zh {
+    font-size: var(--fs-body);
+    font-weight: 700;
+    color: #543714;
+    line-height: 1.42;
+    border-top: none;
+    padding-top: 0;
+  }
+  .log-bar { font-size: var(--fs-sub); }
+  .notepad-log { font-size: var(--fs-ui); line-height: 1.48; padding: 7px 9px; }
+  .log-entry { padding: 4px 0; }
+  .log-ja,
+  .log-zh { font-size: var(--fs-ui); color: var(--ink); font-weight: 600; margin-top: 0; }
+  .btn-voice { font-size: var(--fs-body); padding: 8.5px 12px; }
+  .btn-ptt { font-size: var(--fs-ui); padding: 8px 10px; }
+  .voice-controls-grid input { font-size: var(--fs-body); padding: 7.5px 10px; }
+  .voice-controls-grid .btn-sm { font-size: var(--fs-ui); padding: 7.5px 12px; }
+  .btn-sm { font-size: var(--fs-ui); padding: 6px 11px; }
+  .live-tip-box { padding: 7px 10px; }
+  .live-tip-label { font-size: var(--fs-sub); margin-bottom: 2px; }
+  .live-tip-ja,
+  .live-tip-zh { font-size: var(--fs-ui); font-weight: 700; color: var(--ink); line-height: 1.42; margin-top: 0; }
+
+  .voice-hud { bottom: 146px; }
+  .voice-hud-body { font-size: var(--fs-ui); }
+
+  .guide-card { padding: 11px 14px; }
+  .guide-tag { font-size: var(--fs-sub); margin-bottom: 3px; }
+  .guide-ja,
+  .guide-zh { font-size: var(--fs-body); font-weight: 700; color: var(--ink); line-height: 1.44; margin-top: 0; }
+
+  .prize-toast .pt-ja,
+  .prize-toast .pt-zh { font-size: var(--fs-title); font-weight: 800; color: #3a240e; margin-top: 0; display: inline-flex; align-items: center; gap: 5px; }
+  .prize-toast.enemy .pt-ja,
+  .prize-toast.enemy .pt-zh { color: #7a231b; }
+  .toast-icon { display: inline-flex; width: 15px; height: 15px; flex-shrink: 0; color: var(--gold-deep); }
+  .prize-toast.enemy .toast-icon { color: var(--danger); }
+  .toast-icon svg { width: 100%; height: 100%; display: block; }
+  .prize-card svg { width: 13px; height: 13px; display: block; }
+  .float-text { display: inline-flex; align-items: center; gap: 4px; }
+  .float-icon { display: inline-flex; width: 14px; height: 14px; flex-shrink: 0; }
+  .float-icon svg { width: 100%; height: 100%; display: block; }
+  .turn-banner .tb-ja,
+  .turn-banner .tb-zh { font-size: var(--fs-h1); font-weight: 800; color: #fdf4df; margin-top: 0; transform: skewX(8deg); }
+
+  /* 规则弹窗：单栏大字号 + 舒展行间距，日文与中文均可一页完整展示 */
+  #rulesModal .modal-box { width: min(860px, calc(100vw - 24px)); max-width: 860px; max-height: 94vh; padding: 14px 22px; }
+  #rulesModal .modal-head { padding-bottom: 8px; margin-bottom: 9px; gap: 10px; flex-wrap: wrap; }
+  #rulesModal .modal-head h2 { font-size: var(--fs-h1); line-height: 1.25; }
+  .rules-single-wrap { margin-bottom: 10px; }
+  .rules-block { padding: 13px 20px; }
+  .rules-block h3 { font-size: var(--fs-title); margin: 0 0 10px; }
+  .rules-list { font-size: var(--fs-body); line-height: 1.76; padding-left: 20px; }
+  .rules-list li { margin-bottom: 9px; }
+  .rules-list li:last-child { margin-bottom: 0; }
+  .diff-picker { font-size: var(--fs-body); }
+  .diff-btn { font-size: var(--fs-ui); padding: 7px 16px; }
+  #btnStartGame { font-size: var(--fs-title); padding: 9px 24px; }
+
+  /* 设置与图鉴弹窗：固定稳定尺寸与等高槽位，切换语言/TTS/ASR模型时外框与行列绝不上下左右跳动 */
+  #settingsModal .modal-box {
+    width: min(720px, calc(100vw - 24px));
+    max-width: 720px;
+    height: min(82dvh, 720px);
+    max-height: 90dvh;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+  }
+  #settingsModal .cfg-scroll-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+  }
+  .modal-head h2 { font-size: var(--fs-h2); }
+  .cfg-section-title { font-size: var(--fs-body); }
+  .cfg-section-badge { font-size: var(--fs-sub); }
+  .cfg-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  .cfg-field { min-height: 62px; }
+  .cfg-field label { font-size: var(--fs-ui); min-height: 20px; }
+  .cfg-field input, .cfg-field select {
+    font-size: var(--fs-body);
+    height: 38px;
+    padding: 6px 10px;
+  }
+  .cfg-hint-pill {
+    font-size: var(--fs-sub);
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+  }
+  .cfg-toggle-inline { font-size: var(--fs-ui); }
+  /* 视觉掩码密钥框：替代 type=password 彻底杜绝浏览器误弹“保存密码”提示 */
+  .secret-mask { -webkit-text-security: disc; text-security: disc; }
+  #cmdInput::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; }
+  /* 重开/结束回合确认等次级弹窗字号统一 */
+  #resetConfirmModal .modal-box,
+  #endTurnConfirmModal .modal-box { max-width: 460px; padding: 20px 24px; }
+  #resetConfirmModal h2,
+  #endTurnConfirmModal h2,
+  .mobile-fs-title-ja,
+  .mobile-fs-title-zh { font-size: var(--fs-h1) !important; line-height: 1.35; }
+  .mobile-fs-desc-ja,
+  .mobile-fs-desc-zh { font-size: var(--fs-body) !important; line-height: 1.6; color: var(--ink); }
+  .endturn-hint-ja,
+  .endturn-hint-zh { font-size: var(--fs-body) !important; line-height: 1.5; color: var(--ink); font-weight: 600; }
+  .reset-confirm-actions .btn-sm { font-size: var(--fs-body); padding: 9px 18px; min-width: 132px; }
+  .codex-legend { font-size: var(--fs-ui); }
+  .codex-skill-top { font-size: var(--fs-body); }
+  .codex-skill-desc { font-size: var(--fs-sub); }
+  .codex-meta { font-size: var(--fs-sub); }
+  .dlog-chip { font-size: var(--fs-sub); padding: 3px 10px; }
+  .dlog-list { font-size: var(--fs-ui); }
+  .dlog-meta { font-size: var(--fs-micro); }
+  .dlog-detail { font-size: var(--fs-sub); }
+
+  /* ---------- 中等宽度桌面屏（<= 1240px）顶栏与三列备战区防挤压 ---------- */
+  @media (min-width: 821px) and (max-width: 1240px) {
+    .topbar { flex-wrap: wrap; padding: 5px 10px; gap: 5px; }
+    .top-actions { flex-wrap: wrap; gap: 4px; }
+    .top-btn { padding: 3.5px 8px; }
+    .arena-grid { grid-template-columns: minmax(0, 1fr) clamp(268px, 25vw, 316px); gap: 6px; }
+    .slot-box.active-slot { width: clamp(310px, 70%, 440px); }
+    .hand-card, .hand-drop-placeholder { flex: 0 0 calc((100% - 20px) / 3.4); min-width: 184px; }
+  }
+
+  /* ---------- 桌面端矮屏自适应（按 0.5px 梯度统一微缩字号与槽高，保卡牌完整无溢出） ---------- */
+  @media (min-width: 821px) and (max-height: 840px) {
+    :root {
+      --fs-h1: 18px;
+      --fs-h2: 16.5px;
+      --fs-title: 14px;
+      --fs-body: 13px;
+      --fs-ui: 12px;
+      --fs-sub: 11px;
+      --fs-micro: 10px;
+    }
+    body { padding: 5px 8px; }
+    .table-shell { gap: 5px; }
+    .topbar { padding: 4px 10px; }
+    .playmat { padding: 4px 8px; gap: 3px; }
+    .field-center { gap: 3px; }
+    .slot-box { min-height: 104px; padding: 14px 4px 3px; }
+    .slot-box.active-slot { min-height: 112px; }
+    .card-head { padding: 3px 5px; }
+    .card-art { width: 22px; height: 22px; }
+    .card-art svg { width: 18px; height: 18px; }
+    .bench-row .card-art { width: 19px; height: 19px; }
+    .bench-row .card-art svg { width: 15px; height: 15px; }
+    .token-row { min-height: 16px; }
+    .pip { width: 13.5px; height: 13.5px; }
+    .skills-list { gap: 1.5px; padding: 1px 4px; }
+    .skill-line { padding: 2px 5px; min-height: 19px; }
+    .bench-row .skill-line { padding: 1.5px 4px; min-height: 18px; }
+    .hand-card, .hand-drop-placeholder { min-height: 84px; }
+    .bubble { padding: 6px 9px; }
+    .voice-hud { bottom: 118px; }
+    #rulesModal .modal-box { padding: 12px 18px; }
+    .rules-list { line-height: 1.66; }
+    .rules-list li { margin-bottom: 7px; }
+  }
+  @media (min-width: 821px) and (max-height: 720px) {
+    .slot-box { min-height: 98px; padding: 13px 4px 3px; }
+    .slot-box.active-slot { min-height: 106px; }
+    .prize-card { width: 22px; height: 32px; }
+    .pile-box { padding: 3px 3px; }
+    .hand-card, .hand-drop-placeholder { min-height: 78px; }
+    .hand-actions .btn-sm { padding: 5px 6px; }
+  }
+
+  /* ---------- 手机/小屏横屏恢复紧凑布局（统一 0.5px 字号梯度） ---------- */
+  @media (max-height: 620px) and (orientation: landscape), (max-width: 960px) and (orientation: landscape) {
+    :root {
+      --fs-h2: 15px;
+      --fs-title: 13px;
+      --fs-body: 12.5px;
+      --fs-ui: 11.5px;
+      --fs-sub: 11px;
+      --fs-micro: 10px;
+    }
+    .topbar { padding: 4px 8px; gap: 6px; }
+    .brand-logo-svg { width: 22px; height: 22px; }
+    .turn-pill { padding: 2px 8px; min-width: 0; }
+    .top-btn { min-height: 26px; padding: 3px 8px; }
+    .lang-pill { padding: 2px 7px; min-width: 0; }
+    .lang-badge-svg { width: 15px; height: 15px; }
+    .arena-grid { grid-template-columns: minmax(0, 1fr) clamp(235px, 29vw, 285px); }
+    .slot-box { min-height: 96px; padding: 14px 4px 4px; }
+    .slot-box.active-slot { width: clamp(250px, 66%, 360px); min-height: 102px; }
+    .hand-card, .hand-drop-placeholder { min-height: 80px; }
+    .hand-actions { flex: 0 0 92px; }
+    .side-panel { padding: 6px 8px; gap: 5px; }
+    .bubble { padding: 5px 8px; }
+    .voice-hud { bottom: 96px; padding: 5px 12px; }
+  }
+
+  /* ---------- 手机竖屏单列防溢出布局（完整恢复竖屏适配并兼容 SVG 语言胶囊） ---------- */
+  @media (max-width: 820px) and (orientation: portrait) {
+    html, body { height: auto; min-height: 100dvh; overflow-y: auto; overflow-x: hidden; }
+    .app-shell { height: auto; min-height: 100dvh; overflow: visible; }
+    .topbar { padding: 7px 10px; gap: 6px; flex-wrap: wrap; }
+    .brand { flex: 1 1 100%; justify-content: space-between; flex-wrap: wrap; }
+    .brand-title { font-size: 16.5px; }
+    .brand-logo-svg { width: 24px; height: 24px; }
+    .turn-pill { font-size: 12px; padding: 3px 9px; min-width: 0; }
+    .top-actions { width: 100%; flex-wrap: wrap; gap: 5px; justify-content: flex-start; }
+    .top-btn { font-size: 12px; min-height: 30px; padding: 4px 9px; }
+    .lang-pill { font-size: 11.5px; padding: 3px 8px; min-width: 0; }
+    .lang-badge-svg { width: 15px; height: 15px; }
+
+    .arena-grid {
+      grid-template-columns: 1fr !important;
+      height: auto;
+      min-height: 0;
+      overflow: visible;
+    }
+    .playmat { height: auto; overflow: visible; padding: 8px; gap: 8px; }
+    .side-half { display: flex; flex-direction: column; gap: 6px; }
+    .slot-box { height: auto; min-height: 104px; padding: 18px 6px 6px; }
+    .slot-box.active-slot { width: 100% !important; max-width: none; height: auto; min-height: 122px; }
+    .bench-row {
+      display: flex;
+      overflow-x: auto;
+      gap: 8px;
+      padding-bottom: 4px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .bench-row .slot-box { flex: 0 0 72%; min-width: 210px; }
+    .card-title-inline { font-size: 14.5px; }
+    .bench-row .card-title-inline { font-size: 13.5px; }
+    .skill-line { font-size: 13px; padding: 3.5px 6px; }
+    .skill-dmg { font-size: 14px; }
+
+    .hand-body { flex-direction: column; gap: 8px; }
+    .hand-cards { width: 100%; overflow-x: auto; padding-bottom: 4px; }
+    .hand-card { flex: 0 0 164px; min-width: 164px; min-height: 102px; }
+    .hand-actions { flex: none; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .hand-actions .btn-sm { font-size: 13.5px; padding: 9px 10px; }
+
+    .side-panel {
+      width: 100%;
+      border-left: none;
+      border-top: 2px solid rgba(112, 82, 47, 0.28);
+      padding: 10px;
+      gap: 8px;
+      height: auto;
+      overflow: visible;
+    }
+    .notepad-log { max-height: 180px; }
+    .voice-hud { position: fixed; bottom: 14px; max-width: calc(100vw - 24px); padding: 7px 14px; }
+    .voice-hud-body { font-size: 13px; }
+    #rulesModal .modal-box { width: calc(100vw - 16px); max-height: 92dvh; padding: 14px; }
+    #settingsModal .modal-box { width: calc(100vw - 16px); height: min(88dvh, 680px); }
+    .cfg-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 6px; }
+    .cfg-field { min-height: 0; }
+    .cfg-footer { flex-wrap: wrap; }
+    .rules-list { font-size: 13.5px; line-height: 1.72; }
+    .rules-list li { margin-bottom: 9px; }
+    .rules-head-right { width: 100%; justify-content: space-between; }
+  }
+
+  /* =========================================================================
+     10. 新版立体桌游牌桌与三段式右侧 HUD 布局重构（舒展卡牌比例、零扁平感）
+     ========================================================================= */
+  .arena-grid {
+    grid-template-columns: minmax(0, 1fr) clamp(304px, 24vw, 376px);
+    gap: clamp(8px, 0.8vw, 12px);
+  }
+  .playmat {
+    padding: 8px 12px 7px;
+    gap: 5px;
+    background:
+      radial-gradient(ellipse at 50% 42%, rgba(255, 248, 228, 0.36) 0%, transparent 56%),
+      radial-gradient(ellipse at 50% 48%, var(--mat-center) 0%, var(--mat-mid) 62%, var(--mat-edge) 100%);
+  }
+
+  /* 对手台词融入牌桌顶部横条：增强动漫对战临场感，彻底释放右侧栏 1/3 高度 */
+  .rival-table-bar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 5px 12px;
+    border-radius: 10px;
+    background: linear-gradient(90deg, rgba(116, 50, 42, 0.92) 0%, rgba(86, 36, 30, 0.88) 100%);
+    border: 1.5px solid rgba(217, 138, 120, 0.65);
+    box-shadow: 0 3px 10px rgba(48, 22, 16, 0.24), inset 0 1px 0 rgba(255, 232, 220, 0.16);
+    color: #fff6ed;
+  }
+  .rival-table-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: rgba(255, 242, 224, 0.16);
+    border: 1px solid rgba(246, 198, 146, 0.45);
+    font-size: var(--fs-sub);
+    font-weight: 800;
+    color: #ffe2b8;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .rival-table-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: var(--fs-body);
+    font-weight: 700;
+    line-height: 1.35;
+    color: #fff8f0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .rival-table-text .bubble-ja,
+  .rival-table-text .bubble-zh {
+    font-size: inherit;
+    color: inherit;
+    line-height: inherit;
+  }
+
+  /* 敌我半场：轻量边角奖赏/牌库列，把横向与纵向空间最大化让给怪兽卡 */
+  .side-half {
+    grid-template-columns: clamp(66px, 5.2vw, 76px) minmax(0, 1fr) clamp(62px, 4.8vw, 72px);
+    gap: clamp(6px, 0.6vw, 10px);
+  }
+
+  /* 对手备战区轻量化为紧凑状态条（隐藏冗余长技能行，点击/悬停可看详情），瞬间释放 55px+ 纵向高度 */
+  #enemyBenchRow .slot-box {
+    min-height: clamp(72px, 9.6dvh, 86px);
+    padding: 13px 5px 4px;
+  }
+  #enemyBenchRow .skills-list {
+    display: none;
+  }
+  #enemyBenchRow .card {
+    justify-content: center;
+    gap: 3px;
+  }
+  #enemyBenchRow .card-head {
+    padding: 3px 6px;
+  }
+
+  /* 敌我主战区「面对面」视觉重心放大：舒展立绘卡面，彻底告别扁平横条 */
+  .slot-box.active-slot {
+    width: clamp(370px, 68%, 540px);
+    min-height: clamp(134px, 18.2dvh, 156px);
+    padding: 16px 7px 6px;
+    border: 2px solid var(--gold);
+    background: rgba(255, 249, 232, 0.44);
+    box-shadow: 0 5px 16px rgba(74, 48, 22, 0.16), inset 0 1px 6px rgba(156, 111, 28, 0.14);
+  }
+  .slot-box.active-slot .card-art {
+    width: 32px;
+    height: 32px;
+    border-radius: 7px;
+  }
+  .slot-box.active-slot .card-art svg {
+    width: 28px;
+    height: 28px;
+  }
+  .slot-box.active-slot .card-head {
+    padding: 5px 8px;
+  }
+  .slot-box.active-slot .skills-list {
+    gap: 3.5px;
+    padding: 2px 6px 2px;
+  }
+  .slot-box.active-slot .skill-line {
+    padding: 3.5px 7px;
+    min-height: 26px;
+  }
+
+  /* 己方备战区保持舒展三卡位 */
+  #playerBenchRow .slot-box {
+    min-height: clamp(112px, 15dvh, 132px);
+  }
+
+  /* 底部手牌区：100% 全宽展示 + 更有实体卡牌纵深比例的卡片与悬停抬升 */
+  .hand-section {
+    padding-top: 5px;
+    gap: 3px;
+  }
+  .hand-body {
+    display: block;
+  }
+  .hand-cards {
+    padding: 11px 6px 5px;
+    gap: 10px;
+  }
+  .hand-card,
+  .hand-drop-placeholder {
+    flex: 0 0 clamp(184px, 19.2%, 234px);
+    min-width: 184px;
+    max-width: 234px;
+    min-height: 108px;
+    border-radius: 10px;
+  }
+  .hand-card .card-head {
+    padding: 5px 7px;
+  }
+  .hand-card .card-art {
+    width: 26px;
+    height: 26px;
+  }
+  .hand-card .card-art svg {
+    width: 22px;
+    height: 22px;
+  }
+  .hand-card .card-desc {
+    padding: 5px 8px 6px;
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+  .hand-card .skills-list {
+    gap: 3px;
+    padding: 2px 6px 4px;
+  }
+  .hand-card:hover {
+    transform: translateY(-10px) scale(1.03);
+  }
+
+  /* 右侧三段式游戏 HUD：顶部语音与裁判 → 中部「日志/Tips」舒展双标签页 → 底部战术按键与指令输入 */
+  .side-panel {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .side-voice-top {
+    flex-shrink: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    gap: 6px;
+  }
+  .side-tabs-bar {
+    flex-shrink: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 3px;
+    border-radius: 10px;
+    background: #e7d8ba;
+    border: 1px solid #c8ae82;
+    box-shadow: inset 0 1px 3px rgba(74, 48, 22, 0.14);
+  }
+  .side-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #5e4429;
+    font-family: inherit;
+    font-size: var(--fs-sub);
+    font-weight: 800;
+    padding: 5px 8px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+  }
+  .side-tab-btn:hover:not(.active) {
+    background: rgba(255, 252, 244, 0.62);
+    color: #2f2115;
+  }
+  .side-tab-btn.active {
+    background: linear-gradient(180deg, #fffdf8 0%, #f5ebd5 100%);
+    border-color: #c5a571;
+    color: #3a2615;
+    box-shadow: 0 1px 4px rgba(58, 36, 16, 0.16);
+  }
+  .side-tab-pane {
+    display: none;
+    flex: 1 1 0;
+    min-height: 0;
+    flex-direction: column;
+    gap: 6px;
+    overflow: hidden;
+  }
+  .side-tab-pane.active {
+    display: flex;
+  }
+  .side-tab-pane .notepad-log {
+    flex: 1 1 0;
+    min-height: 0;
+  }
+  .side-tab-pane .live-tip-box {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 12px;
+  }
+  .side-bottom-dock {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    border-top: 1.5px solid #d7c39f;
+    padding-top: 8px;
+  }
+  .tactical-actions-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px;
+  }
+  .tactical-actions-row .btn-sm {
+    padding: 8.5px 8px;
+    font-size: var(--fs-ui);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .tactical-actions-row .btn-defend {
+    background: linear-gradient(180deg, #eff5f3 0%, #d5e4e1 100%);
+    border-color: #6b9694;
+    color: #20494b;
+    box-shadow: 0 2px 5px rgba(32, 73, 75, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.78);
+  }
+  .tactical-actions-row .btn-defend:hover {
+    background: linear-gradient(180deg, #f5faf8 0%, #deece9 100%);
+    border-color: #4f7f7d;
+  }
+  .tactical-actions-row .btn-endturn {
+    background: linear-gradient(180deg, #cd9638 0%, #a97520 100%);
+    border-color: #8c5f17;
+    color: #fffdf8;
+    box-shadow: 0 2px 7px rgba(140, 95, 23, 0.28), inset 0 1px 0 rgba(255, 246, 214, 0.36);
+  }
+  .tactical-actions-row .btn-endturn:hover {
+    background: linear-gradient(180deg, #d8a040 0%, #b57e24 100%);
+    border-color: #7d5312;
+  }
+  .cmd-input-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) max-content;
+    gap: 6px;
+  }
+  .cmd-input-row input {
+    width: 100%;
+    min-width: 0;
+    padding: 7.5px 10px;
+    border: 1.5px solid #c9b086;
+    border-radius: 8px;
+    font-size: var(--fs-body);
+    font-family: inherit;
+    background: #fffdf7;
+    color: var(--ink);
+    box-shadow: inset 0 1px 3px rgba(84, 56, 24, 0.1);
+  }
+  .cmd-input-row input:focus {
+    outline: none;
+    border-color: var(--gold-deep);
+    box-shadow: inset 0 1px 3px rgba(84, 56, 24, 0.08), 0 0 0 2.5px rgba(198, 146, 44, 0.22);
+  }
+  .cmd-input-row .btn-sm {
+    padding: 7.5px 14px;
+    font-size: var(--fs-ui);
+    white-space: nowrap;
+  }
+
+  @media (min-width: 821px) and (max-height: 840px) {
+    .rival-table-bar { padding: 4px 10px; }
+    #enemyBenchRow .slot-box { min-height: 66px; }
+    .slot-box.active-slot { min-height: 120px; }
+    #playerBenchRow .slot-box { min-height: 104px; }
+    .hand-card, .hand-drop-placeholder { min-height: 96px; }
+  }
+  @media (max-width: 820px) and (orientation: portrait) {
+    .rival-table-text { white-space: normal; }
+    #enemyBenchRow .slot-box { min-height: 76px; }
+    .side-tab-pane { min-height: 160px; max-height: 220px; }
+  }
 </style>
 </head>
-<body>
-<div class="table-shell">
+<body data-lang="ja">
+<!-- 首帧防闪屏黑金预遮罩（含手绘矢量 SVG 言灵纹章 Logo） -->
+<div class="boot-splash" id="bootSplash" aria-hidden="true">
+  <svg class="boot-splash-emblem" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="splashGold" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#fff3c4"/>
+        <stop offset="50%" stop-color="#dfa93e"/>
+        <stop offset="100%" stop-color="#946218"/>
+      </linearGradient>
+      <linearGradient id="splashFire" x1="50%" y1="0%" x2="50%" y2="100%">
+        <stop offset="0%" stop-color="#ff8a4c"/>
+        <stop offset="55%" stop-color="#f04c2c"/>
+        <stop offset="100%" stop-color="#b82414"/>
+      </linearGradient>
+      <linearGradient id="splashWater" x1="35%" y1="0%" x2="65%" y2="100%">
+        <stop offset="0%" stop-color="#7ed4ff"/>
+        <stop offset="55%" stop-color="#3395e8"/>
+        <stop offset="100%" stop-color="#1a5fa8"/>
+      </linearGradient>
+      <radialGradient id="splashCore" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#2c2217"/>
+        <stop offset="100%" stop-color="#110d09"/>
+      </radialGradient>
+    </defs>
+    <circle cx="60" cy="60" r="55" fill="url(#splashCore)" stroke="url(#splashGold)" stroke-width="3.6"/>
+    <circle cx="60" cy="60" r="48" fill="none" stroke="rgba(246,216,144,0.34)" stroke-width="1.2" stroke-dasharray="4 4"/>
+    <polygon points="60,18 98,84 22,84" fill="none" stroke="url(#splashGold)" stroke-width="1.6" opacity="0.42"/>
+    <!-- 顶部火苗图腾（双层摇曳火舌） -->
+    <path d="M60 9 C64.5 16 70 20.5 70 27.2 C70 33.2 65.6 37.5 60 37.5 C54.4 37.5 50 33.2 50 27.2 C50 23.2 52.2 19.6 54.4 17 C54.4 19.8 55.6 21.4 56.8 21.8 C56.2 17.4 57.6 12.6 60 9 Z" fill="url(#splashFire)" stroke="#20120a" stroke-width="1.2"/>
+    <path d="M60 19.5 C62.5 23.4 64.5 25.8 64.5 29.2 C64.5 32.3 62.5 34.4 60 34.4 C57.5 34.4 55.5 32.3 55.5 29.2 C55.5 25.8 57.5 23.4 60 19.5 Z" fill="#ffe07d"/>
+    <!-- 左下水滴图腾（饱满水滴 + 弯月高光） -->
+    <path d="M28.5 67.5 C28.5 67.5 38.5 79.2 38.5 85.8 C38.5 91.6 34 96 28.5 96 C23 96 18.5 91.6 18.5 85.8 C18.5 79.2 28.5 67.5 28.5 67.5 Z" fill="url(#splashWater)" stroke="#121d2b" stroke-width="1.2"/>
+    <path d="M24.2 84.5 C23.6 87.6 24.8 90.6 27.2 91.8" fill="none" stroke="rgba(255,255,255,0.82)" stroke-width="2" stroke-linecap="round"/>
+    <!-- 右下雷电图腾（加宽加粗与火苗、水滴视觉体量三足平衡） -->
+    <polygon points="95.5,64 79,83 88.8,83 83.5,99 103.5,77.5 93,77.5" fill="#ffd247" stroke="#4f3407" stroke-width="1.4" stroke-linejoin="round"/>
+    <!-- 中央清晰太极双勾玉（完整描边外环 + 鲜明阴阳分区） -->
+    <circle cx="60" cy="62" r="19" fill="#16120e"/>
+    <path d="M60 43 A19 19 0 0 1 60 81 A9.5 9.5 0 0 1 60 62 A9.5 9.5 0 0 0 60 43 Z" fill="url(#splashGold)"/>
+    <circle cx="60" cy="62" r="19" fill="none" stroke="#f5d585" stroke-width="2"/>
+    <circle cx="60" cy="52.5" r="3.4" fill="#fff0bc"/>
+    <circle cx="60" cy="71.5" r="3.4" fill="#16120e"/>
+  </svg>
+  <div class="boot-splash-title">言霊デュエル</div>
+  <div class="boot-splash-sub">KOTODAMA DUEL</div>
+</div>
+
+<div class="table-shell app-shell">
   <!-- 顶部状态与快捷入口栏 -->
   <header class="topbar">
     <div class="brand">
-      <span class="brand-title">言霊デュエル<span class="zh-inline" lang="zh-CN">（言灵对决）</span></span>
-      <span class="turn-pill" id="turnBadge">ターン 1：あなたの番<span class="zh-inline" lang="zh-CN">（第 1 回合：你的回合）</span></span>
+      <svg class="brand-logo-svg" viewBox="0 0 120 120" aria-hidden="true">
+        <defs>
+          <linearGradient id="topGold" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#fff3c4"/>
+            <stop offset="50%" stop-color="#dfa93e"/>
+            <stop offset="100%" stop-color="#946218"/>
+          </linearGradient>
+          <linearGradient id="topFire" x1="50%" y1="0%" x2="50%" y2="100%">
+            <stop offset="0%" stop-color="#ff8a4c"/>
+            <stop offset="55%" stop-color="#f04c2c"/>
+            <stop offset="100%" stop-color="#b82414"/>
+          </linearGradient>
+          <linearGradient id="topWater" x1="35%" y1="0%" x2="65%" y2="100%">
+            <stop offset="0%" stop-color="#7ed4ff"/>
+            <stop offset="55%" stop-color="#3395e8"/>
+            <stop offset="100%" stop-color="#1a5fa8"/>
+          </linearGradient>
+        </defs>
+        <circle cx="60" cy="60" r="55" fill="#1d140c" stroke="url(#topGold)" stroke-width="4.5"/>
+        <polygon points="60,18 98,84 22,84" fill="none" stroke="url(#topGold)" stroke-width="2" opacity="0.42"/>
+        <path d="M60 9 C64.5 16 70 20.5 70 27.2 C70 33.2 65.6 37.5 60 37.5 C54.4 37.5 50 33.2 50 27.2 C50 23.2 52.2 19.6 54.4 17 C54.4 19.8 55.6 21.4 56.8 21.8 C56.2 17.4 57.6 12.6 60 9 Z" fill="url(#topFire)"/>
+        <path d="M60 19.5 C62.5 23.4 64.5 25.8 64.5 29.2 C64.5 32.3 62.5 34.4 60 34.4 C57.5 34.4 55.5 32.3 55.5 29.2 C55.5 25.8 57.5 23.4 60 19.5 Z" fill="#ffe07d"/>
+        <path d="M28.5 67.5 C28.5 67.5 38.5 79.2 38.5 85.8 C38.5 91.6 34 96 28.5 96 C23 96 18.5 91.6 18.5 85.8 C18.5 79.2 28.5 67.5 28.5 67.5 Z" fill="url(#topWater)"/>
+        <path d="M24.2 84.5 C23.6 87.6 24.8 90.6 27.2 91.8" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2.2" stroke-linecap="round"/>
+        <polygon points="95.5,64 79,83 88.8,83 83.5,99 103.5,77.5 93,77.5" fill="#ffd247" stroke="#4f3407" stroke-width="1.2" stroke-linejoin="round"/>
+        <circle cx="60" cy="62" r="19" fill="#16120e"/>
+        <path d="M60 43 A19 19 0 0 1 60 81 A9.5 9.5 0 0 1 60 62 A9.5 9.5 0 0 0 60 43 Z" fill="url(#topGold)"/>
+        <circle cx="60" cy="62" r="19" fill="none" stroke="#f5d585" stroke-width="2.4"/>
+        <circle cx="60" cy="52.5" r="3.5" fill="#fff0bc"/>
+        <circle cx="60" cy="71.5" r="3.5" fill="#16120e"/>
+      </svg>
+      <span class="brand-title"><span class="lang-ja">言霊デュエル</span><span class="lang-zh">言灵对决</span></span>
+      <span class="turn-pill" id="turnBadge">ターン 1：あなたの番</span>
     </div>
     <div class="top-actions">
-      <button class="top-btn" id="btnFullscreen" title="横画面・全画面切替（切换横屏全屏）"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>全画面<span class="zh-inline" lang="zh-CN">（全屏）</span></button>
-      <button class="top-btn" id="btnToggleLog" title="音声・AI通信ログ表示（查看实时语音与 AI 链路 Log）"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Log<span class="log-err-dot" id="logErrDot"></span></button>
-      <button class="top-btn guide-on" id="btnGuideMode" title="初回操作ガイド切替（开启/关闭首次操作浮动+语音引导）"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z"/><circle cx="12" cy="12" r="1.2"/></svg>ガイド ON<span class="zh-inline" lang="zh-CN">（引导模式）</span></button>
-      <button class="top-btn" id="btnResetMatch"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>再戦<span class="zh-inline" lang="zh-CN">（重开）</span></button>
-      <button class="top-btn" id="btnOpenCodex" title="モンスター・技・グッズ図鑑（查看全部怪兽、技能类型与道具图鉴）"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2zm8 14H5v-6h6v6zm0-8H5V5h6v6zm8 8h-6v-6h6v6zm0-8h-6V5h6v6z"/></svg>図鑑<span class="zh-inline" lang="zh-CN">（图鉴）</span></button>
-      <button class="top-btn" id="btnOpenRules"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>ルール<span class="zh-inline" lang="zh-CN">（规则）</span></button>
-      <button class="top-btn" id="btnOpenSettings"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.74 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.05.3-.08.63-.08.94s.03.64.08.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.12.22.37.3.6.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.23.08.48 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg>設定<span class="zh-inline" lang="zh-CN">（设置）</span></button>
+      <!-- 顶栏 SVG 语言切换胶囊 -->
+      <div class="lang-switch" id="topbarLangSwitch" role="group" aria-label="Language">
+        <button type="button" class="lang-pill active" data-set-lang="ja" title="日本語に切替">
+          <svg class="lang-badge-svg" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="1.5" y="2.5" width="21" height="19" rx="5" fill="rgba(255,244,214,0.16)" stroke="currentColor" stroke-width="1.5"/>
+            <text x="12" y="15.8" text-anchor="middle" font-size="11.5" font-weight="800" fill="currentColor" font-family="Noto Sans JP, sans-serif">あ</text>
+          </svg>
+          <span>日本語</span>
+        </button>
+        <button type="button" class="lang-pill" data-set-lang="zh" title="切换为中文">
+          <svg class="lang-badge-svg" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="1.5" y="2.5" width="21" height="19" rx="5" fill="rgba(255,244,214,0.16)" stroke="currentColor" stroke-width="1.5"/>
+            <text x="12" y="15.8" text-anchor="middle" font-size="11.5" font-weight="800" fill="currentColor" font-family="Noto Sans SC, sans-serif">文</text>
+          </svg>
+          <span>中文</span>
+        </button>
+      </div>
+      <button class="top-btn" id="btnFullscreen"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg><span class="lang-ja">全画面</span><span class="lang-zh">全屏</span></button>
+      <button class="top-btn" id="btnToggleLog"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>Log<span class="log-err-dot" id="logErrDot"></span></button>
+      <button class="top-btn guide-on" id="btnGuideMode"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z"/><circle cx="12" cy="12" r="1.2"/></svg><span class="lang-ja">ガイド ON</span><span class="lang-zh">引导 ON</span></button>
+      <button class="top-btn" id="btnResetMatch"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg><span class="lang-ja">再戦</span><span class="lang-zh">重开</span></button>
+      <button class="top-btn" id="btnOpenCodex"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2zm8 14H5v-6h6v6zm0-8H5V5h6v6zm8 8h-6v-6h6v6zm0-8h-6V5h6v6z"/></svg><span class="lang-ja">図鑑</span><span class="lang-zh">图鉴</span></button>
+      <button class="top-btn" id="btnOpenRules"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg><span class="lang-ja">ルール</span><span class="lang-zh">规则</span></button>
+      <button class="top-btn" id="btnOpenSettings"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.74 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.05.3-.08.63-.08.94s.03.64.08.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.12.22.37.3.6.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.23.08.48 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg><span class="lang-ja">設定</span><span class="lang-zh">设置</span></button>
     </div>
   </header>
 
   <main class="arena-grid">
-    <!-- 左侧：实体帆布对战垫（对手半场 / 分界线 / 己方半场 / 手牌区） -->
+    <!-- 左侧：实体帆布对战垫（对手半场 / 分界线 / 己方半场 / 语音 HUD / 手牌区） -->
     <section class="playmat">
       <div class="turn-banner" id="turnBanner"></div>
       <div class="prize-toast" id="prizeToast" role="status" aria-live="polite"></div>
+
+      <!-- 实时语音收音与解析状态 HUD 浮层（带 SVG 声波动画） -->
+      <div class="voice-hud" id="voiceHud" role="status" aria-live="polite">
+        <span class="voice-hud-icon" id="voiceHudIcon">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <rect class="voice-hud-wave-bar" x="2" y="9" width="2.6" height="6" rx="1.3" fill="currentColor"/>
+            <rect class="voice-hud-wave-bar" x="6.5" y="5" width="2.6" height="14" rx="1.3" fill="currentColor"/>
+            <rect class="voice-hud-wave-bar" x="11" y="3" width="2.6" height="18" rx="1.3" fill="currentColor"/>
+            <rect class="voice-hud-wave-bar" x="15.5" y="6" width="2.6" height="12" rx="1.3" fill="currentColor"/>
+            <rect class="voice-hud-wave-bar" x="20" y="9" width="2.6" height="6" rx="1.3" fill="currentColor"/>
+          </svg>
+        </span>
+        <div class="voice-hud-body">
+          <span class="voice-hud-label" id="voiceHudLabel">聴取中：</span>
+          <span class="voice-hud-text" id="voiceHudText"></span>
+        </div>
+      </div>
+
       <!-- 非阻塞引导浮动提示卡 -->
       <div class="guide-float" id="guideFloat" role="status" aria-live="polite">
         <div class="guide-card">
           <div class="guide-body">
-            <div class="guide-tag" id="guideTag"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z"/><circle cx="12" cy="12" r="1.2"/></svg>ガイド<span class="zh-inline" lang="zh-CN">（操作引导）</span></div>
+            <div class="guide-tag" id="guideTag"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z"/><circle cx="12" cy="12" r="1.2"/></svg><span class="lang-ja">ガイド</span><span class="lang-zh">引导</span></div>
             <div class="guide-ja" id="guideJa"></div>
             <div class="guide-zh" id="guideZh" lang="zh-CN"></div>
           </div>
-          <button class="guide-close" id="btnCloseGuide" title="关闭提示">✕</button>
+          <button class="guide-close" id="btnCloseGuide" title="Close">✕</button>
         </div>
       </div>
-      <!-- 对手半场 -->
+
+      <!-- 对手台词融入牌桌顶部横条 -->
+      <div class="rival-table-bar">
+        <span class="rival-table-badge"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg><span class="lang-ja">相手レン</span><span class="lang-zh">对手 莲</span></span>
+        <div class="rival-table-text">
+          <span class="bubble-ja" id="rivalJa">「さあ、手加減なしで行くぜ！」</span>
+          <span class="bubble-zh" id="rivalZh" lang="zh-CN">“来吧，我可不会手下留情！”</span>
+        </div>
+      </div>
+
+      <!-- 对手半场（紧凑状态备战区 + 视觉放大主战区） -->
       <div class="side-half">
         <div class="zone-col">
-          <div class="zone-label">相手サイド<span class="zh-line" lang="zh-CN">对手奖赏卡</span></div>
+          <div class="zone-label"><span class="lang-ja">相手サイド</span><span class="lang-zh">对手奖赏卡</span></div>
           <div class="prize-stack" id="enemyPrizes"></div>
-          <div class="prize-count-pill" id="enemyPrizeCount">取得 0/3</div>
+          <div class="prize-count-pill" id="enemyPrizeCount">0/3</div>
         </div>
 
         <div class="field-center">
@@ -2920,12 +4128,12 @@
         </div>
 
         <div class="zone-col">
-          <div class="pile-box" id="enemyDeckBox" role="button" tabindex="0" title="初期デッキリストを確認（查看对手初始卡表）">
+          <div class="pile-box" id="enemyDeckBox" role="button" tabindex="0">
             <strong id="enemyDeckCount">0</strong>
             <span class="pile-ja">山札</span>
             <span class="pile-zh" lang="zh-CN">牌库</span>
           </div>
-          <div class="pile-box" id="enemyTrashBox" role="button" tabindex="0" title="相手のトラッシュを確認（查看对手弃牌区）">
+          <div class="pile-box" id="enemyTrashBox" role="button" tabindex="0">
             <strong id="enemyTrashCount">0</strong>
             <span class="pile-ja">トラッシュ</span>
             <span class="pile-zh" lang="zh-CN">弃牌区</span>
@@ -2935,20 +4143,20 @@
 
       <!-- 中心分界线与本回合可用次数指示 -->
       <div class="mat-divider">
-        <span class="vs-badge">VS 相手レン<span class="zh-inline" lang="zh-CN">（对手 莲）</span></span>
+        <span class="vs-badge"><span class="lang-ja">VS レン</span><span class="lang-zh">VS 莲</span></span>
         <div class="turn-limits" id="turnLimits">
-          <span class="limit-pill" id="limitEnergy"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v11h3v9l7-12h-4l4-8H7z"/></svg>エネ 1/1<span class="zh-inline" lang="zh-CN">（贴能）</span></span>
-          <span class="limit-pill" id="limitSupporter"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l7.1-1.01L12 2z"/></svg>サポート 1/1<span class="zh-inline" lang="zh-CN">（支援）</span></span>
-          <span class="limit-pill" id="limitRetreat"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>交代 1/1<span class="zh-inline" lang="zh-CN">（撤退）</span></span>
+          <span class="limit-pill" id="limitEnergy"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v11h3v9l7-12h-4l4-8H7z"/></svg>エネ 1/1</span>
+          <span class="limit-pill" id="limitSupporter"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l7.1-1.01L12 2z"/></svg>サポート 1/1</span>
+          <span class="limit-pill" id="limitRetreat"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>交代 1/1</span>
         </div>
       </div>
 
-      <!-- 己方半场 -->
+      <!-- 己方半场（视觉放大主战区 + 舒展备战区） -->
       <div class="side-half">
         <div class="zone-col">
-          <div class="zone-label">サイド<span class="zh-line" lang="zh-CN">己方奖赏卡</span></div>
+          <div class="zone-label"><span class="lang-ja">自分サイド</span><span class="lang-zh">己方奖赏卡</span></div>
           <div class="prize-stack" id="playerPrizes"></div>
-          <div class="prize-count-pill" id="playerPrizeCount">取得 0/3</div>
+          <div class="prize-count-pill" id="playerPrizeCount">0/3</div>
         </div>
 
         <div class="field-center">
@@ -2957,12 +4165,12 @@
         </div>
 
         <div class="zone-col">
-          <div class="pile-box" id="playerDeckBox" role="button" tabindex="0" title="初期デッキリストを確認（查看己方初始卡表）">
+          <div class="pile-box" id="playerDeckBox" role="button" tabindex="0">
             <strong id="playerDeckCount">0</strong>
             <span class="pile-ja">山札</span>
             <span class="pile-zh" lang="zh-CN">牌库</span>
           </div>
-          <div class="pile-box" id="playerTrashBox" role="button" tabindex="0" title="自分のトラッシュを確認（查看己方弃牌区与可回收能量）">
+          <div class="pile-box" id="playerTrashBox" role="button" tabindex="0">
             <strong id="playerTrashCount">0</strong>
             <span class="pile-ja">トラッシュ</span>
             <span class="pile-zh" lang="zh-CN">弃牌区</span>
@@ -2970,59 +4178,55 @@
         </div>
       </div>
 
-      <!-- 己方手牌区与右侧防御/回合结束操作列 -->
+      <!-- 100% 全宽实体比例手牌区 -->
       <div class="hand-section">
         <div class="hand-header">
-          <div class="zone-label" style="text-align:left;">手札<span class="zh-inline" lang="zh-CN">（手牌）</span></div>
+          <div class="zone-label" style="text-align:left;"><span class="lang-ja">手札</span><span class="lang-zh">手牌</span></div>
           <div class="zone-label" id="handSelectionHint"></div>
         </div>
         <div class="hand-body">
           <div class="hand-cards" id="playerHand"></div>
-          <div class="hand-actions">
-            <button class="btn-sm btn-defend" id="btnDefend"><span><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg>防御態勢</span><span class="btn-zh" lang="zh-CN">（防御）</span></button>
-            <button class="btn-sm btn-endturn" id="btnEndTurn"><span><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18l8.5-6L6 6v12zm10-12v12h2V6h-2z"/></svg>ターン終了</span><span class="btn-zh" lang="zh-CN">（结束回合）</span></button>
-          </div>
         </div>
       </div>
     </section>
 
-    <!-- 右侧：语音通话、双语对局记录与实时 Tips 建议 -->
+    <!-- 右侧：三段式游戏 HUD（语音/裁判 → 日志/Tips 双标签页 → 战术按钮与指令输入） -->
     <aside class="side-panel">
       <!-- 实时语音与 AI 链路调试 Log 抽屉（默认收起，不占牌桌空间） -->
-      <div class="debug-log-drawer" id="debugLogDrawer" aria-label="音声・AI通信ログ（语音与 AI 链路 Log）">
+      <div class="debug-log-drawer" id="debugLogDrawer">
         <div class="dlog-head">
-          <span><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>音声・AI通信ログ<span class="zh-inline" lang="zh-CN">（语音与 AI 链路）</span></span>
-          <button class="btn-sm" id="btnCloseLogDrawer" style="padding:2px 7px;font-size:11px;">✕</button>
+          <span><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg><span class="lang-ja">音声・AI通信ログ</span><span class="lang-zh">语音与 AI 链路日志</span></span>
+          <button class="btn-sm" id="btnCloseLogDrawer" style="padding:2px 8px;font-size:12px;">✕</button>
         </div>
         <div class="dlog-filters" id="dlogFilters">
-          <button class="dlog-chip active" data-cat="ALL">すべて<span class="zh-inline" lang="zh-CN">（全部）</span></button>
+          <button class="dlog-chip active" data-cat="ALL"><span class="lang-ja">すべて</span><span class="lang-zh">全部</span></button>
           <button class="dlog-chip" data-cat="ASR">ASR</button>
           <button class="dlog-chip" data-cat="NLU">NLU</button>
           <button class="dlog-chip" data-cat="TTS">TTS</button>
           <button class="dlog-chip" data-cat="AEC">AEC</button>
           <button class="dlog-chip" data-cat="ERR">ERR</button>
         </div>
-        <div class="dlog-list" id="debugLogList" lang="zh-CN"></div>
+        <div class="dlog-list" id="debugLogList"></div>
         <div class="dlog-foot">
-          <button class="btn-sm" id="btnCopyLog">コピー<span class="zh-inline" lang="zh-CN">（复制）</span></button>
-          <button class="btn-sm primary" id="btnExportLog">JSON出力<span class="zh-inline" lang="zh-CN">（导出）</span></button>
-          <button class="btn-sm" id="btnClearLog">クリア<span class="zh-inline" lang="zh-CN">（清空）</span></button>
+          <button class="btn-sm" id="btnCopyLog"><span class="lang-ja">コピー</span><span class="lang-zh">复制</span></button>
+          <button class="btn-sm primary" id="btnExportLog"><span class="lang-ja">JSON出力</span><span class="lang-zh">导出 JSON</span></button>
+          <button class="btn-sm" id="btnClearLog"><span class="lang-ja">クリア</span><span class="lang-zh">清空</span></button>
         </div>
       </div>
 
+      <!-- 顶部：语音主控与裁判播报 -->
       <div class="panel-title">
-        <span>音声と対局メモ<span class="zh-inline" lang="zh-CN">（语音与记录）</span></span>
-        <span style="display:inline-flex;align-items:center;"><span class="voice-wave-meter" id="voiceWaveMeter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span class="call-state-badge" id="callStateBadge">待機<span class="zh-inline" lang="zh-CN">（待机）</span></span></span>
+        <span><span class="lang-ja">音声コントロール</span><span class="lang-zh">语音控制台</span></span>
+        <span style="display:inline-flex;align-items:center;"><span class="voice-wave-meter" id="voiceWaveMeter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span class="call-state-badge" id="callStateBadge">待機</span></span>
       </div>
 
-      <div class="bubble rival">
-        <div class="bubble-role">相手レン<span class="zh-inline" lang="zh-CN">（对手 莲）</span></div>
-        <div class="bubble-ja" id="rivalJa">「さあ、手加減なしで行くぜ！」</div>
-        <div class="bubble-zh" id="rivalZh" lang="zh-CN">“来吧，我可不会手下留情！”</div>
+      <div class="side-voice-top">
+        <button class="btn-voice" id="btnLiveCall"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.46.57 3.58a1 1 0 0 1-.25 1.01l-2.2 2.2z"/></svg><span class="lang-ja">通話開始</span><span class="lang-zh">开始通话</span></button>
+        <button class="btn-ptt" id="btnRecordVoice"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg><span class="lang-ja">単発</span><span class="lang-zh">单次</span></button>
       </div>
 
       <div class="bubble">
-        <div class="bubble-role">審判<span class="zh-inline" lang="zh-CN">（裁判）</span></div>
+        <div class="bubble-role"><span class="lang-ja">審判</span><span class="lang-zh">裁判</span></div>
         <div class="bubble-ja" id="refereeJa">あなたのターンです。日本語・中国語のどちらでも話しかけてください。</div>
         <div class="bubble-zh" id="refereeZh" lang="zh-CN">轮到你的回合，支持中文或日语语音及文字下达指令。</div>
       </div>
@@ -3034,32 +4238,37 @@
         <div class="pending-btns" id="pendingBtns"></div>
       </div>
 
-      <!-- 双语对局日志（每条日语换行显示中文） -->
-      <div class="log-wrap">
-        <div class="log-bar">対局ログ<span class="zh-inline" lang="zh-CN">（对局记录）</span></div>
+      <!-- 中部：对局日志 / 战术 Tips 双标签切换区 -->
+      <div class="side-tabs-bar" role="tablist">
+        <button type="button" class="side-tab-btn active" id="tabBtnLog" role="tab" aria-selected="true"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg><span class="lang-ja">対局ログ</span><span class="lang-zh">对局日志</span></button>
+        <button type="button" class="side-tab-btn" id="tabBtnTip" role="tab" aria-selected="false"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21h6v-1H9v1zm3-19a7 7 0 0 0-4 12.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26A7 7 0 0 0 12 2z"/></svg><span class="lang-ja">戦術 Tips</span><span class="lang-zh">战术 Tips</span></button>
+      </div>
+
+      <div class="side-tab-pane active" id="sideTabLog">
         <div class="notepad-log" id="matchLog"></div>
       </div>
 
-      <!-- 语音通话 / 输入框 / 实时 Tips 建议 -->
-      <div class="voice-dock">
-        <div class="voice-controls-grid">
-          <button class="btn-voice" id="btnLiveCall"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.46.57 3.58a1 1 0 0 1-.25 1.01l-2.2 2.2z"/></svg>通話開始<br><span class="btn-zh" lang="zh-CN">（开始持续通话）</span></button>
-          <button class="btn-ptt" id="btnRecordVoice" title="単発音声入力（单次按录）"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>単発<br><span class="btn-zh" lang="zh-CN">（单次）</span></button>
-          <input type="text" id="cmdInput" placeholder="コマンド入力（输入指令）" />
-          <button class="btn-sm primary" id="btnSendCmd">送信<span class="zh-inline" lang="zh-CN">（发送）</span></button>
-        </div>
-
-        <!-- 实时战术建议（本地即时刷新 + 按需 AI 深度分析） -->
+      <div class="side-tab-pane" id="sideTabTip">
         <div class="live-tip-box" id="liveTipBox">
           <div class="live-tip-label" style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21h6v-1H9v1zm3-19a7 7 0 0 0-4 12.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26A7 7 0 0 0 12 2z"/></svg>Tips<span id="liveTipAiTag" style="display:none;margin-left:5px;font-size:9.5px;padding:0 4px;border-radius:4px;background:rgba(46,107,71,0.14);color:var(--ok);">AI</span></span>
-            <button class="btn-sm" id="btnAiTip" style="padding:1px 7px;font-size:10px;"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/></svg>AI戦術<span class="zh-inline" lang="zh-CN">（AI分析）</span></button>
+            <span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21h6v-1H9v1zm3-19a7 7 0 0 0-4 12.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26A7 7 0 0 0 12 2z"/></svg>Tips<span id="liveTipAiTag" style="display:none;margin-left:5px;font-size:11px;padding:0 5px;border-radius:4px;background:rgba(46,107,71,0.14);color:var(--ok);">AI</span></span>
+            <button class="btn-sm" id="btnAiTip" style="padding:3px 9px;font-size:12px;"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/></svg><span class="lang-ja">AI戦術</span><span class="lang-zh">AI战术</span></button>
           </div>
           <div class="live-tip-ja" id="liveTipJa"></div>
           <div class="live-tip-zh" id="liveTipZh" lang="zh-CN"></div>
         </div>
+      </div>
 
-
+      <!-- 底部：战术操作大按钮与文本指令输入 -->
+      <div class="side-bottom-dock">
+        <div class="tactical-actions-row">
+          <button class="btn-sm btn-defend" id="btnDefend"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg><span class="lang-ja">防御態勢</span><span class="lang-zh">防御姿态</span></button>
+          <button class="btn-sm btn-endturn" id="btnEndTurn"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18l8.5-6L6 6v12zm10-12v12h2V6h-2z"/></svg><span class="lang-ja">ターン終了</span><span class="lang-zh">结束回合</span></button>
+        </div>
+        <div class="cmd-input-row">
+          <input type="search" id="cmdInput" name="kotodama_cmd_search" placeholder="コマンド入力" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" />
+          <button class="btn-sm primary" id="btnSendCmd"><span class="lang-ja">送信</span><span class="lang-zh">发送</span></button>
+        </div>
       </div>
     </aside>
   </main>
@@ -3068,11 +4277,11 @@
 <!-- 战斗区手动点击弹出菜单 -->
 <div class="action-popover" id="actionPopover"></div>
 
-<!-- 弃牌区 / 初始卡表双语预览弹窗 -->
+<!-- 弃牌区 / 初始卡表预览弹窗 -->
 <div class="modal-backdrop" id="pileModal">
   <div class="modal-box" style="max-width:640px;">
     <div class="modal-head">
-      <h2 id="pileModalTitle">トラッシュ<span class="zh-inline" lang="zh-CN">（弃牌区）</span></h2>
+      <h2 id="pileModalTitle">トラッシュ</h2>
       <button class="btn-sm" id="btnClosePileTop">✕</button>
     </div>
     <div id="pileModalBody"></div>
@@ -3083,50 +4292,104 @@
 <div class="modal-backdrop" id="codexModal">
   <div class="modal-box">
     <div class="modal-head">
-      <h2><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2zm8 14H5v-6h6v6zm0-8H5V5h6v6zm8 8h-6v-6h6v6zm0-8h-6V5h6v6z"/></svg>カード図鑑<span class="zh-inline" lang="zh-CN">（卡牌图鉴）</span></h2>
+      <h2><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2zm8 14H5v-6h6v6zm0-8H5V5h6v6zm8 8h-6v-6h6v6zm0-8h-6V5h6v6z"/></svg><span class="lang-ja">カード図鑑</span><span class="lang-zh">卡牌图鉴</span></h2>
       <button class="btn-sm" id="btnCloseCodexTop">✕</button>
     </div>
     <div class="codex-legend">
-      <span><span class="skill-tag normal">通常·前</span> 通常ワザ：相手バトル場のみ（弱点+20）<span class="zh-inline" lang="zh-CN">／普通技能：仅攻击对手战斗区（计算弱点 +20）</span></span>
-      <span><span class="skill-tag snipe"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm0-13a5 5 0 1 0 5 5 5 5 0 0 0-5-5zm0 8a3 3 0 1 1 3-3 3 3 0 0 1-3 3zm0-4.5A1.5 1.5 0 1 0 13.5 12 1.5 1.5 0 0 0 12 10.5z"/></svg>狙撃</span> 狙撃ワザ：バトル場・ベンチどちらも可（ベンチは弱点なし）<span class="zh-inline" lang="zh-CN">／狙击技能：可打战斗区或备战区（对备战区不计弱点）</span></span>
-      <span>弱点相性：水→炎→雷→水（+20）<span class="zh-inline" lang="zh-CN">／弱点循环：水→炎→雷→水（+20）</span></span>
+      <span class="lang-ja"><span class="skill-tag normal">通常·前</span> 通常ワザ：相手バトル場のみ（弱点+20）</span>
+      <span class="lang-zh"><span class="skill-tag normal">普通·前</span> 普通技能：仅攻击对手战斗区（计算弱点 +20）</span>
+      <span class="lang-ja"><span class="skill-tag snipe"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm0-13a5 5 0 1 0 5 5 5 5 0 0 0-5-5zm0 8a3 3 0 1 1 3-3 3 3 0 0 1-3 3zm0-4.5A1.5 1.5 0 1 0 13.5 12 1.5 1.5 0 0 0 12 10.5z"/></svg>狙撃</span> 狙撃ワザ：バトル場・ベンチどちらも可（ベンチは弱点なし）</span>
+      <span class="lang-zh"><span class="skill-tag snipe"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm0-13a5 5 0 1 0 5 5 5 5 0 0 0-5-5zm0 8a3 3 0 1 1 3-3 3 3 0 0 1-3 3zm0-4.5A1.5 1.5 0 1 0 13.5 12 1.5 1.5 0 0 0 12 10.5z"/></svg>狙击</span> 狙击技能：可打战斗区或备战区（对备战区不计弱点）</span>
+      <span class="lang-ja">弱点相性：水→炎→雷→水（+20）</span>
+      <span class="lang-zh">属性克制：水→火→雷→水（+20）</span>
     </div>
     <div class="codex-filters" id="codexFilters">
-      <button class="dlog-chip active" data-codex="ALL">すべて<span class="zh-inline" lang="zh-CN">（全部）</span></button>
-      <button class="dlog-chip" data-codex="player">自分モンスター<span class="zh-inline" lang="zh-CN">（己方怪兽）</span></button>
-      <button class="dlog-chip" data-codex="opponent">相手モンスター<span class="zh-inline" lang="zh-CN">（对手怪兽）</span></button>
-      <button class="dlog-chip" data-codex="items">エネ・グッズ・サポート<span class="zh-inline" lang="zh-CN">（能量・道具・支援者）</span></button>
+      <button class="dlog-chip active" data-codex="ALL"><span class="lang-ja">すべて</span><span class="lang-zh">全部</span></button>
+      <button class="dlog-chip" data-codex="player"><span class="lang-ja">自分モンスター</span><span class="lang-zh">己方怪兽</span></button>
+      <button class="dlog-chip" data-codex="opponent"><span class="lang-ja">相手モンスター</span><span class="lang-zh">对手怪兽</span></button>
+      <button class="dlog-chip" data-codex="items"><span class="lang-ja">エネ・グッズ・サポート</span><span class="lang-zh">能量・道具・支援卡</span></button>
     </div>
     <div class="codex-grid" id="codexGrid"></div>
   </div>
 </div>
 
-<!-- 开局规则说明弹窗 -->
+<!-- 开局规则说明弹窗（SVG 品牌纹章 + 语言切换胶囊 + 单栏大字号规则） -->
 <div class="modal-backdrop open" id="rulesModal">
   <div class="modal-box">
     <div class="modal-head">
-      <h2><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg>言霊デュエルのルール説明<span class="zh-inline" lang="zh-CN">（言灵对决规则说明）</span></h2>
-      <button class="btn-sm" id="btnCloseRulesTop">✕</button>
+      <div class="rules-brand-head">
+        <svg class="rules-brand-logo" viewBox="0 0 120 120" aria-hidden="true">
+          <defs>
+            <linearGradient id="rulesGold" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#fff3c4"/>
+              <stop offset="50%" stop-color="#dfa93e"/>
+              <stop offset="100%" stop-color="#946218"/>
+            </linearGradient>
+            <linearGradient id="rulesFire" x1="50%" y1="0%" x2="50%" y2="100%">
+              <stop offset="0%" stop-color="#ff8a4c"/>
+              <stop offset="55%" stop-color="#f04c2c"/>
+              <stop offset="100%" stop-color="#b82414"/>
+            </linearGradient>
+            <linearGradient id="rulesWater" x1="35%" y1="0%" x2="65%" y2="100%">
+              <stop offset="0%" stop-color="#7ed4ff"/>
+              <stop offset="55%" stop-color="#3395e8"/>
+              <stop offset="100%" stop-color="#1a5fa8"/>
+            </linearGradient>
+          </defs>
+          <circle cx="60" cy="60" r="55" fill="#1d140c" stroke="url(#rulesGold)" stroke-width="4.5"/>
+          <polygon points="60,18 98,84 22,84" fill="none" stroke="url(#rulesGold)" stroke-width="2" opacity="0.42"/>
+          <path d="M60 9 C64.5 16 70 20.5 70 27.2 C70 33.2 65.6 37.5 60 37.5 C54.4 37.5 50 33.2 50 27.2 C50 23.2 52.2 19.6 54.4 17 C54.4 19.8 55.6 21.4 56.8 21.8 C56.2 17.4 57.6 12.6 60 9 Z" fill="url(#rulesFire)"/>
+          <path d="M60 19.5 C62.5 23.4 64.5 25.8 64.5 29.2 C64.5 32.3 62.5 34.4 60 34.4 C57.5 34.4 55.5 32.3 55.5 29.2 C55.5 25.8 57.5 23.4 60 19.5 Z" fill="#ffe07d"/>
+          <path d="M28.5 67.5 C28.5 67.5 38.5 79.2 38.5 85.8 C38.5 91.6 34 96 28.5 96 C23 96 18.5 91.6 18.5 85.8 C18.5 79.2 28.5 67.5 28.5 67.5 Z" fill="url(#rulesWater)"/>
+          <path d="M24.2 84.5 C23.6 87.6 24.8 90.6 27.2 91.8" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2.2" stroke-linecap="round"/>
+          <polygon points="95.5,64 79,83 88.8,83 83.5,99 103.5,77.5 93,77.5" fill="#ffd247" stroke="#4f3407" stroke-width="1.2" stroke-linejoin="round"/>
+          <circle cx="60" cy="62" r="19" fill="#16120e"/>
+          <path d="M60 43 A19 19 0 0 1 60 81 A9.5 9.5 0 0 1 60 62 A9.5 9.5 0 0 0 60 43 Z" fill="url(#rulesGold)"/>
+          <circle cx="60" cy="62" r="19" fill="none" stroke="#f5d585" stroke-width="2.4"/>
+          <circle cx="60" cy="52.5" r="3.5" fill="#fff0bc"/>
+          <circle cx="60" cy="71.5" r="3.5" fill="#16120e"/>
+        </svg>
+        <h2><span class="lang-ja">言霊デュエル・ルール説明</span><span class="lang-zh">言灵对决・规则说明</span></h2>
+      </div>
+      <div class="rules-head-right">
+        <div class="lang-switch light" id="rulesLangSwitch" role="group" aria-label="Language">
+          <button type="button" class="lang-pill active" data-set-lang="ja">
+            <svg class="lang-badge-svg" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="1.5" y="2.5" width="21" height="19" rx="5" fill="rgba(160,114,40,0.12)" stroke="currentColor" stroke-width="1.5"/>
+              <text x="12" y="15.8" text-anchor="middle" font-size="11.5" font-weight="800" fill="currentColor" font-family="Noto Sans JP, sans-serif">あ</text>
+            </svg>
+            <span>日本語</span>
+          </button>
+          <button type="button" class="lang-pill" data-set-lang="zh">
+            <svg class="lang-badge-svg" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="1.5" y="2.5" width="21" height="19" rx="5" fill="rgba(160,114,40,0.12)" stroke="currentColor" stroke-width="1.5"/>
+              <text x="12" y="15.8" text-anchor="middle" font-size="11.5" font-weight="800" fill="currentColor" font-family="Noto Sans SC, sans-serif">文</text>
+            </svg>
+            <span>中文</span>
+          </button>
+        </div>
+        <button class="btn-sm" id="btnCloseRulesTop">✕</button>
+      </div>
     </div>
-    <div class="rules-grid">
-      <div class="rules-block">
-        <h3>日本語ルール</h3>
+    <div class="rules-single-wrap">
+      <div class="rules-block" id="rulesBlockJa">
+        <h3>基本ルール</h3>
         <ul class="rules-list" id="rulesModalListJa"></ul>
       </div>
-      <div class="rules-block" lang="zh-CN">
-        <h3>中文规则</h3>
+      <div class="rules-block" id="rulesBlockZh" lang="zh-CN">
+        <h3>基本规则</h3>
         <ul class="rules-list" id="rulesModalListZh"></ul>
       </div>
     </div>
     <div class="rules-footer">
       <div class="diff-picker">
-        <span class="diff-label">難易度<span class="zh-inline" lang="zh-CN">（对手难度）</span></span>
-        <div class="diff-seg" role="group" aria-label="对手难度">
-          <button type="button" class="diff-btn active" id="diffOptNormal" data-diff="normal"><svg class="diff-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg>ふつう<span class="zh-inline" lang="zh-CN">（普通）</span></button>
-          <button type="button" class="diff-btn hard" id="diffOptHard" data-diff="hard"><svg class="diff-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2.5c.4 3.2-1.9 5.1-3.1 6.4-1.5 1.6-2.4 3.2-2.4 5.1 0 2.5 2 4.5 4.5 4.5s4.5-2 4.5-4.5c0-2.1-1.2-3.9-2.2-5.2-.3 1.4-1.1 2.2-2 2.5.9-2.2 2.2-5.2.7-8.8zM12 22c-4.1 0-7.5-3.2-7.5-7.2 0-2.9 1.5-5.5 3.6-7.6.2 1.2.8 2 1.6 2.5-1.4 1.5-2.2 3.1-2.2 5.1 0 3 2.5 5.2 5.5 5.2 3.1 0 5.5-2.3 5.5-5.4 0-1.6-.6-3.1-1.5-4.4 1.6 1.5 2.5 3.5 2.5 5.6 0 4-3.4 6.2-7.5 6.2z"/></svg>むずかしい<span class="zh-inline" lang="zh-CN">（困难）</span></button>
+        <span class="diff-label"><span class="lang-ja">難易度</span><span class="lang-zh">难度</span></span>
+        <div class="diff-seg" role="group" aria-label="Difficulty">
+          <button type="button" class="diff-btn active" id="diffOptNormal" data-diff="normal"><svg class="diff-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg><span class="lang-ja">ふつう</span><span class="lang-zh">普通</span></button>
+          <button type="button" class="diff-btn hard" id="diffOptHard" data-diff="hard"><svg class="diff-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2.5c.4 3.2-1.9 5.1-3.1 6.4-1.5 1.6-2.4 3.2-2.4 5.1 0 2.5 2 4.5 4.5 4.5s4.5-2 4.5-4.5c0-2.1-1.2-3.9-2.2-5.2-.3 1.4-1.1 2.2-2 2.5.9-2.2 2.2-5.2.7-8.8zM12 22c-4.1 0-7.5-3.2-7.5-7.2 0-2.9 1.5-5.5 3.6-7.6.2 1.2.8 2 1.6 2.5-1.4 1.5-2.2 3.1-2.2 5.1 0 3 2.5 5.2 5.5 5.2 3.1 0 5.5-2.3 5.5-5.4 0-1.6-.6-3.1-1.5-4.4 1.6 1.5 2.5 3.5 2.5 5.6 0 4-3.4 6.2-7.5 6.2z"/></svg><span class="lang-ja">むずかしい</span><span class="lang-zh">困难</span></button>
         </div>
       </div>
-      <button class="btn-sm primary" id="btnStartGame">ゲーム開始<span class="zh-inline" lang="zh-CN">（开始对战）</span></button>
+      <button class="btn-sm primary" id="btnStartGame"><span class="lang-ja">対戦開始</span><span class="lang-zh">开始对战</span></button>
     </div>
   </div>
 </div>
@@ -3134,148 +4397,174 @@
 <!-- 胜负结算弹窗 -->
 <div class="modal-backdrop" id="gameOverModal">
   <div class="modal-box" style="max-width:460px;text-align:center;">
-    <h2 id="gameOverTitleJa" style="margin:0 0 6px;">勝利！</h2>
-    <p id="gameOverDescJa" style="font-size:13px;line-height:1.6;margin:0 0 12px;"></p>
-    <div lang="zh-CN" style="border-top:1px dashed #d5c7ad;padding-top:10px;margin-bottom:16px;">
-      <div id="gameOverTitleZh" style="font-size:15px;font-weight:700;color:var(--ink-sub);margin-bottom:4px;">你赢了！</div>
-      <p id="gameOverDescZh" style="font-size:12.5px;color:var(--ink-sub);line-height:1.6;margin:0;"></p>
+    <h2 id="gameOverTitleJa" style="margin:0 0 8px;">勝利！</h2>
+    <p id="gameOverDescJa" style="font-size:14.5px;line-height:1.65;margin:0 0 16px;"></p>
+    <div id="gameOverZhWrap" lang="zh-CN" style="margin-bottom:16px;">
+      <h2 id="gameOverTitleZh" style="margin:0 0 8px;">你赢了！</h2>
+      <p id="gameOverDescZh" style="font-size:14.5px;line-height:1.65;margin:0;"></p>
     </div>
-    <button class="btn-sm primary" id="btnPlayAgain" style="padding:8px 20px;">もう一度対戦<span class="zh-inline" lang="zh-CN">（再来一局）</span></button>
+    <button class="btn-sm primary" id="btnPlayAgain" style="padding:10px 24px;"><span class="lang-ja">もう一度対戦</span><span class="lang-zh">再来一局</span></button>
   </div>
 </div>
 
-<!-- AI・音声設定弹窗（分离 LLM / ASR / TTS 入口） -->
+<!-- AI・音声設定弹窗（分离语言 / LLM / ASR / TTS 入口） -->
 <div class="modal-backdrop" id="settingsModal">
   <div class="modal-box">
     <div class="modal-head">
-      <h2><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.74 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.05.3-.08.63-.08.94s.03.64.08.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.12.22.37.3.6.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.23.08.48 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg>AI・音声設定<span class="zh-inline" lang="zh-CN">（LLM 与语音引擎设置）</span></h2>
+      <h2><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.74 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.05.3-.08.63-.08.94s.03.64.08.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.12.22.37.3.6.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.23.08.48 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg><span class="lang-ja">AI・音声設定</span><span class="lang-zh">AI・语音设置</span></h2>
       <button class="btn-sm" id="btnCloseSettings">✕</button>
     </div>
 
     <div class="cfg-scroll-body">
+    <!-- 0. 界面与语音语言同步开关 -->
+    <div class="cfg-section">
+      <div class="cfg-section-head" style="margin-bottom:4px;border-bottom:none;padding-bottom:2px;">
+        <span class="cfg-section-title">
+          <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
+          <span class="lang-ja">表示・音声言語</span><span class="lang-zh">显示・语音语言</span>
+        </span>
+        <div class="lang-switch light" id="settingsLangSwitch" role="group" aria-label="Language">
+          <button type="button" class="lang-pill active" data-set-lang="ja">
+            <svg class="lang-badge-svg" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="1.5" y="2.5" width="21" height="19" rx="5" fill="rgba(160,114,40,0.12)" stroke="currentColor" stroke-width="1.5"/>
+              <text x="12" y="15.8" text-anchor="middle" font-size="11.5" font-weight="800" fill="currentColor" font-family="Noto Sans JP, sans-serif">あ</text>
+            </svg>
+            <span>日本語</span>
+          </button>
+          <button type="button" class="lang-pill" data-set-lang="zh">
+            <svg class="lang-badge-svg" viewBox="0 0 24 24" aria-hidden="true">
+              <rect x="1.5" y="2.5" width="21" height="19" rx="5" fill="rgba(160,114,40,0.12)" stroke="currentColor" stroke-width="1.5"/>
+              <text x="12" y="15.8" text-anchor="middle" font-size="11.5" font-weight="800" fill="currentColor" font-family="Noto Sans SC, sans-serif">文</text>
+            </svg>
+            <span>中文</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 1. LLM 对话与规则解析入口（保持 Gemini） -->
     <div class="cfg-section">
       <div class="cfg-section-head">
         <span class="cfg-section-title">
           <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-4 12.75V18a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-3.25A7 7 0 0 0 12 2zm-2 19h4v1h-4v-1z"/></svg>
-          LLM 指令解析<span class="zh-inline" lang="zh-CN">（对话与战术大脑）</span>
+          <span class="lang-ja">LLM コマンド解析</span><span class="lang-zh">LLM 指令解析</span>
         </span>
         <span class="cfg-section-badge">Vertex Gemini</span>
       </div>
       <div class="cfg-grid">
         <div class="cfg-field">
-          <label>Vertex APIキー<span class="zh-inline" lang="zh-CN">（Gemini 密钥，留空走本地解析）</span></label>
-          <input type="password" id="apiKey" autocomplete="off" />
+          <label><span class="lang-ja">Vertex APIキー（空欄でローカル解析）</span><span class="lang-zh">Vertex API 密钥（留空走本地解析）</span></label>
+          <input type="text" id="apiKey" class="secret-mask" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" disabled />
         </div>
         <div class="cfg-field">
-          <label>LLM モデル<span class="zh-inline" lang="zh-CN">（Gemini 解析模型）</span></label>
+          <label><span class="lang-ja">LLM モデル</span><span class="lang-zh">LLM 解析模型</span></label>
           <input type="text" id="llmModel" />
         </div>
       </div>
     </div>
 
-    <!-- 2. ASR 语音识别入口（默认SenseTime Nia） -->
+    <!-- 2. ASR 语音识别入口（默认 SenseTime Nia） -->
     <div class="cfg-section">
       <div class="cfg-section-head">
         <span class="cfg-section-title">
           <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
-          ASR 音声認識<span class="zh-inline" lang="zh-CN">（语音识别入口）</span>
+          <span class="lang-ja">ASR 音声認識</span><span class="lang-zh">ASR 语音识别</span>
         </span>
         <span class="cfg-section-badge" id="asrEngineBadge">SenseTime Nia</span>
       </div>
       <div class="cfg-grid">
         <div class="cfg-field">
-          <label>音声認識エンジン<span class="zh-inline" lang="zh-CN">（ASR 识别引擎）</span></label>
+          <label><span class="lang-ja">音声認識エンジン</span><span class="lang-zh">语音识别引擎</span></label>
           <select id="asrMode">
-            <option value="nia_asr">SenseTime Nia 流式認識（中/日自动・默认）</option>
-            <option value="gemini_audio">Gemini 音声直伝（中/日自动）</option>
+            <option value="nia_asr">SenseTime Nia</option>
+            <option value="gemini_audio">Gemini Audio</option>
             <option value="chrome_asr_llm">Chrome ASR → Gemini</option>
-            <option value="chrome_local">オフライン（本地中/日语解析）</option>
+            <option value="chrome_local">Offline Local</option>
           </select>
         </div>
         <div class="cfg-field" id="niaAsrLangWrap">
-          <label>Nia 認識言語<span class="zh-inline" lang="zh-CN">（识别语种）</span></label>
+          <label><span class="lang-ja">Nia 認識言語</span><span class="lang-zh">Nia 识别语种</span></label>
           <select id="niaAsrLang">
-            <option value="">自動判別（中/日自动检测）</option>
-            <option value="ja">日本語優先（ja）</option>
-            <option value="zh">中文優先（zh）</option>
+            <option value="">自動判別 / 自动双语</option>
+            <option value="ja">日本語 (ja)</option>
+            <option value="zh">中文 (zh)</option>
           </select>
         </div>
         <div class="cfg-field cfg-hidden" id="chromeAsrLangWrap">
-          <label>ブラウザ認識言語<span class="zh-inline" lang="zh-CN">（Chrome 识别语言）</span></label>
+          <label><span class="lang-ja">ブラウザ認識言語</span><span class="lang-zh">浏览器识别语种</span></label>
           <select id="asrLang">
-            <option value="ja-JP">日本語（ja-JP）</option>
-            <option value="zh-CN">中文（zh-CN）</option>
+            <option value="ja-JP">日本語 (ja-JP)</option>
+            <option value="zh-CN">中文 (zh-CN)</option>
           </select>
         </div>
         <div class="cfg-field cfg-hidden" id="geminiAsrHintWrap">
-          <label>言語設定<span class="zh-inline" lang="zh-CN">（识别说明）</span></label>
-          <div class="cfg-hint-pill">Gemini 音声直伝は中・日混在を自動認識します<span class="zh-inline" lang="zh-CN">（复用上方 Vertex 密钥）</span></div>
+          <label><span class="lang-ja">言語設定</span><span class="lang-zh">识别说明</span></label>
+          <div class="cfg-hint-pill"><span class="lang-ja">Gemini 音声直伝は日本語・中国語を自動認識します</span><span class="lang-zh">Gemini 音频直传自动识别中/日语（复用上方密钥）</span></div>
         </div>
       </div>
 
       <!-- SenseTime Nia 认证凭证（ASR / TTS 任一使用 Nia 时显示） -->
       <div class="cfg-sub-box" id="niaCredsBlock">
         <div class="cfg-sub-label">
-          <span>SenseTime Nia 認証キー<span class="zh-inline" lang="zh-CN">（ASR・TTS 共用 AccessKey）</span></span>
-          <span style="font-size:10px;color:var(--ink-sub);white-space:nowrap;flex-shrink:0;">HS256 JWT</span>
+          <span><span class="lang-ja">SenseTime Nia 認証キー（ASR・TTS 共用）</span><span class="lang-zh">SenseTime Nia 认证密钥（ASR・TTS 共用）</span></span>
+          <span style="font-size:11px;color:var(--ink-sub);white-space:nowrap;flex-shrink:0;">HS256 JWT</span>
         </div>
         <div class="cfg-grid">
           <div class="cfg-field">
-            <label>AccessKey ID<span class="zh-inline" lang="zh-CN">（AK）</span></label>
-            <input type="password" id="niaAk" autocomplete="off" />
+            <label>AccessKey ID (AK)</label>
+            <input type="text" id="niaAk" class="secret-mask" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" disabled />
           </div>
           <div class="cfg-field">
-            <label>AccessKey Secret<span class="zh-inline" lang="zh-CN">（SK）</span></label>
-            <input type="password" id="niaSk" autocomplete="off" />
+            <label>AccessKey Secret (SK)</label>
+            <input type="text" id="niaSk" class="secret-mask" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" disabled />
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 3. TTS 语音合成入口（切换模型时同一音色选择栏自动切换对应音色） -->
+    <!-- 3. TTS 语音合成入口（切换模型或界面语言时音色自动联动） -->
     <div class="cfg-section">
       <div class="cfg-section-head">
         <span class="cfg-section-title">
           <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
-          TTS 音声合成<span class="zh-inline" lang="zh-CN">（语音播报入口）</span>
+          <span class="lang-ja">TTS 音声合成</span><span class="lang-zh">TTS 语音合成</span>
         </span>
         <label class="cfg-toggle-inline" for="chkAutoSpeak">
           <input type="checkbox" id="chkAutoSpeak" checked />
-          <span>自動再生<span class="zh-inline" lang="zh-CN">（自动播报日语）</span></span>
+          <span class="lang-ja">自動再生</span><span class="lang-zh">自动播报</span>
         </label>
       </div>
       <div class="cfg-grid">
         <div class="cfg-field">
-          <label>音声出力モデル<span class="zh-inline" lang="zh-CN">（TTS 语音模型）</span></label>
+          <label><span class="lang-ja">音声合成エンジン</span><span class="lang-zh">语音合成引擎</span></label>
           <select id="ttsEngine">
-            <option value="nia_tts">SenseTime Nia 音声合成（AI音声・默认）</option>
-            <option value="vertex_tts">Vertex Gemini TTS（AI音声）</option>
-            <option value="chrome_tts">Chrome 標準音声（浏览器朗读）</option>
+            <option value="nia_tts">SenseTime Nia TTS</option>
+            <option value="vertex_tts">Vertex Gemini TTS</option>
+            <option value="chrome_tts">Chrome TTS</option>
           </select>
         </div>
         <div class="cfg-field cfg-hidden" id="ttsModelField">
-          <label>Vertex TTS モデル<span class="zh-inline" lang="zh-CN">（合成模型名）</span></label>
+          <label><span class="lang-ja">Vertex TTS モデル</span><span class="lang-zh">Vertex TTS 模型</span></label>
           <input type="text" id="ttsModel" />
         </div>
         <div class="cfg-field" id="ttsEngineHintField">
-          <label>モデル情報<span class="zh-inline" lang="zh-CN">（当前语音引擎）</span></label>
-          <div class="cfg-hint-pill" id="ttsEngineHintText">SenseTime Nia 24kHz · 音色自动联动</div>
+          <label><span class="lang-ja">エンジン状態</span><span class="lang-zh">引擎状态</span></label>
+          <div class="cfg-hint-pill" id="ttsEngineHintText">SenseTime Nia 24kHz</div>
         </div>
       </div>
 
       <div class="cfg-grid">
         <div class="cfg-field">
-          <label>審判ボイス<span class="zh-inline" lang="zh-CN">（裁判音色）</span><span class="cfg-voice-tag" id="voiceEngineTag"></span></label>
+          <label><span class="lang-ja">審判ボイス</span><span class="lang-zh">裁判音色</span><span class="cfg-voice-tag" id="voiceEngineTag"></span></label>
           <select id="voiceReferee"></select>
         </div>
         <div class="cfg-field">
-          <label>相手レンのボイス<span class="zh-inline" lang="zh-CN">（对手音色）</span></label>
+          <label><span class="lang-ja">相手レンのボイス</span><span class="lang-zh">对手莲音色</span></label>
           <select id="voiceRival"></select>
         </div>
       </div>
 
-      <div id="voiceEngineStatus" style="font-size:11px;color:var(--ink-sub);margin:2px 0 4px;"></div>
+      <div id="voiceEngineStatus" style="font-size:12px;color:var(--ink-sub);margin:2px 0 4px;"></div>
     </div>
 
     <!-- 4. 对局设置与外部数据热更新 -->
@@ -3283,63 +4572,64 @@
       <div class="cfg-section-head">
         <span class="cfg-section-title">
           <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg>
-          対局・データ設定<span class="zh-inline" lang="zh-CN">（对局参数与卡表）</span>
+          <span class="lang-ja">対局・データ設定</span><span class="lang-zh">对局・数据设置</span>
         </span>
       </div>
       <div class="cfg-grid">
         <div class="cfg-field">
-          <label>相手AI難易度<span class="zh-inline" lang="zh-CN">（对手难度）</span></label>
+          <label><span class="lang-ja">相手AI難易度</span><span class="lang-zh">对手 AI 难度</span></label>
           <select id="aiDifficulty">
-            <option value="normal">ふつう（普通）</option>
-            <option value="hard">むずかしい（困难）</option>
+            <option value="normal">ふつう / 普通</option>
+            <option value="hard">むずかしい / 困难</option>
           </select>
         </div>
         <div class="cfg-field">
-          <label>無応答リマインド<span class="zh-inline" lang="zh-CN">（久未响应提醒秒数）</span></label>
+          <label><span class="lang-ja">無応答リマインド（秒）</span><span class="lang-zh">久未响应提醒（秒）</span></label>
           <input type="number" id="idlePromptSec" min="0" max="120" step="1" value="15" />
         </div>
       </div>
       <!-- 外部 gamedata.json 拖放热更新入口 -->
       <div class="dropzone" id="mdDropzone" style="margin-top:2px;margin-bottom:4px;">
-        外部 <strong>gamedata.json</strong> をドロップ、または
+        <span class="lang-ja">外部 <strong>gamedata.json</strong> をドロップ、または</span>
+        <span class="lang-zh">拖入外部 <strong>gamedata.json</strong>，或</span>
         <label style="color:var(--water);text-decoration:underline;cursor:pointer;">
-          ファイル選択<span class="zh-inline" lang="zh-CN">（导入 .json）</span>
+          <span class="lang-ja">ファイル選択</span><span class="lang-zh">选择文件</span>
           <input type="file" id="mdFileInput" accept=".json,.md,.txt" style="display:none;" />
         </label>
-        <div id="mdStatusText" style="margin-top:4px;font-size:11px;"></div>
+        <div id="mdStatusText" style="margin-top:4px;font-size:12px;"></div>
       </div>
     </div>
     </div>
 
     <div class="cfg-footer">
-      <button class="btn-sm" id="btnResetDefaults"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>初期値に戻す<span class="zh-inline" lang="zh-CN">（恢复默认）</span></button>
+      <button class="btn-sm" id="btnResetDefaults"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg><span class="lang-ja">初期値に戻す</span><span class="lang-zh">恢复默认</span></button>
       <div style="display:flex;gap:8px;">
-        <button class="btn-sm" id="btnTestTts"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>音声テスト<span class="zh-inline" lang="zh-CN">（测试播报）</span></button>
-        <button class="btn-sm primary" id="btnSaveConfig"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm3-10H5V5h10v4z"/></svg>保存<span class="zh-inline" lang="zh-CN">（保存配置）</span></button>
+        <button class="btn-sm" id="btnTestTts"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg><span class="lang-ja">音声テスト</span><span class="lang-zh">测试播报</span></button>
+        <button class="btn-sm primary" id="btnSaveConfig"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V7l-4-4zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6zm3-10H5V5h10v4z"/></svg><span class="lang-ja">保存</span><span class="lang-zh">保存配置</span></button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- 本地 file:// 直接打开时的数据文件引导弹窗（仅当无法自动读取 gamedata.json 时显示） -->
+<!-- 本地 file:// 直接打开时的数据文件引导弹窗 -->
 <div class="modal-backdrop" id="dataLoadModal">
   <div class="modal-box" style="max-width:460px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <div style="font-size:16px;font-weight:900;">gamedata.json を読み込む<span class="zh-inline" lang="zh-CN" style="display:block;font-size:11px;font-weight:600;color:var(--ink-sub);margin-top:2px;">加载游戏数据文件（gamedata.json）</span></div>
+      <div style="font-size:17px;font-weight:900;"><span class="lang-ja">gamedata.json を読み込む</span><span class="lang-zh">加载游戏数据文件（gamedata.json）</span></div>
     </div>
-    <p style="font-size:12px;line-height:1.65;color:var(--ink);margin:0 0 10px;">
+    <p class="lang-ja" style="font-size:13.5px;line-height:1.65;color:var(--ink);margin:0 0 12px;">
       ブラウザのセキュリティ制限（<code>file://</code>）により、ローカルの <strong>gamedata.json</strong> を自動読込できませんでした。<br/>
       下のボタンから同フォルダ内の <strong>gamedata.json</strong> を選択してください（次回からは自動読込されます）。
     </p>
-    <p lang="zh-CN" style="font-size:11.5px;line-height:1.6;color:var(--ink-sub);margin:0 0 12px;">
-      由于浏览器本地 <code>file://</code> 安全限制，无法自动读取同目录的 <strong>gamedata.json</strong>。请点击下方选择同目录的 <strong>gamedata.json</strong>（选择一次后会缓存），或直接运行 <code>start.command</code>（Mac/Linux）/ <code>start.bat</code>（Windows）自动启动。
+    <p class="lang-zh" lang="zh-CN" style="font-size:13.5px;line-height:1.65;color:var(--ink);margin:0 0 12px;">
+      由于浏览器本地 <code>file://</code> 安全限制，无法自动读取同目录的 <strong>gamedata.json</strong>。请点击下方选择同目录的 <strong>gamedata.json</strong>（选择一次后会缓存），或直接运行 <code>start.command</code> / <code>start.bat</code> 自动启动。
     </p>
     <div class="dropzone" id="dataLoadDropzone" style="padding:14px;">
       <label class="btn-sm primary" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
-        gamedata.json を選択<span class="zh-inline" lang="zh-CN">（选择文件）</span>
+        <span class="lang-ja">gamedata.json を選択</span><span class="lang-zh">选择 gamedata.json</span>
         <input type="file" id="dataLoadFileInput" accept=".json" style="display:none;" />
       </label>
-      <div style="margin-top:6px;font-size:11px;color:var(--ink-sub);">またはここにファイルをドロップ<span class="zh-inline" lang="zh-CN">（或直接拖拽至此）</span></div>
+      <div style="margin-top:6px;font-size:12px;color:var(--ink-sub);"><span class="lang-ja">またはここにファイルをドロップ</span><span class="lang-zh">或直接拖拽至此</span></div>
     </div>
   </div>
 </div>
@@ -3353,8 +4643,8 @@
     <p class="mobile-fs-desc-ja" style="text-align:center;">現在の盤面と手札はリセットされ、新しい対局が始まります。</p>
     <p class="mobile-fs-desc-zh" lang="zh-CN" style="text-align:center;margin-bottom:0;">当前场上的怪兽、手牌与对局进度将被清空，并重新发牌开始新对局。</p>
     <div class="reset-confirm-actions">
-      <button type="button" class="btn-sm" id="btnCancelReset">キャンセル<span class="zh-inline" lang="zh-CN">（取消）</span></button>
-      <button type="button" class="btn-sm danger" id="btnConfirmReset">再戦する<span class="zh-inline" lang="zh-CN">（确认重开）</span></button>
+      <button type="button" class="btn-sm" id="btnCancelReset"><span class="lang-ja">キャンセル</span><span class="lang-zh">取消</span></button>
+      <button type="button" class="btn-sm danger" id="btnConfirmReset"><span class="lang-ja">再戦する</span><span class="lang-zh">确认重开</span></button>
     </div>
   </div>
 </div>
@@ -3369,8 +4659,8 @@
     <p class="mobile-fs-desc-zh" id="endTurnConfirmSubZh" lang="zh-CN" style="text-align:center;margin-bottom:0;">本回合仍有以下可用操作尚未执行：</p>
     <ul class="endturn-hints-list" id="endTurnHintsList"></ul>
     <div class="reset-confirm-actions">
-      <button type="button" class="btn-sm" id="btnCancelEndTurn">戻る<span class="zh-inline" lang="zh-CN">（返回操作）</span></button>
-      <button type="button" class="btn-sm primary" id="btnConfirmEndTurn">このまま終了<span class="zh-inline" lang="zh-CN">（确认结束）</span></button>
+      <button type="button" class="btn-sm" id="btnCancelEndTurn"><span class="lang-ja">戻る</span><span class="lang-zh">返回操作</span></button>
+      <button type="button" class="btn-sm primary" id="btnConfirmEndTurn"><span class="lang-ja">このまま終了</span><span class="lang-zh">确认结束</span></button>
     </div>
   </div>
 </div>
