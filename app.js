@@ -417,7 +417,7 @@
       }
     },
 
-    _showCard(msg, speakVoice) {
+    _showCard(msg, speakVoice, key = "") {
       const box = $("guideFloat");
       if (box) {
         box.classList.remove("show");
@@ -428,7 +428,16 @@
         box.classList.add("show");
       }
       if (speakVoice && !VoiceEngine.isSpeaking) {
-        VoiceEngine.speak(t(msg.ja, msg.zh), "referee");
+        const prio = key === "setup_starter" ? "high" : "low";
+        VoiceEngine.speak({ ja: msg.ja, zh: msg.zh }, "referee", { priority: prio });
+      }
+    },
+
+    /** 语言切换时同步刷新当前可见引导浮窗的标题标签 */
+    syncVisibleCard() {
+      const msg = this.lastGuideKey ? this.MESSAGES[this.lastGuideKey] : null;
+      if (msg && $("guideTag")) {
+        $("guideTag").innerHTML = `${SVG_ICONS.guideChip}${formatBilingualLabelHtml(msg.tag)}`;
       }
     },
 
@@ -447,10 +456,10 @@
       clearTimeout(this._pendingTimer);
       if (waitMs > 0) {
         this._pendingTimer = setTimeout(() => {
-          if (this.isEnabled()) this._showCard(msg, speakVoice);
+          if (this.isEnabled()) this._showCard(msg, speakVoice, key);
         }, waitMs + 30);
       } else {
-        this._showCard(msg, speakVoice);
+        this._showCard(msg, speakVoice, key);
       }
     }
   };
@@ -1260,6 +1269,69 @@
       return res ? res.item : null;
     },
 
+    /** 从同一句中按出现顺序提取所有提及的怪兽（兼容中文拼音音素 + 日语清浊音/长音归一，支持“把雷狮和水龟放到备战区”“ライシシとミズガメをベンチに出して”等复数指令） */
+    matchAllMonsters(rawText, filterSide = null) {
+      const fixed = this.applyLocalTypoFix(rawText);
+      const norm = this.normalizeText(fixed);
+      if (!norm) return [];
+      const normJaPh = this.stripJaVoicing(this.toJaPhonetic(norm));
+      const list = filterSide
+        ? this.fuzzyIndex.monsters.filter((e) => e.item.side === filterSide)
+        : this.fuzzyIndex.monsters;
+      const activeSet = this.getActiveCardIdSet();
+      const inZhPh = this.toZhPhonetic(fixed);
+      const paddedZhPh = inZhPh ? `|${inZhPh}|` : "";
+      const hasActionCtx = this.hasGameActionContext(fixed);
+      const found = [];
+      for (const entry of list) {
+        const mon = entry.item;
+        const inActive = Boolean(mon?.id && activeSet.has(mon.id));
+        let bestPos = Infinity;
+        let bestScore = 0;
+        for (const alias of entry.aliases) {
+          if (!alias) continue;
+          const idx = norm.indexOf(alias);
+          if (idx !== -1) {
+            const sc = alias.length >= 3 ? 1.0 : 0.92;
+            if (idx < bestPos || (idx === bestPos && sc > bestScore)) {
+              bestPos = idx;
+              bestScore = sc;
+            }
+          } else if (alias.length >= 3 && normJaPh) {
+            const aJaPh = this.stripJaVoicing(this.toJaPhonetic(alias));
+            if (aJaPh.length >= 3) {
+              const jIdx = normJaPh.indexOf(aJaPh);
+              if (jIdx !== -1) {
+                const sc = 0.93;
+                if (jIdx < bestPos || (jIdx === bestPos && sc > bestScore)) {
+                  bestPos = jIdx;
+                  bestScore = sc;
+                }
+              }
+            }
+          }
+        }
+        if (paddedZhPh && Array.isArray(entry.zhPhonetics)) {
+          for (const zp of entry.zhPhonetics) {
+            if (zp.charLen <= 2 && !inActive && !hasActionCtx) continue;
+            const pIdx = paddedZhPh.indexOf(`|${zp.ph}|`);
+            if (pIdx !== -1) {
+              const sc = zp.charLen >= 3 ? 0.94 : 0.91;
+              if (pIdx < bestPos || (pIdx === bestPos && sc > bestScore)) {
+                bestPos = pIdx;
+                bestScore = sc;
+              }
+            }
+          }
+        }
+        if (bestScore >= 0.85) {
+          found.push({ item: mon, pos: bestPos, score: bestScore });
+        }
+      }
+      found.sort((a, b) => a.pos - b.pos || b.score - a.score);
+      return found.map((f) => f.item);
+    },
+
     matchSkill(rawText, allowedSkills = null) {
       const list = allowedSkills
         ? this.fuzzyIndex.skills.filter((e) => allowedSkills.some((s) => s.name_ja === e.item.name_ja))
@@ -1520,6 +1592,7 @@
       this._drainId = (this._drainId || 0) + 1;
       this.isSpeaking = false;
       this.isDrainingQueue = false;
+      this.currentSpeakItem = null;
       while (this.speakQueue.length) {
         const item = this.speakQueue.shift();
         try { if (item && item.resolve) item.resolve(); } catch (_) {}
@@ -1554,6 +1627,79 @@
           }, 350);
         }
       }
+    },
+
+    /** 切换语言时不停播丢弃，而是将当前正在播放与排队中的所有语音项无缝切换为新语言重新播报 */
+    replayCurrentQueueInLang(newLang) {
+      const targetLang = newLang === "zh" ? "zh" : "ja";
+      const snapshot = [];
+      if (this.isSpeaking && this.currentSpeakItem) {
+        snapshot.push(this.currentSpeakItem);
+      }
+      if (Array.isArray(this.speakQueue) && this.speakQueue.length > 0) {
+        for (const q of this.speakQueue) snapshot.push(q);
+      }
+      if (snapshot.length === 0) return false;
+
+      /* 仅终止当前音频流与旧播放令牌，但保留原 Promise resolve 链以新语言重新入队 */
+      this.speakToken += 1;
+      this._drainId = (this._drainId || 0) + 1;
+      this.isSpeaking = false;
+      this.isDrainingQueue = false;
+      this.currentSpeakItem = null;
+      this.speakQueue = [];
+      if (window.speechSynthesis) {
+        try { speechSynthesis.cancel(); } catch (_) {}
+      }
+      while (this.activeStreamCancels.length) {
+        const cancelFn = this.activeStreamCancels.pop();
+        try { if (typeof cancelFn === "function") cancelFn(); } catch (_) {}
+      }
+      while (this.activeSources.length) {
+        const entry = this.activeSources.pop();
+        try {
+          if (entry && entry.src) {
+            entry.src.onended = null;
+            entry.src.stop();
+          }
+        } catch (_) {}
+        try { if (entry && entry.resolve) entry.resolve(); } catch (_) {}
+      }
+
+      const newToken = this.speakToken;
+      for (let i = 0; i < snapshot.length; i++) {
+        const old = snapshot[i];
+        const rawForLang = targetLang === "zh"
+          ? (old.zhText || old.jaText || old.spokenText || "")
+          : (old.jaText || old.zhText || old.spokenText || "");
+        const spokenText = this.extractSpokenText(rawForLang, targetLang);
+        if (!spokenText) {
+          try { if (old.resolve) old.resolve(); } catch (_) {}
+          continue;
+        }
+        if (i === 0) {
+          this.prefetch(spokenText, old.role, targetLang);
+        } else {
+          const r = old.role;
+          const st = spokenText;
+          setTimeout(() => { this.prefetch(st, r, targetLang); }, 320 * i);
+        }
+        this.speakQueue.push({
+          spokenText,
+          jaText: old.jaText || "",
+          zhText: old.zhText || "",
+          role: old.role,
+          lang: targetLang,
+          priority: old.priority || "normal",
+          token: newToken,
+          resolve: old.resolve
+        });
+      }
+      this.pendingSpeakCount = this.speakQueue.length;
+      if (this.speakQueue.length > 0 && !this.isDrainingQueue) {
+        this.drainSpeakQueue();
+      }
+      return true;
     },
 
     stopAll() {
@@ -2063,7 +2209,70 @@
       return await this.aecInitPromise;
     },
 
-    /** 统一通过 WebAudio + AEC3 回声参考通道播放 AudioBuffer */
+    /** 获取统一主音量 GainNode（用于 critical 高优打断时 120ms 平滑淡出，杜绝硬切爆音与突兀截断） */
+    getVoiceGainNode(ctx, outNode) {
+      const target = outNode || ctx.destination;
+      if (!this.masterGain || this._masterGainCtx !== ctx) {
+        this.masterGain = ctx.createGain();
+        this.masterGain.gain.setValueAtTime(1, ctx.currentTime);
+        this.masterGain.connect(target);
+        this._masterGainCtx = ctx;
+        this._masterGainTarget = target;
+      } else if (this._masterGainTarget !== target) {
+        try { this.masterGain.disconnect(); } catch (_) {}
+        this.masterGain.connect(target);
+        this._masterGainTarget = target;
+      }
+      return this.masterGain;
+    },
+
+    /** 平滑淡出后终止当前播放（独立旧 GainNode 淡出 + 新语音立得满音量通道，杜绝新旧语音增益竞争） */
+    fadeOutAndStopPlayback(fadeMs = 120) {
+      if (!this.isSpeaking && this.activeSources.length === 0) {
+        this.stopPlayback();
+        return;
+      }
+      const ctx = this.audioCtx;
+      const oldGain = this.masterGain;
+      if (ctx && oldGain && ctx.state === "running" && this.activeSources.length > 0) {
+        /* 立即剥离旧 GainNode 专供淡出，后续新语音自动创建满音量新 GainNode，零竞态 */
+        this.masterGain = null;
+        this._masterGainTarget = null;
+        try {
+          const now = ctx.currentTime;
+          oldGain.gain.cancelScheduledValues(now);
+          oldGain.gain.setValueAtTime(Math.max(0.05, oldGain.gain.value || 1), now);
+          oldGain.gain.linearRampToValueAtTime(0.001, now + fadeMs / 1000);
+        } catch (_) {}
+        const sourcesToStop = this.activeSources.slice();
+        const cancelsToRun = this.activeStreamCancels.slice();
+        this.activeSources = [];
+        this.activeStreamCancels = [];
+        this.speakToken += 1;
+        this._drainId = (this._drainId || 0) + 1;
+        this.isSpeaking = false;
+        this.isDrainingQueue = false;
+        this.currentSpeakItem = null;
+        while (this.speakQueue.length) {
+          const item = this.speakQueue.shift();
+          try { if (item && item.resolve) item.resolve(); } catch (_) {}
+        }
+        this.pendingSpeakCount = 0;
+        if (window.speechSynthesis) { try { speechSynthesis.cancel(); } catch (_) {} }
+        setTimeout(() => {
+          for (const cancelFn of cancelsToRun) { try { if (typeof cancelFn === "function") cancelFn(); } catch (_) {} }
+          for (const entry of sourcesToStop) {
+            try { if (entry && entry.src) { entry.src.onended = null; entry.src.stop(); } } catch (_) {}
+            try { if (entry && entry.resolve) entry.resolve(); } catch (_) {}
+          }
+          try { oldGain.disconnect(); } catch (_) {}
+        }, fadeMs);
+        return;
+      }
+      this.stopPlayback();
+    },
+
+    /** 统一通过 WebAudio + GainNode + AEC3 回声参考通道播放 AudioBuffer */
     async playAudioBuffer(buf, token = this.speakToken) {
       const ctx = this.getAudioCtx();
       if (ctx.state === "suspended") { try { await ctx.resume(); } catch (_) {} }
@@ -2071,6 +2280,8 @@
       const outNode = await this.ensureAecOutput();
       if (token !== this.speakToken) return;
       if (this.aecAudioEl && this.aecAudioEl.paused) { try { this.aecAudioEl.play().catch(() => {}); } catch (_) {} }
+      const gainNode = this.getVoiceGainNode(ctx, outNode);
+      try { gainNode.gain.setValueAtTime(1, ctx.currentTime); } catch (_) {}
       await new Promise((resolve) => {
         let done = false;
         let guardTimer = null;
@@ -2087,7 +2298,7 @@
         entry.resolve = finish;
         guardTimer = setTimeout(finish, Math.max(4000, Math.ceil((buf.duration || 3) * 1000) + 2500));
         src.buffer = buf;
-        src.connect(outNode || ctx.destination);
+        src.connect(gainNode);
         this.activeSources.push(entry);
         src.onended = finish;
         src.start();
@@ -2176,9 +2387,9 @@
           }, Math.max(4500, remainMs + 3000));
         };
 
-        /* 抖动缓冲合并队列：首次攒够 ~180ms (8640B) 开播、播放中按 ~120ms (5760B) 批处理，彻底消除 20ms 微包卡顿与爆音 */
-        const INITIAL_PREBUF_BYTES = 8640;
-        const BATCH_FLUSH_BYTES = 5760;
+        /* 按语种自适应抖动缓冲：日语模型包间抖动更大，首播预缓冲 400ms (19200B)/批处理 200ms (9600B) 彻底防卡顿；中文保持 180ms/120ms 低延迟 */
+        const INITIAL_PREBUF_BYTES = lang === "ja" ? 19200 : 8640;
+        const BATCH_FLUSH_BYTES = lang === "ja" ? 9600 : 5760;
         let pendingChunks = [];
         let pendingBytesLen = 0;
 
@@ -2245,10 +2456,12 @@
           const buf = ctx.createBuffer(1, sampleCount, 24000);
           buf.copyToChannel(float32, 0);
 
+          const gainNode = this.getVoiceGainNode(ctx, outNode);
+          try { gainNode.gain.setValueAtTime(1, ctx.currentTime); } catch (_) {}
           const src = ctx.createBufferSource();
           const entry = { src, resolve: null };
           src.buffer = buf;
-          src.connect(outNode || ctx.destination);
+          src.connect(gainNode);
           this.activeSources.push(entry);
           localEntries.push(entry);
           scheduledCount += 1;
@@ -2399,42 +2612,73 @@
     },
 
     /** 优先级防踩踏播报队列：不掐断正在播放的语音，自动折叠积压旧提示并并发预取下一句 */
+    /** 4 级语音优先级：critical(胜负终局120ms淡出强占) > high(击倒/追问/首句，子句边界优雅让位) > normal(常规行动) > low(引导/回合提示) */
+    PRIORITY_RANK: { low: 0, normal: 1, high: 2, critical: 3 },
     pendingSpeakCount: 0,
+    currentSpeakItem: null,
 
-    speak(text, role = "referee", opts = {}) {
+    /** 将过长单句（>34字）按自然标点拆分为语义子句节点，既避免常规短句多次建连造成停顿，又允许高优语音在自然标点处优雅接管 */
+    splitIntoClauses(text, lang = getUiLang()) {
+      const s = String(text || "").trim();
+      if (!s || s.length <= 34) return s ? [s] : [];
+      const rawParts = s.match(/[^。！？!?；;，,、]+[。！？!?；;，,、]*/g) || [s];
+      const merged = [];
+      for (const part of rawParts) {
+        const p = part.trim();
+        if (!p) continue;
+        if (merged.length > 0 && (p.length < 7 || merged[merged.length - 1].length < 8)) {
+          merged[merged.length - 1] += p;
+        } else {
+          merged.push(p);
+        }
+      }
+      return merged.length > 0 ? merged : [s];
+    },
+
+    speak(textOrPair, role = "referee", opts = {}) {
       const cfg = ConfigManager.data;
       const lang = opts.lang || getUiLang();
-      const spokenText = this.extractSpokenText(text, lang);
+      const isPair = Boolean(textOrPair && typeof textOrPair === "object");
+      const jaText = isPair ? String(textOrPair.ja || "") : String(opts.ja || (lang === "ja" ? textOrPair || "" : ""));
+      const zhText = isPair ? String(textOrPair.zh || "") : String(opts.zh || (lang === "zh" ? textOrPair || "" : ""));
+      const rawText = isPair
+        ? (lang === "zh" ? (zhText || jaText) : (jaText || zhText))
+        : String(textOrPair || "");
+      const spokenText = this.extractSpokenText(rawText, lang);
       if (!cfg.autoSpeak || !spokenText) return Promise.resolve();
 
-      const priority = opts.priority || "normal"; // "high" | "normal" | "low"
+      const priority = opts.priority || "normal"; // "critical" | "high" | "normal" | "low"
+      const rank = this.PRIORITY_RANK[priority] ?? 1;
       if (typeof BattleEngine !== "undefined" && BattleEngine.clearIdleTimer) {
         BattleEngine.clearIdleTimer();
       }
 
-      for (let i = this.speakQueue.length - 1; i >= 0; i--) {
-        if (this.speakQueue[i].priority === "low") {
-          const dropped = this.speakQueue.splice(i, 1)[0];
-          try { if (dropped && dropped.resolve) dropped.resolve(); } catch (_) {}
-        }
-      }
-      if (priority === "low") {
+      /* Tier 3 (critical)：胜负结算/认输，120ms 平滑淡出当前语音后立即接管，不硬切不爆音 */
+      if (priority === "critical") {
+        this.fadeOutAndStopPlayback(120);
+      } else if (priority === "low") {
         if (this.isSpeaking || this.speakQueue.length > 0) {
           return Promise.resolve();
         }
       } else {
-        if (priority !== "high") {
-          for (let i = this.speakQueue.length - 1; i >= 0; i--) {
-            if (this.speakQueue[i].role === role && this.speakQueue[i].priority !== "high") {
-              const dropped = this.speakQueue.splice(i, 1)[0];
-              try { if (dropped && dropped.resolve) dropped.resolve(); } catch (_) {}
-            }
+        /* 若当前正在播报更低优先级的长句，标记在当前子句自然标点处优雅让位（不生硬砍在字中间） */
+        if (this.isSpeaking && this.currentSpeakItem) {
+          const curRank = this.PRIORITY_RANK[this.currentSpeakItem.priority] ?? 1;
+          if (rank > curRank) {
+            this.currentSpeakItem.preemptAfterClause = true;
+          }
+        }
+        for (let i = this.speakQueue.length - 1; i >= 0; i--) {
+          const qRank = this.PRIORITY_RANK[this.speakQueue[i].priority] ?? 1;
+          if (qRank < rank || (priority === "normal" && this.speakQueue[i].role === role && qRank <= rank)) {
+            const dropped = this.speakQueue.splice(i, 1)[0];
+            try { if (dropped && dropped.resolve) dropped.resolve(); } catch (_) {}
           }
         }
         const maxBeforePush = priority === "high" ? 3 : 2;
         while (this.speakQueue.length >= maxBeforePush) {
-          let dropIdx = this.speakQueue.findIndex((it) => it.priority !== "high" && it.role !== "rival");
-          if (dropIdx === -1) dropIdx = this.speakQueue.findIndex((it) => it.priority !== "high");
+          let dropIdx = this.speakQueue.findIndex((it) => (this.PRIORITY_RANK[it.priority] ?? 1) < 2 && it.role !== "rival");
+          if (dropIdx === -1) dropIdx = this.speakQueue.findIndex((it) => (this.PRIORITY_RANK[it.priority] ?? 1) < 2);
           if (dropIdx === -1) {
             if (priority === "high") dropIdx = 0;
             else break;
@@ -2444,16 +2688,76 @@
         }
       }
 
-      if (!opts.deferPrefetch) this.prefetch(spokenText, role, lang);
+      const clauses = this.splitIntoClauses(spokenText, lang);
+      if (!opts.deferPrefetch && clauses[0]) this.prefetch(clauses[0], role, lang);
 
       const myToken = this.speakToken;
       return new Promise((resolve) => {
-        this.speakQueue.push({ spokenText, role, lang, priority, token: myToken, resolve });
+        this.speakQueue.push({ spokenText, jaText, zhText, role, lang, priority, preemptAfterClause: false, token: myToken, resolve });
         this.pendingSpeakCount = (this.isSpeaking ? 1 : 0) + this.speakQueue.length;
         if (!this.isDrainingQueue) {
           this.drainSpeakQueue();
         }
       });
+    },
+
+    async _speakSingleChunk(chunkText, role, myToken, lang) {
+      const cfg = ConfigManager.data;
+      const hasKey = String(cfg.apiKey || "").trim().length > 0;
+      const hasNia = ConfigManager.hasNiaCredentials();
+      if (cfg.ttsEngine === "chrome_tts") {
+        this.setVoiceStatus("現在：Chrome標準音声", "当前：浏览器内置语音朗读");
+        DebugLog.add("TTS", `Chrome TTS (${role}/${lang})`, chunkText);
+        await this.speakChrome(chunkText, role, myToken, lang);
+      } else if (cfg.ttsEngine === "nia_tts") {
+        if (!hasNia || this.apiTtsBlocked) {
+          const reason = !hasNia ? "Nia AK/SK 未設定" : this.apiTtsBlockReason;
+          this.setVoiceStatus(`現在：Chrome標準音声（SenseTime Nia ${reason}）`, `当前：浏览器语音降级（SenseTime Nia ${reason}）`);
+          DebugLog.add("TTS", `Chrome TTS 降级中 (${role}/${lang}, ${reason})`, chunkText);
+          await this.speakChrome(chunkText, role, myToken, lang);
+        } else {
+          try {
+            await this.speakNiaTts(chunkText, role, myToken, lang);
+            const vid = lang === "zh"
+              ? (role === "rival" ? cfg.niaVoiceRivalZh : cfg.niaVoiceRefereeZh)
+              : (role === "rival" ? cfg.niaVoiceRival : cfg.niaVoiceReferee);
+            this.setVoiceStatus(`現在：SenseTime Nia TTS (${vid})`, `当前：SenseTime Nia TTS (${vid})`);
+          } catch (e) {
+            if (myToken === this.speakToken) {
+              if (e && (e.status === 401 || e.status === 402 || e.status === 403)) {
+                this.apiTtsBlocked = true;
+                this.apiTtsBlockReason = e.code || `HTTP ${e.status}`;
+              }
+              DebugLog.add("ERR", `SenseTime Nia TTS 失败 (${e.message}) → 降级 Chrome TTS`, chunkText);
+              this.setVoiceStatus(`SenseTime Nia 失敗 (${e.message}) → Chrome降級`, `SenseTime Nia 失败 (${e.message}) → 已降级浏览器朗读`);
+              await this.speakChrome(chunkText, role, myToken, lang);
+            }
+          }
+        }
+      } else if (!hasKey) {
+        this.setVoiceStatus("現在：Chrome標準音声", "Vertex Key 未填写，使用浏览器朗读");
+        DebugLog.add("TTS", `Chrome TTS (${role}/${lang})`, chunkText);
+        await this.speakChrome(chunkText, role, myToken, lang);
+      } else if (this.apiTtsBlocked) {
+        this.setVoiceStatus(`現在：Chrome標準音声（Vertex ${this.apiTtsBlockReason}）`, `当前：浏览器语音降级（Vertex ${this.apiTtsBlockReason}）`);
+        DebugLog.add("TTS", `Chrome TTS 降级中 (${role}/${lang}, ${this.apiTtsBlockReason})`, chunkText);
+        await this.speakChrome(chunkText, role, myToken, lang);
+      } else {
+        try {
+          await this.speakVertexTts(chunkText, role, myToken, lang);
+          this.setVoiceStatus(`現在：Vertex Gemini TTS (${cfg.ttsModel})`, `当前：Vertex Gemini TTS (${cfg.ttsModel})`);
+        } catch (e) {
+          if (myToken === this.speakToken) {
+            if (e && (e.status === 402 || e.status === 403 || e.status === 404)) {
+              this.apiTtsBlocked = true;
+              this.apiTtsBlockReason = `HTTP ${e.status}`;
+            }
+            DebugLog.add("ERR", `Vertex TTS 失败 (${e.message}) → 降级 Chrome TTS`, chunkText);
+            this.setVoiceStatus(`Vertex失敗 (${e.message}) → Chrome降級`, `Vertex 失败 (${e.message}) → 已降级浏览器朗读`);
+            await this.speakChrome(chunkText, role, myToken, lang);
+          }
+        }
+      }
     },
 
     async drainSpeakQueue() {
@@ -2469,10 +2773,7 @@
             try { resolve(); } catch (_) {}
             continue;
           }
-
-          const cfg = ConfigManager.data;
-          const hasKey = String(cfg.apiKey || "").trim().length > 0;
-          const hasNia = ConfigManager.hasNiaCredentials();
+          this.currentSpeakItem = item;
           this.isSpeaking = true;
           this.pendingSpeakCount = 1 + this.speakQueue.length;
           this.recordSpoken(spokenText);
@@ -2492,62 +2793,23 @@
           }
 
           try {
-            if (cfg.ttsEngine === "chrome_tts") {
-              this.setVoiceStatus("現在：Chrome標準音声", "当前：浏览器内置语音朗读");
-              DebugLog.add("TTS", `Chrome TTS (${role}/${lang})`, spokenText);
-              await this.speakChrome(spokenText, role, myToken, lang);
-            } else if (cfg.ttsEngine === "nia_tts") {
-              if (!hasNia || this.apiTtsBlocked) {
-                const reason = !hasNia ? "Nia AK/SK 未設定" : this.apiTtsBlockReason;
-                this.setVoiceStatus(`現在：Chrome標準音声（SenseTime Nia ${reason}）`, `当前：浏览器语音降级（SenseTime Nia ${reason}）`);
-                DebugLog.add("TTS", `Chrome TTS 降级中 (${role}/${lang}, ${reason})`, spokenText);
-                await this.speakChrome(spokenText, role, myToken, lang);
-              } else {
-                try {
-                  await this.speakNiaTts(spokenText, role, myToken, lang);
-                  const vid = lang === "zh"
-                    ? (role === "rival" ? cfg.niaVoiceRivalZh : cfg.niaVoiceRefereeZh)
-                    : (role === "rival" ? cfg.niaVoiceRival : cfg.niaVoiceReferee);
-                  this.setVoiceStatus(`現在：SenseTime Nia TTS (${vid})`, `当前：SenseTime Nia TTS (${vid})`);
-                } catch (e) {
-                  if (myToken === this.speakToken) {
-                    if (e && (e.status === 401 || e.status === 402 || e.status === 403)) {
-                      this.apiTtsBlocked = true;
-                      this.apiTtsBlockReason = e.code || `HTTP ${e.status}`;
-                    }
-                    DebugLog.add("ERR", `SenseTime Nia TTS 失败 (${e.message}) → 降级 Chrome TTS`, spokenText);
-                    this.setVoiceStatus(`SenseTime Nia 失敗 (${e.message}) → Chrome降級`, `SenseTime Nia 失败 (${e.message}) → 已降级浏览器朗读`);
-                    await this.speakChrome(spokenText, role, myToken, lang);
-                  }
-                }
+            const clauses = this.splitIntoClauses(spokenText, lang);
+            for (let ci = 0; ci < clauses.length; ci++) {
+              if (myToken !== this.speakToken) break;
+              /* 提前预取下一个子句，保证多子句朗读零停顿，同时在每句边界检查高优让位标记 */
+              if (ci + 1 < clauses.length && !item.preemptAfterClause) {
+                this.prefetch(clauses[ci + 1], role, lang);
               }
-            } else if (!hasKey) {
-              this.setVoiceStatus("現在：Chrome標準音声", "Vertex Key 未填写，使用浏览器朗读");
-              DebugLog.add("TTS", `Chrome TTS (${role}/${lang})`, spokenText);
-              await this.speakChrome(spokenText, role, myToken, lang);
-            } else if (this.apiTtsBlocked) {
-              this.setVoiceStatus(`現在：Chrome標準音声（Vertex ${this.apiTtsBlockReason}）`, `当前：浏览器语音降级（Vertex ${this.apiTtsBlockReason}）`);
-              DebugLog.add("TTS", `Chrome TTS 降级中 (${role}/${lang}, ${this.apiTtsBlockReason})`, spokenText);
-              await this.speakChrome(spokenText, role, myToken, lang);
-            } else {
-              try {
-                await this.speakVertexTts(spokenText, role, myToken, lang);
-                this.setVoiceStatus(`現在：Vertex Gemini TTS (${cfg.ttsModel})`, `当前：Vertex Gemini TTS (${cfg.ttsModel})`);
-              } catch (e) {
-                if (myToken === this.speakToken) {
-                  if (e && (e.status === 402 || e.status === 403 || e.status === 404)) {
-                    this.apiTtsBlocked = true;
-                    this.apiTtsBlockReason = `HTTP ${e.status}`;
-                  }
-                  DebugLog.add("ERR", `Vertex TTS 失败 (${e.message}) → 降级 Chrome TTS`, spokenText);
-                  this.setVoiceStatus(`Vertex失敗 (${e.message}) → Chrome降級`, `Vertex 失败 (${e.message}) → 已降级浏览器朗读`);
-                  await this.speakChrome(spokenText, role, myToken, lang);
-                }
+              await this._speakSingleChunk(clauses[ci], role, myToken, lang);
+              if (item.preemptAfterClause) {
+                DebugLog.add("TTS", `子句边界优雅让位 (${role}/${item.priority})`, `已完成「${clauses[ci]}」，让位给更高优播报`);
+                break;
               }
             }
           } finally {
-            try { resolve(); } catch (_) {}
+            if (this.currentSpeakItem === item) this.currentSpeakItem = null;
             if (myToken === this.speakToken) {
+              try { resolve(); } catch (_) {}
               this.isSpeaking = false;
               this.lastSpeakEndAt = Date.now();
               this.pendingSpeakCount = this.speakQueue.length;
@@ -3053,14 +3315,15 @@
         const minPeak = Math.max(0.022, this.vadNoiseFloor * 2.6 + 0.007);
         const minLoudFrames = 4;
 
-        /* AEC3 护航下的高门限 Barge-in：提高外放防误打断阈值，并保护开局裁判+对手首句不被扬声器回声误掐断 */
+        /* AEC3 护航下的高灵敏度 Barge-in：兼顾防爆音保护与随时开口秒打断 */
         if (this.isSpeaking) {
           if (this.bargeInGuardUntil && now < this.bargeInGuardUntil) {
             this.vadBargeStreak = 0;
-            this.updateVoiceWave(rms * 0.2, 0.1, false);
+            this.updateVoiceWave(rms * 0.2, 0.08, false);
             return;
           }
-          const bargeThresh = Math.max(0.085, this.vadNoiseFloor * 5.5);
+          const bargeThresh = Math.max(0.036, this.vadNoiseFloor * 3.0);
+          const strongBargeThresh = Math.max(0.062, this.vadNoiseFloor * 4.5);
           if (rms > bargeThresh) {
             this.vadBargeStreak += 1;
             this.updateVoiceWave(rms, bargeThresh, true);
@@ -3068,7 +3331,7 @@
             this.vadBargeStreak = 0;
             this.updateVoiceWave(rms * 0.3, bargeThresh, false);
           }
-          if (this.vadBargeStreak >= 7) {
+          if (this.vadBargeStreak >= 3 || (rms > strongBargeThresh && this.vadBargeStreak >= 2)) {
             this.vadBargeStreak = 0;
             this.stopPlayback();
             this.lastSpeakEndAt = 0;
@@ -4139,21 +4402,32 @@
       const strippedFuture = fixed.replace(/(?:下回合|下一回合|下次|等会|等一下|一会儿|待会|明天|次のターン|あとで|後で)再?[^、，。]*/g, "").trim();
       const clauses = this.splitComboClauses(strippedFuture);
 
-      /* 辅助：从当前真实手牌提取唯一合法卡牌，支持口语简写直接 0ms 补全 */
+      /* 辅助：从当前真实手牌提取合法卡牌，支持口语简写与复数批量操作 0ms 补全 */
       const liveHand = (typeof BattleEngine !== "undefined" && BattleEngine.state?.player?.hand) ? BattleEngine.state.player.hand : [];
+      const handMonIds = liveHand.filter((id) => Boolean(SpecEngine.getMonster(id)));
       const uniqueHandEnergies = Array.from(new Set(liveHand.filter((id) => id.startsWith("energy_"))));
-      const uniqueHandMons = Array.from(new Set(liveHand.filter((id) => Boolean(SpecEngine.getMonster(id)))));
+      const uniqueHandMons = Array.from(new Set(handMonIds));
       const uniqueHandTools = Array.from(new Set(liveHand.filter((id) => {
         const it = SpecEngine.getItem(id);
         return it && it.category !== "energy";
       })));
+      const emptyBenchCount = Math.max(0, 3 - (Array.isArray(board?.player?.bench) ? board.player.bench.filter(Boolean).length : 0));
+      const parsePluralCount = (clause, maxAvail) => {
+        const cap = Math.max(1, maxAvail || 1);
+        if (/(全部|所有|全都|统统|一起|全員|ぜんぶ|すべて|まとめて|みんな|(?<![不别没])都(?:放|出|派|上|下|用|喝|吃|使|给|贴))/.test(clause)) return cap;
+        if (/(三[张只个次瓶回枚体]|3[张只个次瓶回枚体]|３[枚体回])/.test(clause)) return Math.min(3, cap);
+        if (/(两[张只个次瓶回枚体]|二[张只个次瓶回枚体]|2[张只个次瓶回枚体]|２[枚体回])/.test(clause)) return Math.min(2, cap);
+        return 1;
+      };
 
       const actions = [];
       for (const c of clauses) {
         const fuzzyItem = SpecEngine.matchItem(c);
 
         if (/(エネ回収|エネルギー回収|かいしゅう|トラッシュからエネ|捨て札からエネ|能量回收|回收能量|从弃牌区拿能量|捡回能量|捞能量|拿回能量)/.test(c) || (fuzzyItem && fuzzyItem.id === "item_recycle")) {
-          actions.push({ type: "USE_ITEM", card_id: "item_recycle", target: null });
+          const handCnt = liveHand.filter((id) => id === "item_recycle").length;
+          const repeat = parsePluralCount(c, handCnt || 1);
+          for (let r = 0; r < repeat; r++) actions.push({ type: "USE_ITEM", card_id: "item_recycle", target: null });
           continue;
         }
         if (/(エネルギー|えねるぎー|エネ|えね|能量|贴能|火能|水能|雷能|充能|给.{0,6}(?:贴|充|加)(?:能|火|水|雷)|贴[个张]?(?:炎|火|水|雷)|貼って|はって|付けて|つけて|贴上|给它贴)/.test(c) || (fuzzyItem && fuzzyItem.category === "energy")) {
@@ -4171,7 +4445,8 @@
           continue;
         }
         const matchedSkillEarly = SpecEngine.matchSkill(c) || this.resolveColloquialSkillFromClause(c, board);
-        const matchedPlayerMon = SpecEngine.matchMonster(c, "player");
+        const allMatchedPlayerMons = SpecEngine.matchAllMonsters(c, "player");
+        const matchedPlayerMon = allMatchedPlayerMons[0] || SpecEngine.matchMonster(c, "player");
         const isSummonClause = /(ベンチに出|ベンチに置|ベンチに入|べんちに出|後ろに出|後ろに置|場に出|召喚|しょうかん|を出す|を出して|をだす|をだして|を置く|を置いて|备战区|放到?备战|放上备战|下怪|放上场|放到场上|放到后排|派上后排|派上场|上场|出战|召唤|^(?:出して|置いて|放下去|放上去)$)/.test(c)
           && !matchedSkillEarly && !this.hasExplicitDefendIntent(c)
           && !/(狙撃|狙击|点杀|交代|こうたい|撤退|てったい|换人|换上|换下|撤下去|きずぐすり|回復|かいふく|伤药|回血|奶)/.test(c);
@@ -4179,12 +4454,44 @@
           && /(出|放|派|上|下|置)/.test(c)
           && !/(攻撃|こうげき|攻击|技|招|能量|エネ|きずぐすり|回復|かいふく|伤药|奶|交代|こうたい|撤退|てったい|换|撤下去|拉回)/.test(c);
         if (isSummonClause || isShortMonDeploy) {
-          const deployId = matchedPlayerMon ? matchedPlayerMon.id : (uniqueHandMons.length === 1 ? uniqueHandMons[0] : null);
-          actions.push({ type: "PLAY_BENCH", card_id: deployId });
+          const hasPluralAll = /(全部|所有|全都|统统|一起|能放的|全員|ぜんぶ|すべて|まとめて|みんな|(?<![不别没])都(?:放|出|派|上|下|置))/.test(c);
+          const explicitCount = /(三[张只个回枚体]|3[张只个回枚体]|３[枚体])/.test(c) ? 3 : (/(两[张只个回枚体]|二[张只个回枚体]|2[张只个回枚体]|２[枚体])/.test(c) ? 2 : 0);
+          if (allMatchedPlayerMons.length >= 2) {
+            /* 点名多只怪兽一次放备战区（如“把雷狮和水龟放到备战区”“ライシシとミズガメをベンチに出して”） */
+            const remainingHand = handMonIds.slice();
+            let pushed = 0;
+            for (const m of allMatchedPlayerMons) {
+              if (emptyBenchCount > 0 && pushed >= emptyBenchCount) break;
+              const idx = remainingHand.indexOf(m.id);
+              if (remainingHand.length === 0 || idx !== -1) {
+                if (idx !== -1) remainingHand.splice(idx, 1);
+                actions.push({ type: "PLAY_BENCH", card_id: m.id, _plural: true });
+                pushed += 1;
+              }
+            }
+            if (pushed === 0) actions.push({ type: "PLAY_BENCH", card_id: allMatchedPlayerMons[0].id });
+          } else if (matchedPlayerMon && (hasPluralAll || explicitCount >= 2)) {
+            /* 点名同一种怪兽多只（如“把两只雷狮都放到备战区”） */
+            const copiesInHand = handMonIds.filter((id) => id === matchedPlayerMon.id).length;
+            const want = hasPluralAll ? (copiesInHand || 1) : Math.min(explicitCount, copiesInHand || explicitCount);
+            const cap = emptyBenchCount > 0 ? Math.min(want, emptyBenchCount) : 1;
+            for (let k = 0; k < cap; k++) actions.push({ type: "PLAY_BENCH", card_id: matchedPlayerMon.id, _plural: true });
+          } else if (!matchedPlayerMon && (hasPluralAll || explicitCount >= 2) && handMonIds.length > 0) {
+            /* 批量将手牌全部或指定数量怪兽放入备战区（如“把所有怪兽放到备战区”“手札のモンスターを全部ベンチに出して”） */
+            const want = hasPluralAll ? handMonIds.length : Math.min(explicitCount, handMonIds.length);
+            const cap = emptyBenchCount > 0 ? Math.min(want, emptyBenchCount) : 1;
+            for (let k = 0; k < cap; k++) actions.push({ type: "PLAY_BENCH", card_id: handMonIds[k], _plural: true });
+          } else {
+            const deployId = matchedPlayerMon ? matchedPlayerMon.id : (uniqueHandMons.length === 1 ? uniqueHandMons[0] : null);
+            actions.push({ type: "PLAY_BENCH", card_id: deployId });
+          }
           continue;
         }
         if (/(きずぐすり|回復|かいふく|ヒール|ポーション|体力回復|HP回復|伤药|回血|补血|治疗|加血|加点血|奶一口|奶一下|吃药|喝药|飲む|飲んで|のむ|のんで)/.test(c) || (fuzzyItem && fuzzyItem.id === "item_potion")) {
-          actions.push({ type: "USE_ITEM", card_id: "item_potion", target: this.resolveSlotFromText(c, "player", board) });
+          const handCnt = liveHand.filter((id) => id === "item_potion").length;
+          const repeat = parsePluralCount(c, handCnt || 1);
+          const target = this.resolveSlotFromText(c, "player", board);
+          for (let r = 0; r < repeat; r++) actions.push({ type: "USE_ITEM", card_id: "item_potion", target });
           continue;
         }
         if (/(補給バッグ|ほきゅう|ドロー|2枚引|カードを引|补给包|抽牌|抽两张|抽2张|摸两张|摸2张|摸牌|过牌|补牌)/.test(c) || (fuzzyItem && fuzzyItem.id === "item_bag")) {
@@ -4192,7 +4499,9 @@
           continue;
         }
         if (/(パワーバッジ|ぱわーばっじ|攻撃力アップ|火力アップ|バフ|力量徽章|加攻|加20攻|加伤害|增伤|強化|强化)/.test(c) || (fuzzyItem && fuzzyItem.id === "item_power")) {
-          actions.push({ type: "USE_ITEM", card_id: "item_power", target: null });
+          const handCnt = liveHand.filter((id) => id === "item_power").length;
+          const repeat = parsePluralCount(c, handCnt || 1);
+          for (let r = 0; r < repeat; r++) actions.push({ type: "USE_ITEM", card_id: "item_power", target: null });
           continue;
         }
         if (/^(?:使う|使って|つかう|つかって|用一下|使用道具|用道具)$/.test(c) && uniqueHandTools.length === 1) {
@@ -4610,8 +4919,24 @@
 
       TableUI.setRival(ja, zh);
       TableUI.appendLog(`【レン】${ja}`, `【莲】${zh}`);
-      await VoiceEngine.speak(t(ja, zh), "rival");
+      await VoiceEngine.speak({ ja, zh }, "rival", { priority: "low" });
       this.resetIdleTimer(false);
+    },
+
+    openingRivalLine: null,
+    openingChallengeSpoken: false,
+
+    /** 在开局引导第一句播完后，无缝衔接到对手莲的开局邀战台词 */
+    speakOpeningChallenge() {
+      if (this.openingChallengeSpoken) return;
+      const line = this.openingRivalLine || SpecEngine.getRivalLine("start");
+      if (!line || (!line.ja && !line.zh)) return;
+      this.openingChallengeSpoken = true;
+      const lang = getUiLang();
+      const firstChunk = VoiceEngine.splitIntoClauses(t(line.ja, line.zh), lang)[0] || t(line.ja, line.zh);
+      VoiceEngine.bargeInGuardUntil = Math.max(VoiceEngine.bargeInGuardUntil || 0, Date.now() + 700);
+      VoiceEngine.speak({ ja: line.ja, zh: line.zh }, "rival", { priority: "high", lang, deferPrefetch: true });
+      setTimeout(() => { VoiceEngine.prefetch(firstChunk, "rival", lang); }, 350);
     },
 
     reset(triggerGuideVoice = false) {
@@ -4630,6 +4955,8 @@
       $("gameOverModal").classList.remove("open");
       TableUI.closeEndTurnConfirmModal();
       const startLine = SpecEngine.getRivalLine("start");
+      this.openingRivalLine = startLine;
+      this.openingChallengeSpoken = false;
       TableUI.setRival(startLine.ja, startLine.zh);
       TableUI.appendLog("対戦準備：手札5枚（モンスター＋エネ保証）を引き、サイド3枚をセットしました。", "开局准备：各抽 5 张保底起手并盖放 3 张奖赏卡。");
       const ja = "手札の緑枠モンスターをクリック（または名前を言って）し、バトル場の最初の1体を選んでください。";
@@ -4638,6 +4965,7 @@
       TableUI.renderAll();
       if (triggerGuideVoice || !$("rulesModal")?.classList.contains("open")) {
         GuideEngine.trigger("setup_starter", triggerGuideVoice);
+        if (triggerGuideVoice) this.speakOpeningChallenge();
       }
       this.resetIdleTimer(true);
     },
@@ -5113,7 +5441,7 @@
           if (isManualVoice) {
             const fallback = NLUEngine.pickClarifyPhrase();
             TableUI.setReferee(fallback.ja, fallback.zh);
-            VoiceEngine.speak(t(fallback.ja, fallback.zh), "referee");
+            VoiceEngine.speak({ ja: fallback.ja, zh: fallback.zh }, "referee");
           } else {
             TableUI.setReferee(prevRefJa, prevRefZh);
           }
@@ -5121,8 +5449,9 @@
         }
 
         if (heardText && (result.transcript || isVoiceInput)) {
-          $("cmdInput").value = heardText;
           if (!payload.text) this.pushHistory("player", heardText);
+          /* 识别结果已派发，立即清空输入框，避免旧语音文本残留 */
+          if ($("cmdInput")) $("cmdInput").value = "";
         }
 
         /* 开局选首发阶段：语音转写完成后直接匹配手牌首发怪兽 */
@@ -5136,7 +5465,7 @@
             const zh = "请说出绿色高亮手牌怪兽的名字，或直接点击它作为首发！";
             TableUI.setReferee(ja, zh);
             VoiceEngine.clearQueuedOnly(false);
-            VoiceEngine.speak(t(ja, zh), "referee", { priority: "high" });
+            VoiceEngine.speak({ ja, zh }, "referee", { priority: "high" });
           }
           return;
         }
@@ -5151,7 +5480,7 @@
             if (s.pending && !cloudResolvedPending) {
               TableUI.setReferee(s.pending.promptJa, s.pending.promptZh);
               VoiceEngine.clearQueuedOnly(false);
-              VoiceEngine.speak(t(s.pending.promptJa, s.pending.promptZh), "referee", { priority: "high" });
+              VoiceEngine.speak({ ja: s.pending.promptJa, zh: s.pending.promptZh }, "referee", { priority: "high" });
               return;
             }
           }
@@ -5183,8 +5512,8 @@
             }
           }
           VoiceEngine.clearQueuedOnly(false);
-          VoiceEngine.speak(t(ja, zh), "referee", { priority: "high" });
-          if (result.rival_ja || result.rival_zh) VoiceEngine.speak(t(result.rival_ja, result.rival_zh), "rival", { priority: "normal" });
+          VoiceEngine.speak({ ja, zh }, "referee", { priority: "high" });
+          if (result.rival_ja || result.rival_zh) VoiceEngine.speak({ ja: result.rival_ja, zh: result.rival_zh }, "rival", { priority: "normal" });
           return;
         }
 
@@ -5194,8 +5523,8 @@
           TableUI.appendLog(result.reply_ja || result.transcript, result.reply_zh || result.transcript);
           this.pushHistory("referee", result.reply_ja || "");
           VoiceEngine.clearQueuedOnly(false);
-          VoiceEngine.speak(t(result.reply_ja, result.reply_zh), "referee", { priority: "high" });
-          if (result.rival_ja || result.rival_zh) VoiceEngine.speak(t(result.rival_ja, result.rival_zh), "rival", { priority: "normal" });
+          VoiceEngine.speak({ ja: result.reply_ja, zh: result.reply_zh }, "referee", { priority: "high" });
+          if (result.rival_ja || result.rival_zh) VoiceEngine.speak({ ja: result.rival_ja, zh: result.rival_zh }, "rival", { priority: "normal" });
           return;
         }
 
@@ -5215,7 +5544,7 @@
             ]
           });
           VoiceEngine.clearQueuedOnly(false);
-          VoiceEngine.speak(t(ja, zh), "referee", { priority: "high" });
+          VoiceEngine.speak({ ja, zh }, "referee", { priority: "high" });
           return;
         }
 
@@ -5253,8 +5582,11 @@
           }
           if (a.type === "PLAY_BENCH") {
             if (isVoiceInput && !/(ベンチ|べんち|後ろ|場に出|召喚|しょうかん|出す|だす|だし|置く|おく|おい|备战|下怪|上场|出战|后排|出|放|派|上|召唤)/.test(rawUtter) && !explicitMon) continue;
-            const clauseMon = SpecEngine.matchMonster(actClause, "player");
-            if (!clauseMon) a.card_id = null;
+            if (!a._plural) {
+              const clauseMons = SpecEngine.matchAllMonsters(actClause, "player");
+              const matchedId = clauseMons.some((m) => m.id === a.card_id) ? a.card_id : (clauseMons[0]?.id || null);
+              if (!matchedId) a.card_id = null;
+            }
           }
           if (a.type === "USE_ITEM") {
             if (isVoiceInput && !/(きずぐすり|回復|かいふく|ヒール|ポーション|体力|伤药|回血|补血|治|加血|吃药|喝药|奶|笛|ふえ|呼び出|引っ張り|強制交代|拉|補給|ほきゅう|ドロー|抽|摸|过牌|补牌|バッジ|ばっじ|パワー|バフ|アップ|力量|加攻|加伤害|增伤|強化|强化|回収|かいしゅう|回收|捞|捡|道具|グッズ|サポート|支援|使|用)/.test(rawUtter) && !explicitItem) continue;
@@ -5294,7 +5626,7 @@
           TableUI.setReferee(fallback.ja, fallback.zh);
           TableUI.appendLog(`聞き取り「${rawUtter}」→ 指示未確定`, `识别为「${rawUtter}」，未检测到明确操作，保持当前回合`);
           VoiceEngine.clearQueuedOnly(false);
-          VoiceEngine.speak(t(fallback.ja, fallback.zh), "referee", { priority: "high" });
+          VoiceEngine.speak({ ja: fallback.ja, zh: fallback.zh }, "referee", { priority: "high" });
           return;
         }
 
@@ -5322,13 +5654,14 @@
           });
           TableUI.openEndTurnConfirmModal(opps, true);
           VoiceEngine.clearQueuedOnly(false);
-          VoiceEngine.speak(t(ja, zh), "referee", { priority: "high" });
+          VoiceEngine.speak({ ja, zh }, "referee", { priority: "high" });
           return;
         }
 
         if (s.pending && s.pending.type !== "promote_bench") this.clearPending();
         await this.runActionQueue(safeQueue, { ja: result.rival_ja, zh: result.rival_zh });
       } finally {
+        if (isVoiceInput && $("cmdInput")) $("cmdInput").value = "";
         s.busy = false;
         TableUI.renderAll();
         this.resetIdleTimer(true);
@@ -5349,7 +5682,7 @@
         TableUI.setReferee(ja, zh);
         TableUI.appendLog(ja, zh);
         VoiceEngine.clearQueuedOnly(false);
-        VoiceEngine.speak(t(ja, zh), "referee", { priority: "normal" });
+        VoiceEngine.speak({ ja, zh }, "referee", { priority: "normal" });
         return true;
       }
 
@@ -5384,8 +5717,7 @@
           this.clearPending();
           const r = SpecEngine.getRivalLine("surrender");
           TableUI.setRival(r.ja, r.zh);
-          VoiceEngine.stopPlayback();
-          VoiceEngine.speak(t(r.ja, r.zh), "rival");
+          VoiceEngine.speak({ ja: r.ja, zh: r.zh }, "rival", { priority: "critical" });
           this.endGame("enemy", "降参しました。相手の勝利です。", "你选择了认输，对手获胜。");
           return true;
         }
@@ -5488,11 +5820,13 @@
       return false;
     },
 
-    /** 非阻塞双语播报：错峰预取对手语音防双 WS 争抢，保护开局首句不被回声误打断 */
+    /** 非阻塞双语播报：错峰预取对手语音防双 WS 争抢，并保存完整双语文本支持语言切换实时重播 */
     announceAndReact(ja, zh, rivalEvent, customRival = null, opts = {}) {
       const priority = opts.priority || "normal";
       const lang = getUiLang();
-      const spokenReferee = t(opts.speakJa || ja, opts.speakZh || zh);
+      const refJa = opts.speakJa || ja || "";
+      const refZh = opts.speakZh || zh || "";
+      const spokenReferee = t(refJa, refZh);
       const rJa = (customRival && customRival.ja) || (rivalEvent ? SpecEngine.getRivalLine(rivalEvent).ja : "");
       const rZh = (customRival && customRival.zh) || (rivalEvent ? SpecEngine.getRivalLine(rivalEvent).zh : "");
       const spokenRival = t(rJa, rZh);
@@ -5505,15 +5839,16 @@
         TableUI.setRival(rJa, rZh);
       }
       if (priority === "high" && spokenReferee && spokenRival) {
-        /* 开局或高优双人连播时给予 3.2s 防外放回声自打断窗口，杜绝对手第一句话被吞 */
-        VoiceEngine.bargeInGuardUntil = Math.max(VoiceEngine.bargeInGuardUntil || 0, Date.now() + 3200);
+        /* 仅保留 700ms 启动防爆音窗口，之后允许玩家随时开口灵敏打断 */
+        VoiceEngine.bargeInGuardUntil = Math.max(VoiceEngine.bargeInGuardUntil || 0, Date.now() + 700);
       }
-      if (spokenReferee) VoiceEngine.speak(spokenReferee, "referee", { priority, lang });
+      if (spokenReferee) VoiceEngine.speak({ ja: refJa, zh: refZh }, "referee", { priority, lang });
       if (spokenRival) {
         const rivalPriority = priority === "high" ? "high" : "normal";
-        VoiceEngine.speak(spokenRival, "rival", { priority: rivalPriority, lang, deferPrefetch: true });
-        /* 错峰 350ms 预取对手语音，避免 0ms 并发两条 Nia TTS WS 互相争抢带宽导致丢句或卡顿 */
-        setTimeout(() => { VoiceEngine.prefetch(spokenRival, "rival", lang); }, 350);
+        const firstRivalChunk = VoiceEngine.splitIntoClauses(spokenRival, lang)[0] || spokenRival;
+        VoiceEngine.speak({ ja: rJa, zh: rZh }, "rival", { priority: rivalPriority, lang, deferPrefetch: true });
+        /* 错峰 350ms 预取对手语音首句，避免 0ms 并发两条 Nia TTS WS 互相争抢带宽 */
+        setTimeout(() => { VoiceEngine.prefetch(firstRivalChunk, "rival", lang); }, 350);
       }
       return Promise.resolve();
     },
@@ -6201,7 +6536,7 @@
             const rZh = (customRival && customRival.zh) || SpecEngine.getRivalLine(rivalEv).zh || SpecEngine.getRivalLine("attack_hit").zh;
             if (rJa || rZh) {
               TableUI.setRival(rJa, rZh);
-              VoiceEngine.speak(t(rJa, rZh), "rival");
+              VoiceEngine.speak({ ja: rJa, zh: rZh }, "rival");
             }
           }
           if (s.gameOver) return false;
@@ -6236,7 +6571,7 @@
         if (s.player.prizesLeft === 0) {
           const r = SpecEngine.getRivalLine("player_win");
           TableUI.setRival(r.ja, r.zh);
-          VoiceEngine.speak(t(r.ja, r.zh), "rival", { priority: "high" });
+          VoiceEngine.speak({ ja: r.ja, zh: r.zh }, "rival", { priority: "critical" });
           this.endGame("player", `サイドを${TOTAL_PRIZES}枚取り切りました！あなたの勝利です！`, `你拿完 ${TOTAL_PRIZES} 张奖赏卡，赢得胜利！`);
           return true;
         }
@@ -6246,7 +6581,7 @@
         const prizeJa = prizeCards.length ? `サイドから「${prizeCards.map((c) => c.ja).join("・")}」を手札に加えました！` : "";
         const prizeZh = prizeCards.length ? `从奖赏卡抽到「${prizeCards.map((c) => c.zh).join("、")}」加入手牌！` : "";
         TableUI.appendLog(`相手の${e.def.name_ja}を撃破！${prizeJa}`, `击倒对手的${e.def.name_zh}，${prizeZh}`);
-        VoiceEngine.speak(t(koLine.ja, koLine.zh), "rival", { priority: "high" });
+        VoiceEngine.speak({ ja: koLine.ja, zh: koLine.zh }, "rival", { priority: "high" });
       }
       if (deadEnemies.length > 0 && !s.enemy.active) {
         const bench = this.getBenchEntries("enemy").filter((b) => b.unit.hp > 0);
@@ -6280,7 +6615,7 @@
         if (s.enemy.prizesLeft === 0) {
           const r = SpecEngine.getRivalLine("enemy_win");
           TableUI.setRival(r.ja, r.zh);
-          VoiceEngine.speak(t(r.ja, r.zh), "rival", { priority: "high" });
+          VoiceEngine.speak({ ja: r.ja, zh: r.zh }, "rival", { priority: "critical" });
           this.endGame("enemy", `相手にサイドを${TOTAL_PRIZES}枚取られました。`, `对手拿完 ${TOTAL_PRIZES} 张奖赏卡，本局败北。`);
           return true;
         }
@@ -6288,7 +6623,7 @@
         const r = SpecEngine.getRivalLine(prizeVal === 2 ? "player_ex_ko" : "player_ko");
         TableUI.setRival(r.ja, r.zh);
         TableUI.appendLog(`自分の${p.def.name_ja}がきぜつ…相手がサイドを${prizeVal}枚手札に加えた。`, `己方${p.def.name_zh}倒下，对手拿走 ${prizeVal} 张奖赏卡加入手牌。`);
-        VoiceEngine.speak(t(r.ja, r.zh), "rival", { priority: "high" });
+        VoiceEngine.speak({ ja: r.ja, zh: r.zh }, "rival", { priority: "high" });
       }
       if (deadPlayers.length > 0 && !s.player.active) {
         const myBench = this.getBenchEntries("player").filter((b) => b.unit.hp > 0);
@@ -6943,8 +7278,8 @@
       TableUI.setRival(rivalCallJa, rivalCallZh);
       TableUI.setReferee(ja, zh);
       TableUI.appendLog(ja, zh);
-      VoiceEngine.speak(t(rivalCallJa, rivalCallZh), "rival");
-      VoiceEngine.speak(t(ja, zh), "referee");
+      VoiceEngine.speak({ ja: rivalCallJa, zh: rivalCallZh }, "rival");
+      VoiceEngine.speak({ ja, zh }, "referee");
       if (!(await this.matchDelay(480, seq))) return false;
       await this.checkKnockOuts();
       return seq === this.matchSeq && !s.gameOver;
@@ -7199,7 +7534,7 @@
               TableUI.setRival(guardCallJa, guardCallZh);
               TableUI.setReferee(ja, zh);
               TableUI.appendLog(ja, zh);
-              VoiceEngine.speak(t(guardCallJa, guardCallZh), "rival");
+              VoiceEngine.speak({ ja: guardCallJa, zh: guardCallZh }, "rival");
             } else {
               const ja = "レンはそのままターンを終了した。";
               const zh = "对手莲直接结束了回合。";
@@ -7235,7 +7570,7 @@
             TableUI.showTurnBanner(`ターン ${s.turn} · あなたのターン`, `第 ${s.turn} 回合 · 你的回合`, false);
             TableUI.setReferee(`あなたのターンです！${dJa}`, `轮到你的回合了！${dZh}`);
             TableUI.appendLog(`ターン ${s.turn} 開始：${dJa}`, `第 ${s.turn} 回合开始：${dZh}`);
-            VoiceEngine.speak(t(`あなたのターンです！${dJa}`, `轮到你的回合了！${dZh}`), "referee", { priority: "low" });
+            VoiceEngine.speak({ ja: `あなたのターンです！${dJa}`, zh: `轮到你的回合了！${dZh}` }, "referee", { priority: "low" });
           }
           TableUI.renderAll();
           this.resetIdleTimer(true);
@@ -7360,7 +7695,7 @@
             TableUI.setRival(guardCallJa, "这回合先稳住防守。");
             TableUI.setReferee(ja, zh);
             TableUI.appendLog(ja, zh);
-            VoiceEngine.speak(guardCallJa, "rival");
+            VoiceEngine.speak({ ja: guardCallJa, zh: "这回合先稳住防守。" }, "rival");
           } else {
             const ja = "レンはそのままターンを終了した。";
             const zh = "对手莲直接结束了回合。";
@@ -8141,10 +8476,10 @@
       const badge = $("turnBadge");
       badge.className = "turn-pill" + (s.currentPlayer === "enemy" ? " enemy-turn" : "");
       badge.textContent = s.phase === "setup"
-        ? t("対戦準備：先発モンスターを選択", "开局准备：选择首发怪兽")
+        ? t("対戦準備：先発を選択", "开局准备：选择首发怪兽")
         : (s.currentPlayer === "player"
           ? t(`ターン ${s.turn}：あなたの番`, `第 ${s.turn} 回合：你的回合`)
-          : t(`ターン ${s.turn}：相手レンの番`, `第 ${s.turn} 回合：对手莲的回合`));
+          : t(`ターン ${s.turn}：レンの番`, `第 ${s.turn} 回合：对手莲的回合`));
 
       const limBox = $("turnLimits");
       if (limBox) {
@@ -8800,13 +9135,16 @@
     }
     syncSelectOptionsLanguage();
     GuideEngine.syncButton();
+    GuideEngine.syncVisibleCard();
     VoiceEngine.updateCallButtonUI();
     MobileViewportManager.syncUi();
     syncSettingsForm();
+    if ($("mdStatusText") && SpecEngine.sourceLabel) $("mdStatusText").textContent = `${t("読込元：", "数据源：")} ${SpecEngine.sourceLabel}`;
+    if ($("actionPopover")) $("actionPopover").classList.remove("open");
     if (BattleEngine.state) TableUI.renderAll();
     if ($("codexModal")?.classList.contains("open")) TableUI.renderCodex();
     if (!opts.silent && prev !== next) {
-      VoiceEngine.stopPlayback();
+      VoiceEngine.replayCurrentQueueInLang(next);
       TableUI.showToast("日本語に切り替えました", "已切换为中文界面与中文配音");
     }
   }
@@ -8904,6 +9242,7 @@
       }
       if (BattleEngine.state?.phase === "setup") {
         GuideEngine.trigger("setup_starter", true);
+        BattleEngine.speakOpeningChallenge();
       }
     };
     const setDifficulty = (diff, showToast = false) => {
@@ -9070,9 +9409,9 @@
         VoiceEngine.apiTtsBlockReason = "";
         VoiceEngine.stopPlayback();
         const lang = getUiLang();
-        await VoiceEngine.speak(t("ヒノキツネの『ひのこ』！相手に30ダメージ！", "炎狐发动火花！对对手造成30点伤害！"), "referee", { lang });
+        await VoiceEngine.speak({ ja: "ヒノキツネの『ひのこ』！相手に30ダメージ！", zh: "炎狐发动火花！对对手造成30点伤害！" }, "referee", { lang });
         await delay(240);
-        await VoiceEngine.speak(t("なかなかやるじゃねえか。次は俺の番だぜ！", "挺能干的嘛，接下来轮到我出招了！"), "rival", { lang });
+        await VoiceEngine.speak({ ja: "なかなかやるじゃねえか。次は俺の番だぜ！", zh: "挺能干的嘛，接下来轮到我出招了！" }, "rival", { lang });
       } finally {
         if (!savedConfigDuringTtsTest) {
           ConfigManager.data = prevCfg;
@@ -9317,10 +9656,15 @@
     document.body.classList.add("app-ready");
     const splash = $("bootSplash");
     if (splash) {
-      requestAnimationFrame(() => {
-        splash.classList.add("fade-out");
-        setTimeout(() => splash.remove(), 320);
-      });
+      const FIXED_SPLASH_MS = 1400;
+      const elapsed = Date.now() - (typeof window.__bootStartAt === "number" ? window.__bootStartAt : Date.now());
+      const remain = Math.max(0, FIXED_SPLASH_MS - elapsed);
+      setTimeout(() => {
+        requestAnimationFrame(() => {
+          splash.classList.add("fade-out");
+          setTimeout(() => splash.remove(), 480);
+        });
+      }, remain);
     }
   }
 
