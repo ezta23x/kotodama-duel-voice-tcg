@@ -13,10 +13,10 @@
      1. 经典暖木酒馆与羊皮纸桌游色系（明亮温润、低饱和、高可读 60-30-10）
      ========================================================================= */
   :root {
-    --font-ja: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "BIZ UDPGothic", "Yu Gothic UI", "Meiryo", sans-serif;
-    --font-zh: "PingFang SC", "Noto Sans SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
-    --font-display-ja: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "BIZ UDPGothic", "Yu Gothic UI", "Meiryo", sans-serif;
-    --font-display-zh: "PingFang SC", "Noto Sans SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+    --font-ja: "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "BIZ UDPGothic", "Yu Gothic UI", "Meiryo", sans-serif;
+    --font-zh: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+    --font-display-ja: "Noto Sans JP", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "BIZ UDPGothic", "Yu Gothic UI", "Meiryo", sans-serif;
+    --font-display-zh: "Noto Sans SC", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
     --wood-1: #6b4b30;
     --wood-2: #4f3520;
     --wood-bar-1: #5c3f27;
@@ -63,6 +63,8 @@
     height: 100dvh;
     overflow: hidden;
     font-family: var(--font-ja);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }
@@ -773,6 +775,14 @@
   .card.anim-heal { animation: cardHeal 0.65s ease; }
   .card.anim-enter { animation: cardEnter 0.4s cubic-bezier(.2,.9,.3,1); }
   .card.anim-guard { animation: cardGuardFlash 0.52s ease; }
+  .card.anim-deny, .slot-box.anim-deny { animation: cardDenyShake 0.42s cubic-bezier(.36,.07,.19,.97); }
+  @keyframes cardDenyShake {
+    0%, 100% { transform: translateX(0); }
+    18% { transform: translateX(-6px); box-shadow: 0 0 0 2.5px rgba(184, 69, 58, 0.78), var(--shadow); }
+    40% { transform: translateX(6px); }
+    62% { transform: translateX(-4px); }
+    82% { transform: translateX(3px); }
+  }
   @keyframes cardHit {
     0% { transform: translateX(0) scale(1); }
     15% { transform: translateX(-8px) rotate(-2.5deg) scale(0.97); box-shadow: 0 0 0 2.5px rgba(184, 69, 58, 0.72), var(--shadow); }
@@ -841,6 +851,7 @@
   .float-text.heal { background: var(--ok); color: #fff; }
   .float-text.energy { background: #5a3e26; color: #fbf3df; border: 1px solid var(--gold); font-size: 12.5px; }
   .float-text.guard { background: var(--water); color: #fff; font-size: 12.5px; }
+  .float-text.warn { background: #8f2d24; color: #fff6e8; border: 1.5px solid #f0b084; font-size: 13px; }
   .float-text.ko { background: #462f1c; color: #f8e1a2; border: 1px solid var(--gold); font-size: 14.5px; }
   @keyframes floatUpFade {
     0% { opacity: 0; transform: translate(-50%, 8px) scale(0.76); }
@@ -3223,18 +3234,28 @@
   .turn-pill { font-size: 13px; padding: 3px 12px; }
   .top-actions { flex-wrap: nowrap; gap: 5px; }
   .top-btn { font-size: 12.5px; min-height: 30px; padding: 4px 10px; gap: 4px; }
-  .arena-grid { grid-template-columns: minmax(0, 1fr) 344px; gap: 8px; }
+  /* 全显示器尺寸与纵横比自适应：通过 clamp+dvh 锁定空/满卡槽等高，怪兽上场零挤压、零位移 */
+  .arena-grid { grid-template-columns: minmax(0, 1fr) clamp(292px, 24vw, 372px); gap: clamp(6px, 0.7vw, 10px); }
 
   .zone-label { font-size: 12.5px; }
-  .prize-card { width: 26px; height: 38px; font-size: 13px; }
+  .prize-card { width: clamp(22px, 1.8vw, 28px); height: clamp(32px, 4.2dvh, 42px); font-size: 13px; }
   .prize-count-pill { font-size: 11.5px; padding: 1.5px 7px; }
-  .pile-box { width: 74px; padding: 4px 4px; }
+  .pile-box { width: clamp(68px, 5.2vw, 80px); padding: 4px 4px; }
   .pile-box strong { font-size: 16px; }
   .pile-box .pile-ja, .pile-box .pile-zh { font-size: 11.5px; font-weight: 700; color: #543b24; line-height: 1.15; }
 
-  .field-center { gap: 4px; }
-  .slot-box { padding: 16px 5px 4px; min-height: 92px; }
-  .slot-box.active-slot { width: clamp(360px, 60%, 460px); min-height: 102px; }
+  .field-center { gap: clamp(3px, 0.45dvh, 6px); }
+  .slot-box {
+    padding: 16px 5px 4px;
+    height: clamp(92px, 14.2dvh, 126px);
+    min-height: clamp(92px, 14.2dvh, 126px);
+  }
+  .slot-box.active-slot {
+    width: clamp(310px, 58%, 480px);
+    height: clamp(106px, 16.2dvh, 142px);
+    min-height: clamp(106px, 16.2dvh, 142px);
+  }
+  .slot-box > .card { height: 100%; justify-content: space-between; }
   .slot-tag { top: 2px; left: 7px; font-size: 11.5px; }
   .slot-empty { font-size: 13px; }
 
@@ -3353,14 +3374,59 @@
   .diff-btn { font-size: 13.5px; padding: 7px 16px; }
   #btnStartGame { font-size: 15px; padding: 9px 24px; }
 
-  /* 设置与图鉴弹窗字号放大 */
+  /* 设置与图鉴弹窗：固定稳定尺寸与等高槽位，切换语言/TTS/ASR模型时外框与行列绝不上下左右跳动 */
+  #settingsModal .modal-box {
+    width: min(720px, calc(100vw - 24px));
+    max-width: 720px;
+    height: min(82dvh, 720px);
+    max-height: 90dvh;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+  }
+  #settingsModal .cfg-scroll-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+  }
+  #rulesModal .modal-box { width: min(860px, calc(100vw - 24px)); }
+  .turn-pill { min-width: 172px; text-align: center; }
+  .lang-pill { min-width: 74px; }
   .modal-head h2 { font-size: 18.5px; }
   .cfg-section-title { font-size: 14.5px; }
   .cfg-section-badge { font-size: 12px; }
-  .cfg-field label { font-size: 13.5px; }
-  .cfg-field input, .cfg-field select { font-size: 14px; padding: 7px 10px; }
-  .cfg-hint-pill { font-size: 13px; }
+  .cfg-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  .cfg-field { min-height: 62px; }
+  .cfg-field label { font-size: 13.5px; min-height: 20px; }
+  .cfg-field input, .cfg-field select {
+    font-size: 14px;
+    height: 38px;
+    padding: 6px 10px;
+  }
+  .cfg-hint-pill {
+    font-size: 13px;
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    padding: 6px 10px;
+  }
   .cfg-toggle-inline { font-size: 13.5px; }
+  /* 视觉掩码密钥框：替代 type=password 彻底杜绝浏览器误弹“保存密码”提示 */
+  .secret-mask { -webkit-text-security: disc; text-security: disc; }
+  /* 重开/结束回合确认等次级弹窗字号放大，确保清晰易读 */
+  #resetConfirmModal .modal-box,
+  #endTurnConfirmModal .modal-box { max-width: 460px; padding: 20px 24px; }
+  #resetConfirmModal h2,
+  #endTurnConfirmModal h2,
+  .mobile-fs-title-ja,
+  .mobile-fs-title-zh { font-size: 19px !important; line-height: 1.35; }
+  .mobile-fs-desc-ja,
+  .mobile-fs-desc-zh { font-size: 14.5px !important; line-height: 1.62; color: var(--ink); }
+  .endturn-hint-ja,
+  .endturn-hint-zh { font-size: 14px !important; line-height: 1.5; color: var(--ink); font-weight: 600; }
+  .reset-confirm-actions .btn-sm { font-size: 14px; padding: 9px 18px; min-width: 132px; }
   .codex-legend { font-size: 13.5px; }
   .codex-skill-top { font-size: 14px; }
   .codex-skill-desc { font-size: 12.5px; }
@@ -3453,10 +3519,10 @@
     .brand { flex: 1 1 100%; justify-content: space-between; flex-wrap: wrap; }
     .brand-title { font-size: 16.5px; }
     .brand-logo-svg { width: 24px; height: 24px; }
-    .turn-pill { font-size: 12px; padding: 3px 9px; }
+    .turn-pill { font-size: 12px; padding: 3px 9px; min-width: 0; }
     .top-actions { width: 100%; flex-wrap: wrap; gap: 5px; justify-content: flex-start; }
     .top-btn { font-size: 12px; min-height: 30px; padding: 4px 9px; }
-    .lang-pill { font-size: 11.5px; padding: 3px 8px; }
+    .lang-pill { font-size: 11.5px; padding: 3px 8px; min-width: 0; }
     .lang-badge-svg { width: 15px; height: 15px; }
 
     .arena-grid {
@@ -3466,9 +3532,9 @@
       overflow: visible;
     }
     .playmat { height: auto; overflow: visible; padding: 8px; gap: 8px; }
-    .half-field { display: flex; flex-direction: column; gap: 6px; }
-    .slot-box { min-height: 92px; padding: 18px 6px 6px; }
-    .slot-box.active-slot { width: 100% !important; max-width: none; min-height: 112px; }
+    .side-half { display: flex; flex-direction: column; gap: 6px; }
+    .slot-box { height: auto; min-height: 104px; padding: 18px 6px 6px; }
+    .slot-box.active-slot { width: 100% !important; max-width: none; height: auto; min-height: 122px; }
     .bench-row {
       display: flex;
       overflow-x: auto;
@@ -3482,7 +3548,7 @@
     .skill-line { font-size: 13px; padding: 3.5px 6px; }
     .skill-dmg { font-size: 14px; }
 
-    .hand-dock { flex-direction: column; gap: 8px; padding: 8px; }
+    .hand-body { flex-direction: column; gap: 8px; }
     .hand-cards { width: 100%; overflow-x: auto; padding-bottom: 4px; }
     .hand-card { flex: 0 0 164px; min-width: 164px; min-height: 102px; }
     .hand-actions { flex: none; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -3500,7 +3566,11 @@
     .notepad-log { max-height: 180px; }
     .voice-hud { position: fixed; bottom: 14px; max-width: calc(100vw - 24px); padding: 7px 14px; }
     .voice-hud-body { font-size: 13px; }
-    #rulesModal .modal-box { width: calc(100vw - 20px); max-height: 92dvh; padding: 14px; }
+    #rulesModal .modal-box { width: calc(100vw - 16px); max-height: 92dvh; padding: 14px; }
+    #settingsModal .modal-box { width: calc(100vw - 16px); height: min(88dvh, 680px); }
+    .cfg-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 6px; }
+    .cfg-field { min-height: 0; }
+    .cfg-footer { flex-wrap: wrap; }
     .rules-list { font-size: 13.5px; line-height: 1.72; }
     .rules-list li { margin-bottom: 9px; }
     .rules-head-right { width: 100%; justify-content: space-between; }
@@ -3513,28 +3583,42 @@
   <svg class="boot-splash-emblem" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="splashGold" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stop-color="#fff0bc"/>
-        <stop offset="50%" stop-color="#d8a23a"/>
-        <stop offset="100%" stop-color="#8c5c16"/>
+        <stop offset="0%" stop-color="#fff3c4"/>
+        <stop offset="50%" stop-color="#dfa93e"/>
+        <stop offset="100%" stop-color="#946218"/>
+      </linearGradient>
+      <linearGradient id="splashFire" x1="50%" y1="0%" x2="50%" y2="100%">
+        <stop offset="0%" stop-color="#ff8a4c"/>
+        <stop offset="55%" stop-color="#f04c2c"/>
+        <stop offset="100%" stop-color="#b82414"/>
+      </linearGradient>
+      <linearGradient id="splashWater" x1="35%" y1="0%" x2="65%" y2="100%">
+        <stop offset="0%" stop-color="#7ed4ff"/>
+        <stop offset="55%" stop-color="#3395e8"/>
+        <stop offset="100%" stop-color="#1a5fa8"/>
       </linearGradient>
       <radialGradient id="splashCore" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stop-color="#3a2813"/>
-        <stop offset="100%" stop-color="#120c06"/>
+        <stop offset="0%" stop-color="#2c2217"/>
+        <stop offset="100%" stop-color="#110d09"/>
       </radialGradient>
     </defs>
-    <circle cx="60" cy="60" r="54" fill="url(#splashCore)" stroke="url(#splashGold)" stroke-width="3.2"/>
-    <circle cx="60" cy="60" r="46" fill="none" stroke="rgba(246,216,144,0.45)" stroke-width="1.2" stroke-dasharray="5 4"/>
-    <polygon points="60,15 99,82 21,82" fill="none" stroke="url(#splashGold)" stroke-width="2" opacity="0.72"/>
-    <!-- 顶部火纹几何图腾 -->
-    <path d="M60 22 C65 29 66 34 60 40 C54 34 55 29 60 22 Z" fill="#e6674a"/>
-    <!-- 左下水纹几何图腾 -->
-    <path d="M31 74 C36 69 41 72 39 78 C36 83 28 81 31 74 Z" fill="#5aa8e0"/>
-    <!-- 右下雷纹几何图腾 -->
-    <polygon points="88,67 81,76 86,76 83,84 93,74 87,74" fill="#f3c442"/>
-    <!-- 中央言灵双勾玉符文 -->
-    <path d="M60 42 A18 18 0 1 1 42 60 A9 9 0 0 0 60 60 A9 9 0 0 1 60 42 Z" fill="url(#splashGold)"/>
-    <circle cx="60" cy="51" r="3.4" fill="#181008"/>
-    <circle cx="60" cy="69" r="3.4" fill="#fff0bc"/>
+    <circle cx="60" cy="60" r="55" fill="url(#splashCore)" stroke="url(#splashGold)" stroke-width="3.6"/>
+    <circle cx="60" cy="60" r="48" fill="none" stroke="rgba(246,216,144,0.34)" stroke-width="1.2" stroke-dasharray="4 4"/>
+    <polygon points="60,18 98,84 22,84" fill="none" stroke="url(#splashGold)" stroke-width="1.6" opacity="0.42"/>
+    <!-- 顶部火苗图腾（双层摇曳火舌） -->
+    <path d="M60 9 C64.5 16 70 20.5 70 27.2 C70 33.2 65.6 37.5 60 37.5 C54.4 37.5 50 33.2 50 27.2 C50 23.2 52.2 19.6 54.4 17 C54.4 19.8 55.6 21.4 56.8 21.8 C56.2 17.4 57.6 12.6 60 9 Z" fill="url(#splashFire)" stroke="#20120a" stroke-width="1.2"/>
+    <path d="M60 19.5 C62.5 23.4 64.5 25.8 64.5 29.2 C64.5 32.3 62.5 34.4 60 34.4 C57.5 34.4 55.5 32.3 55.5 29.2 C55.5 25.8 57.5 23.4 60 19.5 Z" fill="#ffe07d"/>
+    <!-- 左下水滴图腾（饱满水滴 + 弯月高光） -->
+    <path d="M28.5 67.5 C28.5 67.5 38.5 79.2 38.5 85.8 C38.5 91.6 34 96 28.5 96 C23 96 18.5 91.6 18.5 85.8 C18.5 79.2 28.5 67.5 28.5 67.5 Z" fill="url(#splashWater)" stroke="#121d2b" stroke-width="1.2"/>
+    <path d="M24.2 84.5 C23.6 87.6 24.8 90.6 27.2 91.8" fill="none" stroke="rgba(255,255,255,0.82)" stroke-width="2" stroke-linecap="round"/>
+    <!-- 右下雷电图腾（加宽加粗与火苗、水滴视觉体量三足平衡） -->
+    <polygon points="95.5,64 79,83 88.8,83 83.5,99 103.5,77.5 93,77.5" fill="#ffd247" stroke="#4f3407" stroke-width="1.4" stroke-linejoin="round"/>
+    <!-- 中央清晰太极双勾玉（完整描边外环 + 鲜明阴阳分区） -->
+    <circle cx="60" cy="62" r="19" fill="#16120e"/>
+    <path d="M60 43 A19 19 0 0 1 60 81 A9.5 9.5 0 0 1 60 62 A9.5 9.5 0 0 0 60 43 Z" fill="url(#splashGold)"/>
+    <circle cx="60" cy="62" r="19" fill="none" stroke="#f5d585" stroke-width="2"/>
+    <circle cx="60" cy="52.5" r="3.4" fill="#fff0bc"/>
+    <circle cx="60" cy="71.5" r="3.4" fill="#16120e"/>
   </svg>
   <div class="boot-splash-title">言霊デュエル</div>
   <div class="boot-splash-sub">KOTODAMA DUEL</div>
@@ -3547,19 +3631,33 @@
       <svg class="brand-logo-svg" viewBox="0 0 120 120" aria-hidden="true">
         <defs>
           <linearGradient id="topGold" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#fff0bc"/>
-            <stop offset="52%" stop-color="#d8a23a"/>
-            <stop offset="100%" stop-color="#8c5c16"/>
+            <stop offset="0%" stop-color="#fff3c4"/>
+            <stop offset="50%" stop-color="#dfa93e"/>
+            <stop offset="100%" stop-color="#946218"/>
+          </linearGradient>
+          <linearGradient id="topFire" x1="50%" y1="0%" x2="50%" y2="100%">
+            <stop offset="0%" stop-color="#ff8a4c"/>
+            <stop offset="55%" stop-color="#f04c2c"/>
+            <stop offset="100%" stop-color="#b82414"/>
+          </linearGradient>
+          <linearGradient id="topWater" x1="35%" y1="0%" x2="65%" y2="100%">
+            <stop offset="0%" stop-color="#7ed4ff"/>
+            <stop offset="55%" stop-color="#3395e8"/>
+            <stop offset="100%" stop-color="#1a5fa8"/>
           </linearGradient>
         </defs>
-        <circle cx="60" cy="60" r="54" fill="#23160b" stroke="url(#topGold)" stroke-width="5"/>
-        <polygon points="60,16 98,82 22,82" fill="none" stroke="url(#topGold)" stroke-width="3" opacity="0.72"/>
-        <path d="M60 22 C65 29 66 34 60 40 C54 34 55 29 60 22 Z" fill="#e6674a"/>
-        <path d="M31 74 C36 69 41 72 39 78 C36 83 28 81 31 74 Z" fill="#5aa8e0"/>
-        <polygon points="88,67 81,76 86,76 83,84 93,74 87,74" fill="#f3c442"/>
-        <path d="M60 42 A18 18 0 1 1 42 60 A9 9 0 0 0 60 60 A9 9 0 0 1 60 42 Z" fill="url(#topGold)"/>
-        <circle cx="60" cy="51" r="3.5" fill="#23160b"/>
-        <circle cx="60" cy="69" r="3.5" fill="#fff0bc"/>
+        <circle cx="60" cy="60" r="55" fill="#1d140c" stroke="url(#topGold)" stroke-width="4.5"/>
+        <polygon points="60,18 98,84 22,84" fill="none" stroke="url(#topGold)" stroke-width="2" opacity="0.42"/>
+        <path d="M60 9 C64.5 16 70 20.5 70 27.2 C70 33.2 65.6 37.5 60 37.5 C54.4 37.5 50 33.2 50 27.2 C50 23.2 52.2 19.6 54.4 17 C54.4 19.8 55.6 21.4 56.8 21.8 C56.2 17.4 57.6 12.6 60 9 Z" fill="url(#topFire)"/>
+        <path d="M60 19.5 C62.5 23.4 64.5 25.8 64.5 29.2 C64.5 32.3 62.5 34.4 60 34.4 C57.5 34.4 55.5 32.3 55.5 29.2 C55.5 25.8 57.5 23.4 60 19.5 Z" fill="#ffe07d"/>
+        <path d="M28.5 67.5 C28.5 67.5 38.5 79.2 38.5 85.8 C38.5 91.6 34 96 28.5 96 C23 96 18.5 91.6 18.5 85.8 C18.5 79.2 28.5 67.5 28.5 67.5 Z" fill="url(#topWater)"/>
+        <path d="M24.2 84.5 C23.6 87.6 24.8 90.6 27.2 91.8" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2.2" stroke-linecap="round"/>
+        <polygon points="95.5,64 79,83 88.8,83 83.5,99 103.5,77.5 93,77.5" fill="#ffd247" stroke="#4f3407" stroke-width="1.2" stroke-linejoin="round"/>
+        <circle cx="60" cy="62" r="19" fill="#16120e"/>
+        <path d="M60 43 A19 19 0 0 1 60 81 A9.5 9.5 0 0 1 60 62 A9.5 9.5 0 0 0 60 43 Z" fill="url(#topGold)"/>
+        <circle cx="60" cy="62" r="19" fill="none" stroke="#f5d585" stroke-width="2.4"/>
+        <circle cx="60" cy="52.5" r="3.5" fill="#fff0bc"/>
+        <circle cx="60" cy="71.5" r="3.5" fill="#16120e"/>
       </svg>
       <span class="brand-title"><span class="lang-ja">言霊デュエル</span><span class="lang-zh">言灵对决</span></span>
       <span class="turn-pill" id="turnBadge">ターン 1：あなたの番</span>
@@ -3619,7 +3717,7 @@
       <div class="guide-float" id="guideFloat" role="status" aria-live="polite">
         <div class="guide-card">
           <div class="guide-body">
-            <div class="guide-tag" id="guideTag"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z"/><circle cx="12" cy="12" r="1.2"/></svg><span class="lang-ja">ガイド</span><span class="lang-zh">操作引导</span></div>
+            <div class="guide-tag" id="guideTag"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z"/><circle cx="12" cy="12" r="1.2"/></svg><span class="lang-ja">ガイド</span><span class="lang-zh">引导</span></div>
             <div class="guide-ja" id="guideJa"></div>
             <div class="guide-zh" id="guideZh" lang="zh-CN"></div>
           </div>
@@ -3656,7 +3754,7 @@
 
       <!-- 中心分界线与本回合可用次数指示 -->
       <div class="mat-divider">
-        <span class="vs-badge"><span class="lang-ja">VS レン</span><span class="lang-zh">VS 对手 莲</span></span>
+        <span class="vs-badge"><span class="lang-ja">VS レン</span><span class="lang-zh">VS 莲</span></span>
         <div class="turn-limits" id="turnLimits">
           <span class="limit-pill" id="limitEnergy"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2v11h3v9l7-12h-4l4-8H7z"/></svg>エネ 1/1</span>
           <span class="limit-pill" id="limitSupporter"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.26L22 9.27l-5 4.87L18.18 21 12 17.77 5.82 21 7 14.14 2 9.27l7.1-1.01L12 2z"/></svg>サポート 1/1</span>
@@ -3667,7 +3765,7 @@
       <!-- 己方半场 -->
       <div class="side-half">
         <div class="zone-col">
-          <div class="zone-label"><span class="lang-ja">サイド</span><span class="lang-zh">己方奖赏卡</span></div>
+          <div class="zone-label"><span class="lang-ja">自分サイド</span><span class="lang-zh">己方奖赏卡</span></div>
           <div class="prize-stack" id="playerPrizes"></div>
           <div class="prize-count-pill" id="playerPrizeCount">0/3</div>
         </div>
@@ -3732,7 +3830,7 @@
       </div>
 
       <div class="panel-title">
-        <span><span class="lang-ja">音声・バトルログ</span><span class="lang-zh">语音与对局记录</span></span>
+        <span><span class="lang-ja">音声・対局ログ</span><span class="lang-zh">语音・对局日志</span></span>
         <span style="display:inline-flex;align-items:center;"><span class="voice-wave-meter" id="voiceWaveMeter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span><span class="call-state-badge" id="callStateBadge">待機</span></span>
       </div>
 
@@ -3757,7 +3855,7 @@
 
       <!-- 单语言对局日志 -->
       <div class="log-wrap">
-        <div class="log-bar"><span class="lang-ja">対局ログ</span><span class="lang-zh">对局记录</span></div>
+        <div class="log-bar"><span class="lang-ja">対局ログ</span><span class="lang-zh">对局日志</span></div>
         <div class="notepad-log" id="matchLog"></div>
       </div>
 
@@ -3774,7 +3872,7 @@
         <div class="live-tip-box" id="liveTipBox">
           <div class="live-tip-label" style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
             <span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21h6v-1H9v1zm3-19a7 7 0 0 0-4 12.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26A7 7 0 0 0 12 2z"/></svg>Tips<span id="liveTipAiTag" style="display:none;margin-left:5px;font-size:11px;padding:0 5px;border-radius:4px;background:rgba(46,107,71,0.14);color:var(--ok);">AI</span></span>
-            <button class="btn-sm" id="btnAiTip" style="padding:2px 8px;font-size:11.5px;"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/></svg><span class="lang-ja">AI戦術</span><span class="lang-zh">AI 建议</span></button>
+            <button class="btn-sm" id="btnAiTip" style="padding:2px 8px;font-size:11.5px;"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/></svg><span class="lang-ja">AI戦術</span><span class="lang-zh">AI战术</span></button>
           </div>
           <div class="live-tip-ja" id="liveTipJa"></div>
           <div class="live-tip-zh" id="liveTipZh" lang="zh-CN"></div>
@@ -3817,7 +3915,7 @@
       <button class="dlog-chip active" data-codex="ALL"><span class="lang-ja">すべて</span><span class="lang-zh">全部</span></button>
       <button class="dlog-chip" data-codex="player"><span class="lang-ja">自分モンスター</span><span class="lang-zh">己方怪兽</span></button>
       <button class="dlog-chip" data-codex="opponent"><span class="lang-ja">相手モンスター</span><span class="lang-zh">对手怪兽</span></button>
-      <button class="dlog-chip" data-codex="items"><span class="lang-ja">エネ・グッズ・サポート</span><span class="lang-zh">能量・道具・支援者</span></button>
+      <button class="dlog-chip" data-codex="items"><span class="lang-ja">エネ・グッズ・サポート</span><span class="lang-zh">能量・道具・支援卡</span></button>
     </div>
     <div class="codex-grid" id="codexGrid"></div>
   </div>
@@ -3831,19 +3929,33 @@
         <svg class="rules-brand-logo" viewBox="0 0 120 120" aria-hidden="true">
           <defs>
             <linearGradient id="rulesGold" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#fff0bc"/>
-              <stop offset="52%" stop-color="#d8a23a"/>
-              <stop offset="100%" stop-color="#8c5c16"/>
+              <stop offset="0%" stop-color="#fff3c4"/>
+              <stop offset="50%" stop-color="#dfa93e"/>
+              <stop offset="100%" stop-color="#946218"/>
+            </linearGradient>
+            <linearGradient id="rulesFire" x1="50%" y1="0%" x2="50%" y2="100%">
+              <stop offset="0%" stop-color="#ff8a4c"/>
+              <stop offset="55%" stop-color="#f04c2c"/>
+              <stop offset="100%" stop-color="#b82414"/>
+            </linearGradient>
+            <linearGradient id="rulesWater" x1="35%" y1="0%" x2="65%" y2="100%">
+              <stop offset="0%" stop-color="#7ed4ff"/>
+              <stop offset="55%" stop-color="#3395e8"/>
+              <stop offset="100%" stop-color="#1a5fa8"/>
             </linearGradient>
           </defs>
-          <circle cx="60" cy="60" r="54" fill="#23160b" stroke="url(#rulesGold)" stroke-width="5"/>
-          <polygon points="60,16 98,82 22,82" fill="none" stroke="url(#rulesGold)" stroke-width="3" opacity="0.72"/>
-          <path d="M60 22 C65 29 66 34 60 40 C54 34 55 29 60 22 Z" fill="#e6674a"/>
-          <path d="M31 74 C36 69 41 72 39 78 C36 83 28 81 31 74 Z" fill="#5aa8e0"/>
-          <polygon points="88,67 81,76 86,76 83,84 93,74 87,74" fill="#f3c442"/>
-          <path d="M60 42 A18 18 0 1 1 42 60 A9 9 0 0 0 60 60 A9 9 0 0 1 60 42 Z" fill="url(#rulesGold)"/>
-          <circle cx="60" cy="51" r="3.5" fill="#23160b"/>
-          <circle cx="60" cy="69" r="3.5" fill="#fff0bc"/>
+          <circle cx="60" cy="60" r="55" fill="#1d140c" stroke="url(#rulesGold)" stroke-width="4.5"/>
+          <polygon points="60,18 98,84 22,84" fill="none" stroke="url(#rulesGold)" stroke-width="2" opacity="0.42"/>
+          <path d="M60 9 C64.5 16 70 20.5 70 27.2 C70 33.2 65.6 37.5 60 37.5 C54.4 37.5 50 33.2 50 27.2 C50 23.2 52.2 19.6 54.4 17 C54.4 19.8 55.6 21.4 56.8 21.8 C56.2 17.4 57.6 12.6 60 9 Z" fill="url(#rulesFire)"/>
+          <path d="M60 19.5 C62.5 23.4 64.5 25.8 64.5 29.2 C64.5 32.3 62.5 34.4 60 34.4 C57.5 34.4 55.5 32.3 55.5 29.2 C55.5 25.8 57.5 23.4 60 19.5 Z" fill="#ffe07d"/>
+          <path d="M28.5 67.5 C28.5 67.5 38.5 79.2 38.5 85.8 C38.5 91.6 34 96 28.5 96 C23 96 18.5 91.6 18.5 85.8 C18.5 79.2 28.5 67.5 28.5 67.5 Z" fill="url(#rulesWater)"/>
+          <path d="M24.2 84.5 C23.6 87.6 24.8 90.6 27.2 91.8" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="2.2" stroke-linecap="round"/>
+          <polygon points="95.5,64 79,83 88.8,83 83.5,99 103.5,77.5 93,77.5" fill="#ffd247" stroke="#4f3407" stroke-width="1.2" stroke-linejoin="round"/>
+          <circle cx="60" cy="62" r="19" fill="#16120e"/>
+          <path d="M60 43 A19 19 0 0 1 60 81 A9.5 9.5 0 0 1 60 62 A9.5 9.5 0 0 0 60 43 Z" fill="url(#rulesGold)"/>
+          <circle cx="60" cy="62" r="19" fill="none" stroke="#f5d585" stroke-width="2.4"/>
+          <circle cx="60" cy="52.5" r="3.5" fill="#fff0bc"/>
+          <circle cx="60" cy="71.5" r="3.5" fill="#16120e"/>
         </svg>
         <h2><span class="lang-ja">言霊デュエル・ルール説明</span><span class="lang-zh">言灵对决・规则说明</span></h2>
       </div>
@@ -3879,13 +3991,13 @@
     </div>
     <div class="rules-footer">
       <div class="diff-picker">
-        <span class="diff-label"><span class="lang-ja">難易度</span><span class="lang-zh">对手难度</span></span>
+        <span class="diff-label"><span class="lang-ja">難易度</span><span class="lang-zh">难度</span></span>
         <div class="diff-seg" role="group" aria-label="Difficulty">
           <button type="button" class="diff-btn active" id="diffOptNormal" data-diff="normal"><svg class="diff-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg><span class="lang-ja">ふつう</span><span class="lang-zh">普通</span></button>
           <button type="button" class="diff-btn hard" id="diffOptHard" data-diff="hard"><svg class="diff-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2.5c.4 3.2-1.9 5.1-3.1 6.4-1.5 1.6-2.4 3.2-2.4 5.1 0 2.5 2 4.5 4.5 4.5s4.5-2 4.5-4.5c0-2.1-1.2-3.9-2.2-5.2-.3 1.4-1.1 2.2-2 2.5.9-2.2 2.2-5.2.7-8.8zM12 22c-4.1 0-7.5-3.2-7.5-7.2 0-2.9 1.5-5.5 3.6-7.6.2 1.2.8 2 1.6 2.5-1.4 1.5-2.2 3.1-2.2 5.1 0 3 2.5 5.2 5.5 5.2 3.1 0 5.5-2.3 5.5-5.4 0-1.6-.6-3.1-1.5-4.4 1.6 1.5 2.5 3.5 2.5 5.6 0 4-3.4 6.2-7.5 6.2z"/></svg><span class="lang-ja">むずかしい</span><span class="lang-zh">困难</span></button>
         </div>
       </div>
-      <button class="btn-sm primary" id="btnStartGame"><span class="lang-ja">ゲーム開始</span><span class="lang-zh">开始对战</span></button>
+      <button class="btn-sm primary" id="btnStartGame"><span class="lang-ja">対戦開始</span><span class="lang-zh">开始对战</span></button>
     </div>
   </div>
 </div>
@@ -3907,7 +4019,7 @@
 <div class="modal-backdrop" id="settingsModal">
   <div class="modal-box">
     <div class="modal-head">
-      <h2><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.74 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.05.3-.08.63-.08.94s.03.64.08.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.12.22.37.3.6.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.23.08.48 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg><span class="lang-ja">AI・音声設定</span><span class="lang-zh">语言与语音引擎设置</span></h2>
+      <h2><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.74 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.05.3-.08.63-.08.94s.03.64.08.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.12.22.37.3.6.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.23.08.48 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg><span class="lang-ja">AI・音声設定</span><span class="lang-zh">AI・语音设置</span></h2>
       <button class="btn-sm" id="btnCloseSettings">✕</button>
     </div>
 
@@ -3917,7 +4029,7 @@
       <div class="cfg-section-head" style="margin-bottom:4px;border-bottom:none;padding-bottom:2px;">
         <span class="cfg-section-title">
           <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
-          <span class="lang-ja">表示・音声言語</span><span class="lang-zh">界面与语音语言</span>
+          <span class="lang-ja">表示・音声言語</span><span class="lang-zh">显示・语音语言</span>
         </span>
         <div class="lang-switch light" id="settingsLangSwitch" role="group" aria-label="Language">
           <button type="button" class="lang-pill active" data-set-lang="ja">
@@ -3950,7 +4062,7 @@
       <div class="cfg-grid">
         <div class="cfg-field">
           <label><span class="lang-ja">Vertex APIキー（空欄でローカル解析）</span><span class="lang-zh">Vertex API 密钥（留空走本地解析）</span></label>
-          <input type="password" id="apiKey" autocomplete="off" />
+          <input type="text" id="apiKey" class="secret-mask" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" />
         </div>
         <div class="cfg-field">
           <label><span class="lang-ja">LLM モデル</span><span class="lang-zh">LLM 解析模型</span></label>
@@ -4008,11 +4120,11 @@
         <div class="cfg-grid">
           <div class="cfg-field">
             <label>AccessKey ID (AK)</label>
-            <input type="password" id="niaAk" autocomplete="off" />
+            <input type="text" id="niaAk" class="secret-mask" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" />
           </div>
           <div class="cfg-field">
             <label>AccessKey Secret (SK)</label>
-            <input type="password" id="niaSk" autocomplete="off" />
+            <input type="text" id="niaSk" class="secret-mask" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" />
           </div>
         </div>
       </div>
@@ -4032,7 +4144,7 @@
       </div>
       <div class="cfg-grid">
         <div class="cfg-field">
-          <label><span class="lang-ja">音声出力モデル</span><span class="lang-zh">语音合成引擎</span></label>
+          <label><span class="lang-ja">音声合成エンジン</span><span class="lang-zh">语音合成引擎</span></label>
           <select id="ttsEngine">
             <option value="nia_tts">SenseTime Nia TTS</option>
             <option value="vertex_tts">Vertex Gemini TTS</option>
@@ -4044,7 +4156,7 @@
           <input type="text" id="ttsModel" />
         </div>
         <div class="cfg-field" id="ttsEngineHintField">
-          <label><span class="lang-ja">モデル情報</span><span class="lang-zh">当前引擎状态</span></label>
+          <label><span class="lang-ja">エンジン状態</span><span class="lang-zh">引擎状态</span></label>
           <div class="cfg-hint-pill" id="ttsEngineHintText">SenseTime Nia 24kHz</div>
         </div>
       </div>
@@ -4055,7 +4167,7 @@
           <select id="voiceReferee"></select>
         </div>
         <div class="cfg-field">
-          <label><span class="lang-ja">相手レンのボイス</span><span class="lang-zh">对手音色</span></label>
+          <label><span class="lang-ja">相手レンのボイス</span><span class="lang-zh">对手莲音色</span></label>
           <select id="voiceRival"></select>
         </div>
       </div>
@@ -4068,7 +4180,7 @@
       <div class="cfg-section-head">
         <span class="cfg-section-title">
           <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg>
-          <span class="lang-ja">対局・データ設定</span><span class="lang-zh">对局参数与卡表</span>
+          <span class="lang-ja">対局・データ設定</span><span class="lang-zh">对局・数据设置</span>
         </span>
       </div>
       <div class="cfg-grid">

@@ -406,9 +406,9 @@
         zh: "金框 ex 怪兽血厚伤害高，可直接出战或放备战区；但被击倒时对手会一次拿走 2 张奖赏卡。"
       },
       first_supporter: {
-        tag: "ガイド：サポート（引导：支援者卡）",
+        tag: "ガイド：サポート（引导：支援卡）",
         ja: "『サポート』マークのカード（補給バッグ・よびだし笛・パワーバッジ）は1ターンに合計1枚までです。",
-        zh: "支援者卡（补给包/召唤笛/力量徽章）每回合合计只能使用 1 张。"
+        zh: "支援卡（补给包/召唤笛/力量徽章）每回合合计只能使用 1 张。"
       },
       first_bench_play: {
         tag: "ガイド：ベンチ展開（引导：备战区）",
@@ -2387,9 +2387,11 @@
           }, Math.max(4500, remainMs + 3000));
         };
 
-        /* 按语种自适应抖动缓冲：日语模型包间抖动更大，首播预缓冲 400ms (19200B)/批处理 200ms (9600B) 彻底防卡顿；中文保持 180ms/120ms 低延迟 */
-        const INITIAL_PREBUF_BYTES = lang === "ja" ? 19200 : 8640;
-        const BATCH_FLUSH_BYTES = lang === "ja" ? 9600 : 5760;
+        /* 按语种深度防抖缓冲：日语流式模型包间抖动显著大于中文，首播攒够 600ms (28800B)/批处理 300ms (14400B) 且欠载恢复补足 220ms 安全垫，彻底消除连环卡顿 */
+        const INITIAL_PREBUF_BYTES = lang === "ja" ? 28800 : 8640;
+        const BATCH_FLUSH_BYTES = lang === "ja" ? 14400 : 5760;
+        const LEAD_IN_SEC = lang === "ja" ? 0.18 : 0.12;
+        const UNDERRUN_PAD_SEC = lang === "ja" ? 0.22 : 0.08;
         let pendingChunks = [];
         let pendingBytesLen = 0;
 
@@ -2436,21 +2438,25 @@
           let didUnderrun = false;
           if (!startedPlayback) {
             startedPlayback = true;
-            nextPlayTime = now + 0.12;
+            nextPlayTime = now + LEAD_IN_SEC;
             if (!loggedFirst) {
               loggedFirst = true;
               const ttfa = Date.now() - t0;
               DebugLog.add("TTS", `SenseTime Nia 流式 TTS (${role}/${voiceId}, 首声 ${ttfa}ms)`, text);
             }
-          } else if (nextPlayTime < now + 0.015) {
-            nextPlayTime = now + 0.05;
+          } else if (nextPlayTime < now + 0.025) {
+            nextPlayTime = now + UNDERRUN_PAD_SEC;
             didUnderrun = true;
           }
 
-          /* 仅在首包或网络欠载重同步时加 2ms 微淡入，杜绝边界咔哒爆音 */
+          /* 首包或欠载重同步时加 5ms 平滑淡入，尾端加 2ms 微淡出防止切片爆音 */
           if (didUnderrun || scheduledCount === 0) {
-            const fade = Math.min(48, sampleCount);
+            const fade = Math.min(120, sampleCount);
             for (let i = 0; i < fade; i++) float32[i] *= i / fade;
+          }
+          if (force && sampleCount > 64) {
+            const tail = Math.min(48, sampleCount);
+            for (let i = 0; i < tail; i++) float32[sampleCount - 1 - i] *= i / tail;
           }
 
           const buf = ctx.createBuffer(1, sampleCount, 24000);
@@ -4190,17 +4196,33 @@
         TableUI.showVoiceHud("llm", text || t("音声データ", "语音音频"));
       }
 
-      const parts = [{ text: `現在の盤面JSON:\n${JSON.stringify(boardSnapshot)}` }];
+      /* 精简发往 LLM 的盘面快照，压缩输入 token 数以显著降低首字与整体解析延迟 */
+      const compactUnit = (u) => u ? { id: u.id, hp: u.hp, e: u.energies } : null;
+      const compactBoard = boardSnapshot ? {
+        turn: boardSnapshot.turn,
+        phase: boardSnapshot.phase,
+        used: { e: boardSnapshot.energyUsedThisTurn, s: boardSnapshot.supporterUsedThisTurn, r: boardSnapshot.retreatedThisTurn },
+        p: {
+          act: compactUnit(boardSnapshot.player?.active),
+          ben: (boardSnapshot.player?.bench || []).map(compactUnit),
+          hand: boardSnapshot.player?.hand || []
+        },
+        e: {
+          act: compactUnit(boardSnapshot.enemy?.active),
+          ben: (boardSnapshot.enemy?.bench || []).map(compactUnit)
+        }
+      } : {};
+      const parts = [{ text: `盤面:${JSON.stringify(compactBoard)}` }];
 
-      /* 仅在真正处于追问态（pending 非空）时才向云端注入追问上下文，杜绝上一回合的「ターンエンド」污染新回合语音识别 */
+      /* 仅在真正处于追问态（pending 非空）时才向云端注入追问上下文，杜绝上一回合污染 */
       if (conversationContext && conversationContext.pending) {
         const ctxLines = [
-          `現在の追問状態: ${conversationContext.pending.type}（前回の元発話: 「${conversationContext.pending.originalUtterance || ""}」／審判の質問: 「${conversationContext.pending.promptJa || ""}」）`
+          `追問状態: ${conversationContext.pending.type}（元発話:「${conversationContext.pending.originalUtterance || ""}」／質問:「${conversationContext.pending.promptJa || ""}」）`
         ];
         if (conversationContext.lastPlayerUtterance) {
-          ctxLines.push(`直前のプレイヤー発話: 「${conversationContext.lastPlayerUtterance}」`);
+          ctxLines.push(`直前発話:「${conversationContext.lastPlayerUtterance}」`);
         }
-        parts.push({ text: `会話コンテキスト（追問時の記憶）:\n${ctxLines.join("\n")}` });
+        parts.push({ text: `追問コンテキスト:\n${ctxLines.join("\n")}` });
       }
 
       if (audioBase64) {
@@ -4208,24 +4230,33 @@
         parts.push({ inlineData: { mimeType: audioMime, data: audioBase64 } });
       } else {
         const fuzzyHints = SpecEngine.extractFuzzyHints(text);
-        const hintLine = fuzzyHints.length ? `\n（カード名ファジー照合候補: ${fuzzyHints.join(" / ")}）` : "";
-        parts.push({ text: `プレイヤーの発話（日本語または中国語）: 「${text}」${hintLine}` });
+        const hintLine = fuzzyHints.length ? `\n（候補: ${fuzzyHints.join(" / ")}）` : "";
+        parts.push({ text: `発話:「${text}」${hintLine}` });
       }
 
-      const genCfg = { responseMimeType: "application/json" };
+      const genCfg = {
+        responseMimeType: "application/json",
+        temperature: 0.1,
+        maxOutputTokens: 260
+      };
       const thinkCfg = ConfigManager.buildThinkingConfig(cfg.llmModel);
       if (thinkCfg) genCfg.thinkingConfig = thinkCfg;
 
       const t0 = Date.now();
       const ac = typeof AbortController !== "undefined" ? new AbortController() : null;
       if (ac && typeof BattleEngine !== "undefined") BattleEngine.activeAbortCtrl = ac;
-      const fetchTimer = ac ? setTimeout(() => ac.abort(), 15000) : null;
+      let timedOut = false;
+      const fetchTimer = ac ? setTimeout(() => { timedOut = true; ac.abort(); }, 8000) : null;
       try {
+        if (!this._cachedSysPrompt || this._cachedSysPromptSource !== SpecEngine.sourceLabel) {
+          this._cachedSysPrompt = SpecEngine.buildSystemPrompt();
+          this._cachedSysPromptSource = SpecEngine.sourceLabel;
+        }
         const res = await fetch(url, {
           method: "POST",
           headers: ConfigManager.buildAuthHeaders(),
           body: JSON.stringify({
-            systemInstruction: { parts: [{ text: SpecEngine.buildSystemPrompt() }] },
+            systemInstruction: { parts: [{ text: this._cachedSysPrompt }] },
             contents: [{ role: "user", parts }],
             generationConfig: genCfg
           }),
@@ -4239,7 +4270,12 @@
         DebugLog.add("NLU", `Vertex ${cfg.llmModel} (${Date.now() - t0}ms, ${parsed.status})`, { transcript: parsed.transcript, actions: parsed.actions });
         return parsed;
       } catch (e) {
-        const errMsg = e?.name === "AbortError" ? "timeout" : (e?.message || "network");
+        const isUserCancelled = e?.name === "AbortError" && !timedOut;
+        if (isUserCancelled) {
+          DebugLog.add("NLU", `已取消旧 LLM 解析 (${Date.now() - t0}ms)`, "被玩家新操作或重开安全抢占");
+          return { transcript: "", status: "aborted", actions: [], reply_ja: "", reply_zh: "", rival_ja: "", rival_zh: "" };
+        }
+        const errMsg = timedOut ? "timeout" : (e?.message || "network");
         DebugLog.add("ERR", `Vertex ${audioBase64 ? "ASR/NLU" : "NLU"} 请求失败 (${Date.now() - t0}ms)`, errMsg);
         if (audioBase64 && !text) {
           return {
@@ -4256,6 +4292,9 @@
         return this.localParse(text || "", boardSnapshot, conversationContext);
       } finally {
         if (fetchTimer) clearTimeout(fetchTimer);
+        if (ac && typeof BattleEngine !== "undefined" && BattleEngine.activeAbortCtrl === ac) {
+          BattleEngine.activeAbortCtrl = null;
+        }
       }
     },
 
@@ -4650,8 +4689,20 @@
   const BattleEngine = {
     state: null,
     matchSeq: 0,
+    nluSeq: 0,
     activeAbortCtrl: null,
     idleTimer: null,
+
+    /** 安全取消正在飞行中的云端 LLM 解析请求，确保手动点卡/新语音/重开绝不被旧响应反噬 */
+    cancelPendingNlu() {
+      this.nluSeq += 1;
+      if (this.activeAbortCtrl) {
+        try { this.activeAbortCtrl.abort(); } catch (_) {}
+        this.activeAbortCtrl = null;
+      }
+      if (this.state) this.state.nluInFlight = false;
+      if (typeof TableUI !== "undefined" && TableUI.hideVoiceHud) TableUI.hideVoiceHud();
+    },
     idleNudgeCount: 0,
     dialogueHistory: [],
     lastPlayerUtterance: "",
@@ -4941,10 +4992,7 @@
 
     reset(triggerGuideVoice = false) {
       this.matchSeq += 1;
-      if (this.activeAbortCtrl) {
-        try { this.activeAbortCtrl.abort(); } catch (_) {}
-        this.activeAbortCtrl = null;
-      }
+      this.cancelPendingNlu();
       this.clearIdleTimer();
       VoiceEngine.stopPlayback();
       GuideEngine.reset();
@@ -5269,10 +5317,15 @@
       }
     },
 
-    /** 牌桌点击直出操作的统一防重入封装（防止快速连点并发触发两次攻击或对手回合） */
+    /** 牌桌点击直出操作的统一防重入封装（允许安全抢占等待中的云端 LLM 解析，绝不互相干扰） */
     async performDirectAction(act) {
       const s = this.state;
-      if (!s || s.gameOver || s.busy || s.currentPlayer !== "player") return;
+      if (!s || s.gameOver || s.currentPlayer !== "player") return;
+      if (s.nluInFlight) {
+        this.cancelPendingNlu();
+      } else if (s.busy) {
+        return;
+      }
       if (s.phase === "setup") {
         TableUI.setReferee(
           "まずは手札の緑枠モンスターをクリックして、バトル場の最初の1体を選んでください。",
@@ -5312,6 +5365,10 @@
       if (s.gameOver) {
         TableUI.setReferee("対局は終了しています。「再戦」から新しい試合を始めましょう。", "对局已结束，请点击“重开”开始新对局。");
         return;
+      }
+      /* 若上一句语音仍在等待云端 LLM 解析，新指令直接安全抢占并取消旧请求，绝不冲突 */
+      if (s.nluInFlight && !s.busy && s.currentPlayer === "player") {
+        this.cancelPendingNlu();
       }
       if (s.busy || s.currentPlayer !== "player") {
         TableUI.setReferee("ただいま相手のターン中です。少しお待ちください。", "当前是对手回合，请稍候。");
@@ -5362,10 +5419,20 @@
 
       const prevRefJa = $("refereeJa") ? $("refereeJa").textContent : "";
       const prevRefZh = $("refereeZh") ? $("refereeZh").textContent : "";
-      s.busy = true;
+      const myMatchSeq = this.matchSeq;
+      const myNluSeq = ++this.nluSeq;
+      s.nluInFlight = true;
       TableUI.setReferee("解析中…", "正在解析指令…");
+      let acquiredExecLock = false;
       try {
         const result = await NLUEngine.parse(payload, this.getSnapshot(), convCtx);
+        /* 若等待 LLM 期间玩家已手动操作、说出新指令、重开或切换回合，直接静默丢弃过期结果，零干扰 */
+        if (myMatchSeq !== this.matchSeq || myNluSeq !== this.nluSeq || result.status === "aborted" || this.state !== s || s.gameOver || s.currentPlayer !== "player") {
+          return;
+        }
+        s.nluInFlight = false;
+        s.busy = true;
+        acquiredExecLock = true;
         const isVoiceInput = Boolean(payload.audioBase64 || payload.fromVoice);
         const isManualVoice = Boolean(payload.manualVoice);
         const rawHeard = String(result.transcript || payload.text || "").trim();
@@ -5661,10 +5728,13 @@
         if (s.pending && s.pending.type !== "promote_bench") this.clearPending();
         await this.runActionQueue(safeQueue, { ja: result.rival_ja, zh: result.rival_zh });
       } finally {
-        if (isVoiceInput && $("cmdInput")) $("cmdInput").value = "";
-        s.busy = false;
-        TableUI.renderAll();
-        this.resetIdleTimer(true);
+        if (myNluSeq === this.nluSeq) s.nluInFlight = false;
+        if (acquiredExecLock) {
+          if (Boolean(payload.audioBase64 || payload.fromVoice) && $("cmdInput")) $("cmdInput").value = "";
+          s.busy = false;
+          TableUI.renderAll();
+          this.resetIdleTimer(true);
+        }
       }
     },
 
@@ -5883,6 +5953,7 @@
 
         case "ATTACH_ENERGY": {
           if (s.energyUsedThisTurn) {
+            TableUI.flashDeny("player_active", "エネ添付済", "本回合已贴能");
             await this.announceAndReact("エネルギー添付は1ターンに1回までです。", "能量每回合只能附着 1 次，本回合已使用。", null);
             return false;
           }
@@ -5994,6 +6065,7 @@
         case "PLAY_BENCH": {
           const emptyIdx = s.player.bench.findIndex((b) => b === null);
           if (emptyIdx === -1) {
+            TableUI.flashDeny("player_bench_1", "ベンチ満員", "备战区已满");
             await this.announceAndReact("ベンチは満員（3体）です。", "备战区已满（3只），无法继续下怪。", null);
             return false;
           }
@@ -6048,7 +6120,8 @@
           }
           const it = SpecEngine.getItem(act.card_id);
           if (it.category === "supporter" && s.supporterUsedThisTurn) {
-            await this.announceAndReact("サポートカードは1ターンに1枚までです。", "支援者卡每回合只能使用 1 张，本回合已使用。", null);
+            TableUI.flashDeny("player_active", "サポート済", "本回合已用支援卡");
+            await this.announceAndReact("サポートカードは1ターンに1枚までです。", "支援卡每回合只能使用 1 张，本回合已使用。", null);
             return false;
           }
           if (it.category === "supporter") GuideEngine.trigger("first_supporter", false);
@@ -6083,6 +6156,7 @@
             }
             const tDef = SpecEngine.getMonster(targetUnit.id);
             if (targetUnit.hp >= tDef.hp) {
+              TableUI.flashDeny(targetSlot, "HP満タン", "已满血");
               await this.announceAndReact(`${tDef.name_ja}はすでにHP満タンです。`, `${tDef.name_zh}已经是满血，无法使用伤药。`, null);
               return false;
             }
@@ -6174,6 +6248,7 @@
           if (boostMatch) {
             const boostVal = Number(boostMatch[1]) || 20;
             if (s.turn === 1) {
+              TableUI.flashDeny("player_active", "先攻1T不可", "先手T1不可用");
               await this.announceAndReact("先攻1ターン目はパワーバッジを使えません。", "先手第 1 回合禁止使用力量徽章（防止开局秒杀）。", null);
               return false;
             }
@@ -6246,6 +6321,7 @@
 
         case "RETREAT": {
           if (s.retreatedThisTurn) {
+            TableUI.flashDeny("player_active", "交代済", "本回合已撤退");
             await this.announceAndReact("交代は1ターンに1回までです。", "撤退换人每回合只能执行 1 次。", null);
             return false;
           }
@@ -6253,6 +6329,7 @@
           const actDef = actUnit ? SpecEngine.getMonster(actUnit.id) : null;
           const retreatCost = actDef && actDef.is_ex ? 2 : 1;
           if (!actUnit || actUnit.energies.length < retreatCost) {
+            TableUI.flashDeny("player_active", `エネ不足 (${retreatCost}必要)`, `能量不足 (需${retreatCost}能)`);
             await this.announceAndReact(
               `交代するにはバトル場のエネルギーが${retreatCost}つ必要です。`,
               `战斗区${actDef && actDef.is_ex ? " ex 怪兽" : "怪兽"}撤退需要 ${retreatCost} 点能量，当前能量不足。`,
@@ -6262,6 +6339,7 @@
           }
           const myBench = this.getBenchEntries("player");
           if (myBench.length === 0) {
+            TableUI.flashDeny("player_active", "控えなし", "备战区无怪");
             await this.announceAndReact("交代できるベンチのモンスターがいません。", "备战区没有可替换上场的怪兽。", null);
             return false;
           }
@@ -6389,6 +6467,7 @@
           }
 
           if (!this.canPayCost(actUnit.energies, chosenSkill.cost)) {
+            TableUI.flashDeny("player_active", "エネ不足", "能量不足");
             await this.announceAndReact(`『${chosenSkill.name_ja}』のエネルギーが足りません。`, `发动“${chosenSkill.name_zh}”所需能量不足。`, null);
             return false;
           }
@@ -7413,7 +7492,7 @@
               s.enemy.hand.splice(bagIdxH, 1);
               s.enemy.trash.push("item_bag");
               this.drawCard("enemy", 2);
-              TableUI.appendLog("レンはサポート『補給バッグ』で2枚引いた。", "对手莲使用支援者「补给包」抽了 2 张牌。");
+              TableUI.appendLog("レンはサポート『補給バッグ』で2枚引いた。", "对手莲使用支援卡「补给包」抽了 2 张牌。");
               TableUI.renderAll();
               if (!(await this.matchDelay(400, seq))) return;
               if (!(await benchAllAvailable())) return;
@@ -7488,7 +7567,7 @@
               s.enemy.hand.splice(s.enemy.hand.indexOf("item_power"), 1);
               s.enemy.trash.push("item_power");
               hardBoost = 20;
-              TableUI.appendLog("レンはサポート『パワーバッジ』を使用！（攻撃+20）", "对手莲使用支援者「力量徽章」！（本回合攻击 +20）");
+              TableUI.appendLog("レンはサポート『パワーバッジ』を使用！（攻撃+20）", "对手莲使用支援卡「力量徽章」！（本回合攻击 +20）");
               TableUI.spawnFloatText("enemy_active", "⚔️ 攻撃+20！", "energy");
               TableUI.renderAll();
               if (!(await this.matchDelay(320, seq))) return;
@@ -7506,7 +7585,7 @@
               SoundFX.play("switch");
               TableUI.flashAnim("player_active", "anim-enter");
               TableUI.spawnFloatText("player_active", "強制交代！", "guard");
-              TableUI.appendLog(`レンはサポート『よびだし笛』で${pulledDef.name_ja}を引きずり出した！`, `对手莲发动支援者「召唤笛」，强行将你的${pulledDef.name_zh}拉上战斗区！`);
+              TableUI.appendLog(`レンはサポート『よびだし笛』で${pulledDef.name_ja}を引きずり出した！`, `对手莲发动支援卡「召唤笛」，强行将你的${pulledDef.name_zh}拉上战斗区！`);
               if (!(await this.matchDelay(480, seq))) return;
             }
 
@@ -7585,7 +7664,7 @@
           s.enemy.hand.splice(bagIdx, 1);
           s.enemy.trash.push("item_bag");
           this.drawCard("enemy", 2);
-          TableUI.appendLog("レンはサポート『補給バッグ』で2枚引いた。", "对手莲使用支援者「补给包」抽了 2 张牌。");
+          TableUI.appendLog("レンはサポート『補給バッグ』で2枚引いた。", "对手莲使用支援卡「补给包」抽了 2 张牌。");
           TableUI.renderAll();
           if (!(await this.matchDelay(420, seq))) return;
         }
@@ -7671,7 +7750,7 @@
               s.enemy.hand.splice(pwrIdx, 1);
               s.enemy.trash.push("item_power");
               s.enemy.attackBoost = (s.enemy.attackBoost || 0) + 20;
-              TableUI.appendLog("レンはサポート『パワーバッジ』を使用！（攻撃+20）", "对手莲使用支援者「力量徽章」！（本回合攻击 +20）");
+              TableUI.appendLog("レンはサポート『パワーバッジ』を使用！（攻撃+20）", "对手莲使用支援卡「力量徽章」！（本回合攻击 +20）");
               TableUI.spawnFloatText("enemy_active", "⚔️ 攻撃+20！", "energy");
               TableUI.renderAll();
               if (!(await this.matchDelay(320, seq))) return;
@@ -7808,14 +7887,27 @@
       mat.classList.add("anim-shake");
     },
 
-    /** 触发单卡一次性动效（攻击前冲 / 受击震动 / 贴能激活 / 回复 / 登场 / 防御） */
+    /** 触发单卡一次性动效（攻击前冲 / 受击震动 / 贴能激活 / 回复 / 登场 / 防御 / 拒绝微抖） */
     flashAnim(slot, cls) {
       const slotEl = this.getSlotEl(slot);
       const el = slotEl ? slotEl.querySelector(".card") : null;
       if (!el) return;
-      el.classList.remove("anim-hit", "anim-lunge-up", "anim-lunge-down", "anim-powerup", "anim-heal", "anim-enter", "anim-guard");
+      el.classList.remove("anim-hit", "anim-lunge-up", "anim-lunge-down", "anim-powerup", "anim-heal", "anim-enter", "anim-guard", "anim-deny");
       void el.offsetWidth;
       el.classList.add(cls);
+    },
+
+    /** 操作受限（能量不足 / 次数已用 / 满员 / 满血等）的视觉拒绝抖动 + 飘字反馈 */
+    flashDeny(slot, jaLabel, zhLabel) {
+      const slotEl = this.getSlotEl(slot);
+      const target = (slotEl && slotEl.querySelector(".card")) || slotEl;
+      if (target) {
+        target.classList.remove("anim-deny");
+        void target.offsetWidth;
+        target.classList.add("anim-deny");
+      }
+      SoundFX.play("tap");
+      this.spawnFloatText(slot, t(jaLabel, zhLabel), "warn");
     },
 
     /** 在目标槽位上方生成浮动战斗数值/状态文字 */
@@ -8203,10 +8295,10 @@
           const isSup = it.category === "supporter";
           const cls = it.category === "energy" ? it.element : (isSup ? "supporter" : "item");
           const catLabel = it.category === "energy"
-            ? escapeHtml(t("エネルギー（1ターン1回）", "能量卡（每回合限贴 1 次）"))
+            ? escapeHtml(t("エネルギー", "能量卡"))
             : (isSup
-              ? escapeHtml(t("サポート（1ターン1枚）", "支援者卡（每回合限用 1 张）"))
-              : escapeHtml(t("グッズ（回数制限なし）", "普通道具卡（不限次数）")));
+              ? escapeHtml(t("サポート", "支援卡"))
+              : escapeHtml(t("グッズ", "道具卡")));
           cards.push(`
             <div class="codex-card ${escapeHtml(cls)}">
               <div class="card-head">
@@ -8307,7 +8399,7 @@
         bodyEl.innerHTML = bannerHtml
           + renderGroup("エネルギー", "能量卡", energies)
           + renderGroup("モンスター", "怪兽卡", monsters)
-          + renderGroup("サポートとグッズ", "支援者与道具", trainers);
+          + renderGroup("サポートとグッズ", "支援卡与道具", trainers);
       }
       modal.classList.add("open");
     },
@@ -8365,10 +8457,10 @@
       } catch (e) {
         DebugLog.add("ERR", "AI 战术分析失败", e?.name === "AbortError" ? "timeout" : (e?.message || "error"));
         this.renderLiveTip();
-        TableUI.showToast("AI戦術分析に失敗・ローカル提案を表示中", "AI 分析连接失败，已显示本地战术建议");
+        TableUI.showToast("AI戦術分析に失敗・ローカル提案を表示中", "AI战术分析失败，已显示本地建议");
       } finally {
         if (timer) clearTimeout(timer);
-        if (btn) { btn.disabled = false; btn.innerHTML = `${SVG_ICONS.sparkle}${escapeHtml(t("AI戦術", "AI分析"))}`; }
+        if (btn) { btn.disabled = false; btn.innerHTML = `${SVG_ICONS.sparkle}${escapeHtml(t("AI戦術", "AI战术"))}`; }
       }
     },
 
@@ -8476,10 +8568,10 @@
       const badge = $("turnBadge");
       badge.className = "turn-pill" + (s.currentPlayer === "enemy" ? " enemy-turn" : "");
       badge.textContent = s.phase === "setup"
-        ? t("対戦準備：先発を選択", "开局准备：选择首发怪兽")
+        ? t("対戦準備：先発を選択", "开局准备：选择首发")
         : (s.currentPlayer === "player"
           ? t(`ターン ${s.turn}：あなたの番`, `第 ${s.turn} 回合：你的回合`)
-          : t(`ターン ${s.turn}：レンの番`, `第 ${s.turn} 回合：对手莲的回合`));
+          : t(`ターン ${s.turn}：レンの番`, `第 ${s.turn} 回合：莲的回合`));
 
       const limBox = $("turnLimits");
       if (limBox) {
@@ -8542,7 +8634,7 @@
 
       const pAct = $("playerActiveSlot");
       pAct.className = "slot-box active-slot" + (needAllyTarget || s.phase === "setup" ? " highlight-ally" : "");
-      pAct.innerHTML = `<span class="slot-tag">${escapeHtml(t("バトル場", "己方战斗区"))}</span>` +
+      pAct.innerHTML = `<span class="slot-tag">${escapeHtml(t("自分バトル場", "己方战斗区"))}</span>` +
         (s.player.active ? this.renderMonsterCard(s.player.active, "player_active") : `<div class="slot-empty">${escapeHtml(s.phase === "setup" ? t("手札から1体選択", "请从手牌选择首发") : t("空き", "空位"))}</div>`);
 
       $("enemyBenchRow").innerHTML = s.enemy.bench.map((inst, i) => `
@@ -9123,15 +9215,13 @@
       btn.classList.toggle("active", btn.getAttribute("data-set-lang") === next);
     });
     if ($("cmdInput")) {
-      $("cmdInput").placeholder = next === "zh"
-        ? "输入指令（如：把雷狮放备战区给炎狐贴火能用火花攻击）"
-        : "コマンド入力（例：前に炎エネを貼ってひのこで攻撃）";
+      $("cmdInput").placeholder = next === "zh" ? "输入指令" : "コマンド入力";
     }
     if ($("btnRecordVoice") && !VoiceEngine.isRecording) {
       $("btnRecordVoice").innerHTML = `${SVG_ICONS.mic}${escapeHtml(t("単発", "单次"))}`;
     }
     if ($("btnAiTip") && !$("btnAiTip").disabled) {
-      $("btnAiTip").innerHTML = `${SVG_ICONS.sparkle}${escapeHtml(t("AI戦術", "AI分析"))}`;
+      $("btnAiTip").innerHTML = `${SVG_ICONS.sparkle}${escapeHtml(t("AI戦術", "AI战术"))}`;
     }
     syncSelectOptionsLanguage();
     GuideEngine.syncButton();
