@@ -1185,8 +1185,10 @@
     aecPc2: null,
     aecInitPromise: null,
     activeSources: [],
+    activeStreamCancels: [],
     audioCache: new Map(),
     inflightCache: new Map(),
+    niaStreams: new Map(),
     isSpeaking: false,
     sfxPlayingUntil: 0,
     chromeResumeTimer: null,
@@ -1241,15 +1243,15 @@
     /* 各 TTS 引擎可用音色目录（切换语音模型时同一组音色下拉框自动切换可选列表） */
     VOICE_CATALOG: {
       nia_tts: [
-        { value: "female_xiaowan", label: "小婉 · 轻柔女声" },
-        { value: "female_luna", label: "Luna · 温柔少女" },
-        { value: "female_meihe", label: "美和 · 清澈女声" },
-        { value: "female_lora", label: "Lora · 温柔青年" },
-        { value: "female_shuying", label: "疏影 · 知性女声" },
-        { value: "male_zichen", label: "子宸 · 沉稳男声" },
-        { value: "male_haru", label: "Haru · 低沉松弛青年" },
-        { value: "male_shantian", label: "山田 · 温柔成年男声" },
-        { value: "male_youzhen", label: "悠真 · 爽朗青年男声" }
+        { value: "female_xiaowan", label: "小婉" },
+        { value: "female_luna", label: "Luna" },
+        { value: "female_meihe", label: "美和" },
+        { value: "female_lora", label: "Lora" },
+        { value: "female_shuying", label: "疏影" },
+        { value: "male_zichen", label: "子宸" },
+        { value: "male_haru", label: "Haru" },
+        { value: "male_shantian", label: "山田" },
+        { value: "male_youzhen", label: "悠真" }
       ],
       vertex_tts: [
         { value: "Kore", label: "Kore" },
@@ -1272,12 +1274,19 @@
       return this.audioCtx;
     },
 
-    /** 仅清理尚未开播的积压队列（不打断当前正在播报或加载中的语音） */
-    clearQueuedOnly(keepHigh = true) {
+    /** 仅清理尚未开播的积压队列（不打断当前正在播报或加载中的语音；可选择保留最新 1 条对手台词避免被新回合点击误杀） */
+    clearQueuedOnly(keepHigh = true, keepLatestRival = false) {
       if (!Array.isArray(this.speakQueue) || this.speakQueue.length === 0) return;
+      let lastRivalIdx = -1;
+      if (keepLatestRival) {
+        for (let i = this.speakQueue.length - 1; i >= 0; i--) {
+          if (this.speakQueue[i].role === "rival") { lastRivalIdx = i; break; }
+        }
+      }
       const kept = [];
-      for (const item of this.speakQueue) {
-        if (keepHigh && item.priority === "high") {
+      for (let i = 0; i < this.speakQueue.length; i++) {
+        const item = this.speakQueue[i];
+        if ((keepHigh && item.priority === "high") || (keepLatestRival && i === lastRivalIdx)) {
           kept.push(item);
         } else {
           try { if (item.resolve) item.resolve(); } catch (_) {}
@@ -1301,6 +1310,10 @@
       this.speakLock = Promise.resolve();
       if (window.speechSynthesis) {
         try { speechSynthesis.cancel(); } catch (_) {}
+      }
+      while (this.activeStreamCancels.length) {
+        const cancelFn = this.activeStreamCancels.pop();
+        try { if (typeof cancelFn === "function") cancelFn(); } catch (_) {}
       }
       while (this.activeSources.length) {
         const entry = this.activeSources.pop();
@@ -1534,131 +1547,193 @@
       }
     },
 
-    /** 通过SenseTime Nia WebSocket TTS 合成 24kHz PCM 音频（带内存 LRU 缓存、并发去重与 12s 超时保护） */
-    async fetchNiaTtsAudioBuffer(text, role = "referee") {
+    /** 创建或复用一条 SenseTime Nia WebSocket 流式 TTS 会话（边收 PCM 分片边推送给播放器，同时在完成后写入 LRU 缓存） */
+    ensureNiaTtsStream(text, role = "referee") {
       const cfg = ConfigManager.data;
       const voiceId = role === "rival"
         ? (cfg.niaVoiceRival || "male_zichen")
         : (cfg.niaVoiceReferee || "female_xiaowan");
       const cacheKey = `nia|${voiceId}|${text}`;
-      if (this.audioCache.has(cacheKey)) return this.audioCache.get(cacheKey);
-      if (this.inflightCache.has(cacheKey)) return await this.inflightCache.get(cacheKey);
-      if (!ConfigManager.hasNiaCredentials()) throw new Error("Nia AK/SK 未設定");
-
-      const promise = (async () => {
-        const jwt = await ConfigManager.generateNiaJwt();
-        const url = `wss://nia.sensetime.com/biz/tts/ws?jwt=${encodeURIComponent(jwt)}`;
-        const pcmBytes = await new Promise((resolve, reject) => {
-          let settled = false;
-          let ws = null;
-          const chunks = [];
-          let totalBytes = 0;
-          const finishErr = (err) => {
-            if (settled) return;
-            settled = true;
-            clearTimeout(timer);
-            try { if (ws && ws.readyState < 2) ws.close(); } catch (_) {}
-            reject(err);
-          };
-          const finishOk = () => {
-            if (settled) return;
-            settled = true;
-            clearTimeout(timer);
-            try { if (ws && ws.readyState < 2) ws.close(); } catch (_) {}
-            const merged = new Uint8Array(totalBytes);
-            let off = 0;
-            for (const c of chunks) { merged.set(c, off); off += c.length; }
-            if (merged.length < 4) return reject(new Error("Nia TTS empty audio"));
-            resolve(merged);
-          };
-          const timer = setTimeout(() => finishErr(new Error("Nia TTS timeout")), 12000);
-          try {
-            ws = new WebSocket(url);
-          } catch (e) {
-            return finishErr(e);
-          }
-          ws.binaryType = "arraybuffer";
-          ws.onopen = () => {
-            try {
-              ws.send(JSON.stringify({
-                type: "start",
-                config: {
-                  voice_id: voiceId,
-                  language: "JAPANESE",
-                  speed: 1.0,
-                  volume: 0,
-                  pitch: 0,
-                  format: "pcm",
-                  sample_rate: 24000,
-                  stream_output: true,
-                  text_type: "PLAIN",
-                  output_subtitles: false,
-                  disable_tn: false
-                }
-              }));
-            } catch (e) {
-              finishErr(e);
-            }
-          };
-          ws.onmessage = (ev) => {
-            if (ev.data instanceof ArrayBuffer) {
-              const u8 = new Uint8Array(ev.data);
-              chunks.push(u8);
-              totalBytes += u8.length;
-              return;
-            }
-            if (typeof ev.data === "string") {
-              let msg = null;
-              try { msg = JSON.parse(ev.data); } catch (_) { return; }
-              if (msg.type === "started") {
-                try {
-                  ws.send(JSON.stringify({ type: "text", text, is_last: true }));
-                  ws.send(JSON.stringify({ type: "finish" }));
-                } catch (e) {
-                  finishErr(e);
-                }
-              } else if (msg.type === "finished") {
-                finishOk();
-              } else if (msg.type === "error") {
-                const err = new Error(msg.message || msg.code || "Nia TTS error");
-                err.code = msg.code || "";
-                if (/401|403|AUTH|TOKEN|UNAUTH|FORBID/i.test(String(msg.code || msg.message || ""))) {
-                  err.status = 401;
-                }
-                finishErr(err);
-              }
-            }
-          };
-          ws.onerror = () => finishErr(new Error("Nia TTS WebSocket error"));
-          ws.onclose = (ev) => {
-            if (!settled) {
-              if (totalBytes > 100 && ev.code === 1000) finishOk();
-              else finishErr(new Error(`Nia TTS closed (${ev.code})`));
-            }
-          };
-        });
-
-        const ctx = this.getAudioCtx();
-        const sampleCount = Math.floor(pcmBytes.byteLength / 2);
-        const dv = new DataView(pcmBytes.buffer, pcmBytes.byteOffset, sampleCount * 2);
-        const float32 = new Float32Array(sampleCount);
-        for (let i = 0; i < sampleCount; i++) float32[i] = dv.getInt16(i * 2, true) / 32768;
-        const buf = ctx.createBuffer(1, sampleCount, 24000);
-        buf.copyToChannel(float32, 0);
-        if (this.audioCache.size >= 80) {
-          const firstKey = this.audioCache.keys().next().value;
-          this.audioCache.delete(firstKey);
-        }
-        this.audioCache.set(cacheKey, buf);
-        return buf;
-      })();
-
-      this.inflightCache.set(cacheKey, promise);
-      try {
-        return await promise;
-      } finally {
-        this.inflightCache.delete(cacheKey);
+      if (this.audioCache.has(cacheKey)) {
+        return { cachedBuffer: this.audioCache.get(cacheKey), cacheKey, voiceId };
       }
+      if (this.niaStreams.has(cacheKey)) {
+        return this.niaStreams.get(cacheKey);
+      }
+      if (!ConfigManager.hasNiaCredentials()) {
+        throw new Error("Nia AK/SK 未設定");
+      }
+
+      const stream = {
+        cacheKey,
+        voiceId,
+        chunks: [],
+        totalBytes: 0,
+        done: false,
+        error: null,
+        buffer: null,
+        listeners: new Set(),
+        ws: null,
+        t0: Date.now(),
+        tFirstAudio: 0,
+        promise: null
+      };
+      this.niaStreams.set(cacheKey, stream);
+
+      const notify = (type, payload) => {
+        for (const fn of Array.from(stream.listeners)) {
+          try { fn(type, payload); } catch (_) {}
+        }
+      };
+
+      stream.promise = (async () => {
+        let idleTimer = null;
+        let maxTimer = null;
+        let settled = false;
+        const clearTimers = () => {
+          if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
+          if (maxTimer) { clearTimeout(maxTimer); maxTimer = null; }
+        };
+
+        try {
+          const jwt = await ConfigManager.generateNiaJwt();
+          const url = `wss://nia.sensetime.com/biz/tts/ws?jwt=${encodeURIComponent(jwt)}`;
+          await new Promise((resolve, reject) => {
+            const fail = (err) => {
+              if (settled) return;
+              settled = true;
+              clearTimers();
+              try { if (stream.ws && stream.ws.readyState < 2) stream.ws.close(); } catch (_) {}
+              reject(err);
+            };
+            const finishOk = () => {
+              if (settled) return;
+              settled = true;
+              clearTimers();
+              try { if (stream.ws && stream.ws.readyState < 2) stream.ws.close(); } catch (_) {}
+              if (stream.totalBytes < 4) return reject(new Error("Nia TTS empty audio"));
+              resolve();
+            };
+            const armIdleTimer = (ms = 12000) => {
+              if (idleTimer) clearTimeout(idleTimer);
+              idleTimer = setTimeout(() => fail(new Error("Nia TTS timeout")), ms);
+            };
+            armIdleTimer(12000);
+            maxTimer = setTimeout(() => {
+              if (stream.totalBytes > 100) finishOk();
+              else fail(new Error("Nia TTS timeout"));
+            }, 25000);
+
+            let ws = null;
+            try {
+              ws = new WebSocket(url);
+            } catch (e) {
+              return fail(e);
+            }
+            stream.ws = ws;
+            ws.binaryType = "arraybuffer";
+            ws.onopen = () => {
+              try {
+                ws.send(JSON.stringify({
+                  type: "start",
+                  config: {
+                    voice_id: voiceId,
+                    language: "JAPANESE",
+                    speed: 1.0,
+                    volume: 0,
+                    pitch: 0,
+                    format: "pcm",
+                    sample_rate: 24000,
+                    stream_output: true,
+                    text_type: "PLAIN",
+                    output_subtitles: false,
+                    disable_tn: false
+                  }
+                }));
+              } catch (e) {
+                fail(e);
+              }
+            };
+            ws.onmessage = (ev) => {
+              if (ev.data instanceof ArrayBuffer) {
+                const u8 = new Uint8Array(ev.data);
+                if (u8.byteLength > 0) {
+                  if (!stream.tFirstAudio) stream.tFirstAudio = Date.now() - stream.t0;
+                  armIdleTimer(10000);
+                  stream.chunks.push(u8);
+                  stream.totalBytes += u8.byteLength;
+                  notify("chunk", u8);
+                }
+                return;
+              }
+              if (typeof ev.data === "string") {
+                let msg = null;
+                try { msg = JSON.parse(ev.data); } catch (_) { return; }
+                if (msg.type === "started") {
+                  try {
+                    ws.send(JSON.stringify({ type: "text", text, is_last: true }));
+                    ws.send(JSON.stringify({ type: "finish" }));
+                  } catch (e) {
+                    fail(e);
+                  }
+                } else if (msg.type === "finished") {
+                  finishOk();
+                } else if (msg.type === "error") {
+                  const err = new Error(msg.message || msg.code || "Nia TTS error");
+                  err.code = msg.code || "";
+                  if (/401|403|AUTH|TOKEN|UNAUTH|FORBID/i.test(String(msg.code || msg.message || ""))) {
+                    err.status = 401;
+                  }
+                  fail(err);
+                }
+              }
+            };
+            ws.onerror = () => fail(new Error("Nia TTS WebSocket error"));
+            ws.onclose = (ev) => {
+              if (!settled) {
+                if (stream.totalBytes > 100 && ev.code === 1000) finishOk();
+                else fail(new Error(`Nia TTS closed (${ev.code})`));
+              }
+            };
+          });
+
+          const merged = new Uint8Array(stream.totalBytes);
+          let off = 0;
+          for (const c of stream.chunks) { merged.set(c, off); off += c.length; }
+          const ctx = this.getAudioCtx();
+          const sampleCount = Math.floor(merged.byteLength / 2);
+          const dv = new DataView(merged.buffer, merged.byteOffset, sampleCount * 2);
+          const float32 = new Float32Array(sampleCount);
+          for (let i = 0; i < sampleCount; i++) float32[i] = dv.getInt16(i * 2, true) / 32768;
+          const buf = ctx.createBuffer(1, sampleCount, 24000);
+          buf.copyToChannel(float32, 0);
+          if (this.audioCache.size >= 80) {
+            const firstKey = this.audioCache.keys().next().value;
+            this.audioCache.delete(firstKey);
+          }
+          this.audioCache.set(cacheKey, buf);
+          stream.buffer = buf;
+          stream.done = true;
+          this.niaStreams.delete(cacheKey);
+          notify("done", buf);
+          return buf;
+        } catch (err) {
+          stream.error = err;
+          stream.done = true;
+          this.niaStreams.delete(cacheKey);
+          notify("error", err);
+          throw err;
+        }
+      })();
+      stream.promise.catch(() => {});
+      return stream;
+    },
+
+    /** 获取完整 SenseTime Nia 24kHz PCM AudioBuffer（复用流式会话与 LRU 缓存） */
+    async fetchNiaTtsAudioBuffer(text, role = "referee") {
+      const s = this.ensureNiaTtsStream(text, role);
+      if (s.cachedBuffer) return s.cachedBuffer;
+      return await s.promise;
     },
 
     /** 后台预取下一句语音，消除裁判与对手台词之间的网络停顿 */
@@ -1668,7 +1743,7 @@
       if (!cfg.autoSpeak || !jaOnly || this.apiTtsBlocked || cfg.ttsEngine === "chrome_tts") return;
       if (cfg.ttsEngine === "nia_tts") {
         if (!ConfigManager.hasNiaCredentials()) return;
-        this.fetchNiaTtsAudioBuffer(jaOnly, role).catch(() => {});
+        try { this.ensureNiaTtsStream(jaOnly, role); } catch (_) {}
         return;
       }
       if (!String(cfg.apiKey || "").trim()) return;
@@ -1774,19 +1849,196 @@
       });
     },
 
-    /** 通过SenseTime Nia TTS 播放纯日语音频（走 AEC3 回声参考通道，优先命中缓存/预取） */
+    /** 通过 SenseTime Nia 流式 TTS 边下边播纯日语音频（首包即开播 + 预取无缝衔接 + AEC3 回声参考通道） */
     async speakNiaTts(text, role = "referee", token = this.speakToken) {
       const t0 = Date.now();
-      const cfg = ConfigManager.data;
-      const voiceId = role === "rival"
-        ? (cfg.niaVoiceRival || "male_zichen")
-        : (cfg.niaVoiceReferee || "female_xiaowan");
-      const cacheKey = `nia|${voiceId}|${text}`;
-      const cached = this.audioCache.has(cacheKey);
-      const buf = await this.fetchNiaTtsAudioBuffer(text, role);
+      const s = this.ensureNiaTtsStream(text, role);
+      const voiceId = s.voiceId;
+      if (s.cachedBuffer) {
+        if (token !== this.speakToken) return;
+        DebugLog.add("TTS", `SenseTime Nia TTS (${role}/${voiceId}, 缓存命中)`, text);
+        await this.playAudioBuffer(s.cachedBuffer, token);
+        return;
+      }
+
+      const ctx = this.getAudioCtx();
+      if (ctx.state === "suspended") { try { await ctx.resume(); } catch (_) {} }
       if (token !== this.speakToken) return;
-      DebugLog.add("TTS", `SenseTime Nia TTS (${role}/${voiceId}, ${cached ? "缓存命中" : `${Date.now() - t0}ms`})`, text);
-      await this.playAudioBuffer(buf, token);
+      const outNode = await this.ensureAecOutput();
+      if (token !== this.speakToken) return;
+      if (s.done && s.buffer && !s.error) {
+        DebugLog.add("TTS", `SenseTime Nia TTS (${role}/${voiceId}, 预取命中)`, text);
+        await this.playAudioBuffer(s.buffer, token);
+        return;
+      }
+      if (this.aecAudioEl && this.aecAudioEl.paused) { try { this.aecAudioEl.play().catch(() => {}); } catch (_) {} }
+
+      await new Promise((resolve, reject) => {
+        let settled = false;
+        let carryByte = null;
+        let nextPlayTime = 0;
+        let startedPlayback = false;
+        let scheduledCount = 0;
+        let endedCount = 0;
+        let streamDone = false;
+        let loggedFirst = false;
+        let guardTimer = null;
+        const localEntries = [];
+
+        const cleanup = () => {
+          if (guardTimer) { clearTimeout(guardTimer); guardTimer = null; }
+          s.listeners.delete(onStreamEvent);
+          const cIdx = this.activeStreamCancels.indexOf(cancelPlayback);
+          if (cIdx !== -1) this.activeStreamCancels.splice(cIdx, 1);
+        };
+
+        const finishOk = () => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          resolve();
+        };
+
+        const finishErr = (err) => {
+          if (settled) return;
+          settled = true;
+          cleanup();
+          reject(err);
+        };
+
+        const cancelPlayback = () => {
+          if (settled) return;
+          for (const entry of localEntries) {
+            try {
+              if (entry && entry.src) {
+                entry.src.onended = null;
+                entry.src.stop();
+              }
+            } catch (_) {}
+            const aIdx = this.activeSources.indexOf(entry);
+            if (aIdx !== -1) this.activeSources.splice(aIdx, 1);
+          }
+          localEntries.length = 0;
+          finishOk();
+        };
+
+        const rearmGuard = () => {
+          if (guardTimer) clearTimeout(guardTimer);
+          const remainMs = startedPlayback ? Math.max(0, Math.ceil((nextPlayTime - ctx.currentTime) * 1000)) : 12000;
+          guardTimer = setTimeout(() => {
+            if (scheduledCount > 0) finishOk();
+            else finishErr(new Error("Nia TTS stream playback timeout"));
+          }, Math.max(4500, remainMs + 3000));
+        };
+
+        const checkAllFinished = () => {
+          if (settled) return;
+          if (token !== this.speakToken) { cancelPlayback(); return; }
+          if (streamDone && endedCount >= scheduledCount) {
+            finishOk();
+          }
+        };
+
+        const schedulePcmChunk = (u8) => {
+          if (settled || token !== this.speakToken || !u8 || u8.byteLength === 0) return;
+          let bytes = u8;
+          if (carryByte !== null) {
+            const combined = new Uint8Array(u8.byteLength + 1);
+            combined[0] = carryByte;
+            combined.set(u8, 1);
+            bytes = combined;
+            carryByte = null;
+          }
+          if (bytes.byteLength % 2 === 1) {
+            carryByte = bytes[bytes.byteLength - 1];
+            bytes = bytes.subarray(0, bytes.byteLength - 1);
+          }
+          const sampleCount = bytes.byteLength >> 1;
+          if (sampleCount <= 0) return;
+
+          const dv = new DataView(bytes.buffer, bytes.byteOffset, sampleCount * 2);
+          const float32 = new Float32Array(sampleCount);
+          for (let i = 0; i < sampleCount; i++) float32[i] = dv.getInt16(i * 2, true) / 32768;
+          const buf = ctx.createBuffer(1, sampleCount, 24000);
+          buf.copyToChannel(float32, 0);
+
+          const now = ctx.currentTime;
+          if (!startedPlayback) {
+            startedPlayback = true;
+            nextPlayTime = now + 0.08;
+            if (!loggedFirst) {
+              loggedFirst = true;
+              const ttfa = Date.now() - t0;
+              DebugLog.add("TTS", `SenseTime Nia 流式 TTS (${role}/${voiceId}, 首声 ${ttfa}ms)`, text);
+            }
+          } else if (nextPlayTime < now + 0.02) {
+            nextPlayTime = now + 0.03;
+          }
+
+          const src = ctx.createBufferSource();
+          const entry = { src, resolve: null };
+          src.buffer = buf;
+          src.connect(outNode || ctx.destination);
+          this.activeSources.push(entry);
+          localEntries.push(entry);
+          scheduledCount += 1;
+          src.onended = () => {
+            const aIdx = this.activeSources.indexOf(entry);
+            if (aIdx !== -1) this.activeSources.splice(aIdx, 1);
+            endedCount += 1;
+            checkAllFinished();
+          };
+          src.start(nextPlayTime);
+          nextPlayTime += buf.duration;
+          rearmGuard();
+        };
+
+        const onStreamEvent = (type, payload) => {
+          if (settled) return;
+          if (token !== this.speakToken) { cancelPlayback(); return; }
+          if (type === "chunk") {
+            schedulePcmChunk(payload);
+          } else if (type === "done") {
+            streamDone = true;
+            if (scheduledCount === 0) {
+              if (payload && payload.duration > 0) {
+                finishOk();
+              } else {
+                finishErr(new Error("Nia TTS empty stream"));
+              }
+            } else {
+              rearmGuard();
+              checkAllFinished();
+            }
+          } else if (type === "error") {
+            streamDone = true;
+            if (scheduledCount > 0) {
+              rearmGuard();
+              checkAllFinished();
+            } else {
+              finishErr(payload || new Error("Nia TTS stream error"));
+            }
+          }
+        };
+
+        this.activeStreamCancels.push(cancelPlayback);
+        rearmGuard();
+
+        /* 先立即调度后台预取阶段已到达的 PCM 分片（实现 0ms 无缝接播） */
+        const existingChunks = s.chunks.slice();
+        for (const c of existingChunks) schedulePcmChunk(c);
+
+        if (s.done) {
+          streamDone = true;
+          if (s.error && scheduledCount === 0) {
+            finishErr(s.error);
+          } else {
+            checkAllFinished();
+          }
+        } else {
+          s.listeners.add(onStreamEvent);
+        }
+      });
     },
 
     /** 通过 Vertex Gemini TTS 播放纯日语音频（走 AEC3 回声参考通道，优先命中缓存/预取） */
@@ -1877,29 +2129,45 @@
       if (typeof BattleEngine !== "undefined" && BattleEngine.clearIdleTimer) {
         BattleEngine.clearIdleTimer();
       }
-      this.prefetch(jaOnly, role);
 
-      /* 防积压折叠：仅裁剪尚未开播的等待项（新语音入队时自动折叠等待队列中的旧 low 项），绝不打断正在播放或加载中的当前句 */
+      /* 紧凑防积压队列（等待上限 2 条，high 上限 3 条）：
+         1) low 提示在播报忙时直接跳过，绝不排队也绝不挤掉其他语音；
+         2) 同角色（如连续两句未开播的对手台词）直接以新替旧，避免过时台词堆积；
+         3) 超限时优先淘汰非 high 裁判播报，确保最新 1 句对手台词不被挤掉。 */
       for (let i = this.speakQueue.length - 1; i >= 0; i--) {
         if (this.speakQueue[i].priority === "low") {
           const dropped = this.speakQueue.splice(i, 1)[0];
           try { if (dropped && dropped.resolve) dropped.resolve(); } catch (_) {}
         }
       }
-      if (priority === "high") {
-        while (this.speakQueue.length >= 3) {
-          const dropIdx = this.speakQueue.findIndex((it) => it.priority !== "high");
-          const dropped = this.speakQueue.splice(dropIdx !== -1 ? dropIdx : 0, 1)[0];
-          try { if (dropped && dropped.resolve) dropped.resolve(); } catch (_) {}
+      if (priority === "low") {
+        if (this.isSpeaking || this.speakQueue.length > 0) {
+          return Promise.resolve();
         }
       } else {
-        while (this.speakQueue.length >= 2) {
-          const dropIdx = this.speakQueue.findIndex((it) => it.priority !== "high");
-          if (dropIdx === -1) break;
+        /* 同一角色若已有尚未开播的非 high 旧台词，直接以最新一句替换，杜绝连续积压 */
+        if (priority !== "high") {
+          for (let i = this.speakQueue.length - 1; i >= 0; i--) {
+            if (this.speakQueue[i].role === role && this.speakQueue[i].priority !== "high") {
+              const dropped = this.speakQueue.splice(i, 1)[0];
+              try { if (dropped && dropped.resolve) dropped.resolve(); } catch (_) {}
+            }
+          }
+        }
+        const maxBeforePush = priority === "high" ? 3 : 2;
+        while (this.speakQueue.length >= maxBeforePush) {
+          let dropIdx = this.speakQueue.findIndex((it) => it.priority !== "high" && it.role !== "rival");
+          if (dropIdx === -1) dropIdx = this.speakQueue.findIndex((it) => it.priority !== "high");
+          if (dropIdx === -1) {
+            if (priority === "high") dropIdx = 0;
+            else break;
+          }
           const dropped = this.speakQueue.splice(dropIdx, 1)[0];
           try { if (dropped && dropped.resolve) dropped.resolve(); } catch (_) {}
         }
       }
+
+      this.prefetch(jaOnly, role);
 
       const myToken = this.speakToken;
       return new Promise((resolve) => {
@@ -4084,15 +4352,14 @@
         eStarterDef = ePick.def;
         s.enemy.active = { id: ePick.id, hp: ePick.def.hp, energies: [], guard: 0 };
       }
-      /* 开局准备：若对手起手还有多余怪兽，同步暗置 1 只到备战区（困难模式允许把 ex 怪兽也提前置入备战区蓄能） */
-      const extraEnemyIdx = s.enemy.hand.findIndex((id) => {
-        const d = SpecEngine.getMonster(id);
-        return d && (hardOpening || !d.is_ex);
-      });
-      if (extraEnemyIdx !== -1 && s.enemy.bench[0] === null) {
-        const extraId = s.enemy.hand.splice(extraEnemyIdx, 1)[0];
-        const extraDef = SpecEngine.getMonster(extraId);
-        s.enemy.bench[0] = { id: extraId, hp: extraDef.hp, energies: [], guard: 0 };
+      /* 开局准备：困难模式若起手还有多余怪兽，同步暗置 1 只到备战区蓄能；普通模式留待对手自己回合再铺场 */
+      if (hardOpening) {
+        const extraEnemyIdx = s.enemy.hand.findIndex((id) => Boolean(SpecEngine.getMonster(id)));
+        if (extraEnemyIdx !== -1 && s.enemy.bench[0] === null) {
+          const extraId = s.enemy.hand.splice(extraEnemyIdx, 1)[0];
+          const extraDef = SpecEngine.getMonster(extraId);
+          s.enemy.bench[0] = { id: extraId, hp: extraDef.hp, energies: [], guard: 0 };
+        }
       }
 
       s.phase = "battle";
@@ -4865,16 +5132,16 @@
       return false;
     },
 
-    /** 非阻塞双语播报：不打断正在播放的语音，仅清理陈旧积压队列并按优先级串行顺播 */
+    /** 非阻塞双语播报：不打断正在播放的语音，清理陈旧积压队列（若本次不含新对手台词则保留最新 1 条待播对手台词） */
     announceAndReact(ja, zh, rivalEvent, customRival = null, opts = {}) {
       const priority = opts.priority || "normal";
-      if (priority !== "low") VoiceEngine.clearQueuedOnly(true);
+      const rJa = (customRival && customRival.ja) || (rivalEvent ? SpecEngine.getRivalLine(rivalEvent).ja : "");
+      const rZh = (customRival && customRival.zh) || (rivalEvent ? SpecEngine.getRivalLine(rivalEvent).zh : "");
+      if (priority !== "low") VoiceEngine.clearQueuedOnly(true, !rJa);
       TableUI.setReferee(ja, zh);
       TableUI.appendLog(ja, zh);
       this.pushHistory("referee", ja);
 
-      const rJa = (customRival && customRival.ja) || (rivalEvent ? SpecEngine.getRivalLine(rivalEvent).ja : "");
-      const rZh = (customRival && customRival.zh) || (rivalEvent ? SpecEngine.getRivalLine(rivalEvent).zh : "");
       if (rJa) {
         TableUI.setRival(rJa, rZh);
         VoiceEngine.prefetch(rJa, "rival");
@@ -5603,7 +5870,7 @@
         if (s.player.prizesLeft === 0) {
           const r = SpecEngine.getRivalLine("player_win");
           TableUI.setRival(r.ja, r.zh);
-          VoiceEngine.speak(r.ja, "rival");
+          VoiceEngine.speak(r.ja, "rival", { priority: "high" });
           this.endGame("player", `サイドを${TOTAL_PRIZES}枚取り切りました！あなたの勝利です！`, `你拿完 ${TOTAL_PRIZES} 张奖赏卡，赢得胜利！`);
           return true;
         }
@@ -5613,7 +5880,7 @@
         const prizeJa = prizeCards.length ? `サイドから「${prizeCards.map((c) => c.ja).join("・")}」を手札に加えました！` : "";
         const prizeZh = prizeCards.length ? `从奖赏卡抽到「${prizeCards.map((c) => c.zh).join("、")}」加入手牌！` : "";
         TableUI.appendLog(`相手の${e.def.name_ja}を撃破！${prizeJa}`, `击倒对手的${e.def.name_zh}，${prizeZh}`);
-        VoiceEngine.speak(koLine.ja, "rival");
+        VoiceEngine.speak(koLine.ja, "rival", { priority: "high" });
       }
       if (deadEnemies.length > 0 && !s.enemy.active) {
         const bench = this.getBenchEntries("enemy").filter((b) => b.unit.hp > 0);
@@ -5647,7 +5914,7 @@
         if (s.enemy.prizesLeft === 0) {
           const r = SpecEngine.getRivalLine("enemy_win");
           TableUI.setRival(r.ja, r.zh);
-          VoiceEngine.speak(r.ja, "rival");
+          VoiceEngine.speak(r.ja, "rival", { priority: "high" });
           this.endGame("enemy", `相手にサイドを${TOTAL_PRIZES}枚取られました。`, `对手拿完 ${TOTAL_PRIZES} 张奖赏卡，本局败北。`);
           return true;
         }
@@ -5655,7 +5922,7 @@
         const r = SpecEngine.getRivalLine(prizeVal === 2 ? "player_ex_ko" : "player_ko");
         TableUI.setRival(r.ja, r.zh);
         TableUI.appendLog(`自分の${p.def.name_ja}がきぜつ…相手がサイドを${prizeVal}枚手札に加えた。`, `己方${p.def.name_zh}倒下，对手拿走 ${prizeVal} 张奖赏卡加入手牌。`);
-        VoiceEngine.speak(r.ja, "rival");
+        VoiceEngine.speak(r.ja, "rival", { priority: "high" });
       }
       if (deadPlayers.length > 0 && !s.player.active) {
         const myBench = this.getBenchEntries("player").filter((b) => b.unit.hp > 0);
@@ -6608,323 +6875,110 @@
           return;
         }
 
-        /* ===== 普通模式：保持完整且有对抗感的稳健打法 ===== */
+        /* ===== 普通模式：自然直观的节奏打法（约 75% 一般玩家胜率，与困难模式形成清晰梯度） ===== */
+        /* 阶段 1：手牌紧张时使用补给包；手中无能量时尝试从弃牌区回收 1 张能量 */
         const bagIdx = s.enemy.hand.indexOf("item_bag");
-        const bagDeckOk = s.enemy.deck.length >= 4 && s.enemy.deck.length >= s.player.deck.length;
-        if (bagIdx !== -1 && bagDeckOk && s.enemy.active && s.player.active) {
-          const actDef0 = SpecEngine.getMonster(s.enemy.active.id);
-          const needCards = s.enemy.hand.length <= 4
-            || !s.enemy.hand.some((id) => id.startsWith("energy_"))
-            || (actDef0 && !s.enemy.active.energies.includes(actDef0.element) && !s.enemy.hand.includes(`energy_${actDef0.element}`))
-            || this.getBenchEntries("enemy").length === 0;
-          if (needCards) {
-            enemySupporterUsed = true;
-            s.enemy.hand.splice(bagIdx, 1);
-            s.enemy.trash.push("item_bag");
-            this.drawCard("enemy", 2);
-            TableUI.appendLog("レンはサポート『補給バッグ』で2枚引いた。", "对手莲使用支援者「补给包」抽了 2 张牌。");
+        if (bagIdx !== -1 && s.enemy.deck.length >= 5 && s.enemy.hand.length <= 3 && s.enemy.active && s.player.active) {
+          enemySupporterUsed = true;
+          s.enemy.hand.splice(bagIdx, 1);
+          s.enemy.trash.push("item_bag");
+          this.drawCard("enemy", 2);
+          TableUI.appendLog("レンはサポート『補給バッグ』で2枚引いた。", "对手莲使用支援者「补给包」抽了 2 张牌。");
+          TableUI.renderAll();
+          if (!(await this.matchDelay(420, seq))) return;
+        }
+        const recIdxN = s.enemy.hand.indexOf("item_recycle");
+        if (recIdxN !== -1 && !s.enemy.hand.some((id) => id.startsWith("energy_"))) {
+          const tIdxN = s.enemy.trash.findIndex((id) => id.startsWith("energy_"));
+          if (tIdxN !== -1) {
+            s.enemy.hand.splice(recIdxN, 1);
+            s.enemy.trash.push("item_recycle");
+            const got = s.enemy.trash.splice(tIdxN, 1)[0];
+            s.enemy.hand.push(got);
+            TableUI.appendLog("レンは『エネ回収』でトラッシュからエネルギーを回収した。", "对手莲使用「能量回收」从弃牌区取回 1 张能量。");
+            TableUI.renderAll();
+            if (!(await this.matchDelay(380, seq))) return;
+          }
+        }
+
+        /* 阶段 2：铺场备战区（普通模式最多维持 2 只备战且优先放常规怪，不抢铺 ex 压场） */
+        const curBenchCountN = s.enemy.bench.filter(Boolean).length;
+        if (curBenchCountN < 2 && s.enemy.bench.includes(null)) {
+          const handMons = s.enemy.hand
+            .map((id, idx) => ({ id, idx, def: SpecEngine.getMonster(id) }))
+            .filter((x) => x.def);
+          if (handMons.length > 0) {
+            handMons.sort((a, b) => (a.def.is_ex ? 1 : 0) - (b.def.is_ex ? 1 : 0));
+            const pick = handMons[0];
+            const emptyB = s.enemy.bench.findIndex((b) => b === null);
+            s.enemy.hand.splice(pick.idx, 1);
+            s.enemy.bench[emptyB] = { id: pick.id, hp: pick.def.hp, energies: [], guard: 0 };
+            TableUI.appendLog(`レンはベンチに${pick.def.name_ja}を出した。`, `对手莲将${pick.def.name_zh}放入备战区。`);
             TableUI.renderAll();
             if (!(await this.matchDelay(420, seq))) return;
           }
         }
-        if (!(await tryEnemyEnergyRecycle())) return;
 
-        /* 阶段 2：铺场备战区（普通模式每回合最多铺 1 只；困难模式全力铺满最多 3 只） */
-        const pActDef = s.player.active ? SpecEngine.getMonster(s.player.active.id) : null;
-        const maxBenchPerTurn = hardAi ? 3 : 1;
-        let benchedThisTurn = 0;
-        while (benchedThisTurn < maxBenchPerTurn && s.enemy.bench.includes(null)) {
-          const handMons = s.enemy.hand
-            .map((id, idx) => ({ id, idx, def: SpecEngine.getMonster(id) }))
-            .filter((x) => x.def);
-          if (handMons.length === 0) break;
-          handMons.sort((a, b) => {
-            const scoreMon = (m) => {
-              let sc = m.def.hp * 0.5;
-              if (m.def.is_ex) sc += 90;
-              if (hardAi && pActDef && this.getWeaknessBonus(m.def.element, pActDef.element) > 0) sc += 120;
-              if (s.enemy.hand.includes(`energy_${m.def.element}`)) sc += 50;
-              return sc;
-            };
-            return scoreMon(b) - scoreMon(a);
-          });
-          const pick = handMons[0];
-          const emptyB = s.enemy.bench.findIndex((b) => b === null);
-          s.enemy.hand.splice(pick.idx, 1);
-          s.enemy.bench[emptyB] = { id: pick.id, hp: pick.def.hp, energies: [], guard: 0 };
-          benchedThisTurn += 1;
-          TableUI.appendLog(`レンはベンチに${pick.def.name_ja}を出した。`, `对手莲将${pick.def.name_zh}放入备战区。`);
-          TableUI.renderAll();
-          if (!(await this.matchDelay(420, seq))) return;
-        }
-        /* 困难模式：铺完新怪兽后若手里还有能量回收，再次检查是否可为刚上场的 ex/主力补齐对应能量 */
-        if (hardAi && s.enemy.hand.includes("item_recycle")) {
-          if (!(await tryEnemyEnergyRecycle())) return;
+        /* 阶段 3：主战残血时使用 1 瓶伤药 */
+        if (s.enemy.active && s.enemy.hand.includes("item_potion")) {
+          const actDefP = SpecEngine.getMonster(s.enemy.active.id);
+          const missingP = actDefP ? (actDefP.hp - s.enemy.active.hp) : 0;
+          if (actDefP && s.enemy.active.hp <= 40 && missingP >= 30) {
+            const healAmt = Math.min(30, missingP);
+            s.enemy.hand.splice(s.enemy.hand.indexOf("item_potion"), 1);
+            s.enemy.trash.push("item_potion");
+            s.enemy.active.hp += healAmt;
+            TableUI.appendLog(`レンはきずぐすりで${actDefP.name_ja}を${healAmt}回復！`, `对手莲用伤药为${actDefP.name_zh}回复 ${healAmt} HP！`);
+            TableUI.renderAll();
+            if (!(await this.matchDelay(460, seq))) return;
+          }
         }
 
-        /* 阶段 3：先评估战术回血（若喝药能让主战怪脱离斩杀线，则留场输出而非浪费能量撤退） */
-        let potionsUsedThisTurn = 0;
-        const maxPotionsPerTurn = hardAi ? 3 : 1;
-        while (potionsUsedThisTurn < maxPotionsPerTurn && s.enemy.hand.includes("item_potion")) {
-          const potCount = s.enemy.hand.filter((id) => id === "item_potion").length;
-          const candidates = this.getAllEntries("enemy")
-            .filter((e) => e.unit.hp < e.def.hp)
-            .map((e) => {
-              const missing = e.def.hp - e.unit.hp;
-              const isAct = e.slot === "enemy_active";
-              const threat = this.estimatePlayerNextTurnThreat(e.unit, isAct);
-              const heal1 = Math.min(30, missing);
-              const heal2 = Math.min(60, missing);
-              const savesWith1 = threat.lethal && (e.unit.hp + heal1 > threat.maxDmg);
-              const savesWith2 = hardAi && threat.lethal && potCount >= 2 && (e.unit.hp + heal2 > threat.maxDmg);
-
-              let score = -1;
-              if (hardAi && savesWith1) {
-                score = (e.def.is_ex ? 1400 : 900) + (isAct ? 200 : 0) + heal1;
-              } else if (savesWith2 && (e.def.is_ex || isAct)) {
-                score = (e.def.is_ex ? 1150 : 680) + heal1;
-              } else if (hardAi && missing >= 30) {
-                score = (isAct ? 320 : 180) + (e.def.is_ex ? 140 : 0) + missing;
-              } else if (hardAi && missing >= 20 && threat.maxDmg > 0) {
-                score = (isAct ? 220 : 90) + missing;
-              } else if (!hardAi && isAct && e.unit.hp <= 40 && missing >= 30) {
-                score = 200 + missing;
-              }
-              return { entry: e, score, heal: heal1 };
-            })
-            .filter((x) => x.score > 0)
-            .sort((a, b) => b.score - a.score);
-
-          if (candidates.length === 0) break;
-          const bestHeal = candidates[0];
-          const potIdx = s.enemy.hand.indexOf("item_potion");
-          s.enemy.hand.splice(potIdx, 1);
-          s.enemy.trash.push("item_potion");
-          bestHeal.entry.unit.hp += bestHeal.heal;
-          potionsUsedThisTurn += 1;
-          TableUI.appendLog(`レンはきずぐすりで${bestHeal.entry.def.name_ja}を${bestHeal.heal}回復！`, `对手莲用伤药为${bestHeal.entry.def.name_zh}回复 ${bestHeal.heal} HP！`);
-          TableUI.renderAll();
-          if (!(await this.matchDelay(460, seq))) return;
-        }
-
-        /* 阶段 4：智能贴能（修复 doomedActive 误判、严禁向已满能后排倾倒废能量；普通模式偏重主战直观贴能） */
+        /* 阶段 4：直观给当前前排主战怪贴能（优先匹配前排属性，不做备战蓄能与能量色保留精算） */
         if (s.enemy.active && s.enemy.hand.some((id) => id.startsWith("energy_"))) {
-          const allEnemyUnits = this.getAllEntries("enemy");
           const actUnit = s.enemy.active;
-          const actThreat = this.estimatePlayerNextTurnThreat(actUnit, true);
-          const actBasePlan = this.evaluateAttackPlan(actUnit, 0);
-          const actMaxCost = Math.max(...SpecEngine.getMonster(actUnit.id).skills.map((sk) => sk.cost.length));
-          const activeNeedsEnergy = (actUnit.energies || []).length < actMaxCost;
-          let bestAttach = null;
-
-          for (const entry of allEnemyUnits) {
-            const otherUnits = allEnemyUnits.map((e) => e.unit).filter((u) => u !== entry.unit);
-            const eIdx = this.pickBestEnergyForUnit(s.enemy.hand, entry.unit, entry.def, otherUnits);
-            if (eIdx === -1) continue;
-            const addElem = s.enemy.hand[eIdx].replace("energy_", "");
-            const curE = entry.unit.energies || [];
-            const simE = [...curE, addElem];
-            const isMatch = addElem === entry.def.element && !curE.includes(entry.def.element);
-            const prevUsable = entry.def.skills.filter((sk) => this.canPayCost(curE, sk.cost)).length;
-            const nextUsable = entry.def.skills.filter((sk) => this.canPayCost(simE, sk.cost)).length;
-            const unlockedNew = nextUsable > prevUsable;
-            const maxCost = Math.max(...entry.def.skills.map((sk) => sk.cost.length));
-
-            let score = 0;
-            if (entry.slot === "enemy_active") {
-              const newPlan = this.evaluateAttackPlan(entry.unit, 0, null, simE);
-              const baseDmg = actBasePlan ? actBasePlan.dmg : 0;
-              const newDmg = newPlan ? newPlan.dmg : 0;
-              if (newPlan && newPlan.isWin && !(actBasePlan && actBasePlan.isWin)) score += 6000;
-              else if (newPlan && newPlan.isKo && !(actBasePlan && actBasePlan.isKo)) score += newPlan.prizeVal === 2 ? 2200 : 1300;
-              if (unlockedNew) {
-                score += (prevUsable === 0 ? 720 : 460) + (newDmg - baseDmg) * 6;
-              }
-              if (isMatch) score += 180;
-              if (!hardAi && curE.length < maxCost) score += 1200;
-              if (curE.length >= maxCost && allEnemyUnits.length > 1) score -= 500;
-              const canDefendSurvive = !newPlan && entry.unit.lastDefendedTurn !== s.turn - 1 && (entry.unit.hp + 30 > actThreat.maxDmg);
-              const doomedActive = hardAi && actThreat.lethal && !canDefendSurvive && !(newPlan && newPlan.isKo) && allEnemyUnits.length > 1;
-              if (doomedActive) score -= 680;
-              if (!unlockedNew && curE.length >= maxCost) score -= 300;
-            } else {
-              if (curE.length >= maxCost) {
-                score -= activeNeedsEnergy ? 2000 : 800;
-              } else {
-                score += hardAi ? 260 : 40;
-                if (hardAi && unlockedNew) score += 260;
-                if (isMatch) score += hardAi ? 190 : 60;
-                if (entry.def.is_ex) score += hardAi ? 280 : 40;
-                if (hardAi && pActDef && this.getWeaknessBonus(entry.def.element, pActDef.element) > 0) score += 210;
-                if (curE.length === 1 && maxCost >= 2) score += 90;
-                score += entry.unit.hp * 0.4;
-              }
-            }
-
-            if (!bestAttach || score > bestAttach.score) {
-              bestAttach = { entry, eIdx, score };
-            }
-          }
-
-          if (bestAttach) {
-            const cardId = s.enemy.hand.splice(bestAttach.eIdx, 1)[0];
-            const itDef = SpecEngine.getItem(cardId);
-            bestAttach.entry.unit.energies.push(itDef.element);
-            TableUI.appendLog(`レンは${bestAttach.entry.def.name_ja}に${itDef.name_ja}をつけた。`, `对手莲为${bestAttach.entry.def.name_zh}贴上了${itDef.name_zh}。`);
-            TableUI.renderAll();
-            if (!(await this.matchDelay(480, seq))) return;
-          }
-        }
-
-        /* 阶段 5：战术撤退（困难模式专属：放在回血与贴能之后，支持“贴1能立即撤退”；ex 怪兽撤退需 2 点能量） */
-        if (hardAi && s.enemy.active && s.player.active) {
-          const actUnit = s.enemy.active;
-          const actDef = SpecEngine.getMonster(actUnit.id);
-          const retreatCost = actDef && actDef.is_ex ? 2 : 1;
-          const enemyBench = this.getBenchEntries("enemy");
-          if (actUnit.energies.length >= retreatCost && enemyBench.length > 0) {
-            const stayPlan = this.evaluateAttackPlan(actUnit, 0);
-            const stayThreat = this.estimatePlayerNextTurnThreat(actUnit, true);
-            const stayWeak = pActDef && this.getWeaknessBonus(pActDef.element, actDef.element) > 0;
-
-            let stayScore = stayPlan ? stayPlan.score : -120;
-            if (stayThreat.lethal && !(stayPlan && stayPlan.isWin)) {
-              stayScore -= actDef.is_ex ? 900 : 380;
-            }
-            if (stayWeak) stayScore -= actDef.is_ex ? 220 : 100;
-            if (actUnit.hp <= 30) stayScore -= 160;
-
-            let bestSwitch = null;
-            for (const b of enemyBench) {
-              const swPlan = this.evaluateAttackPlan(b.unit, 0);
-              const swThreat = this.estimatePlayerNextTurnThreat(b.unit, true);
-              const swAdv = pActDef && this.getWeaknessBonus(b.def.element, pActDef.element) > 0;
-              const swWeak = pActDef && this.getWeaknessBonus(pActDef.element, b.def.element) > 0;
-              let swScore = (swPlan ? swPlan.score : -160) - 160;
-              if (swAdv) swScore += 180;
-              if (swWeak) swScore -= b.def.is_ex ? 320 : 140;
-              if (swThreat.lethal && !(swPlan && swPlan.isWin)) {
-                swScore -= b.def.is_ex ? 950 : 420;
-              }
-              if (b.unit.hp < 40 && !(swPlan && swPlan.isKo)) swScore -= 220;
-              if (!bestSwitch || swScore > bestSwitch.score) {
-                bestSwitch = { entry: b, score: swScore, plan: swPlan };
-              }
-            }
-
-            const switchMargin = hardAi ? 170 : 480;
-            const urgentSaveEx = hardAi && actDef.is_ex && stayThreat.lethal && !(stayPlan && stayPlan.isWin)
-              && bestSwitch && !bestSwitch.entry.def.is_ex && bestSwitch.score > stayScore - 100;
-            if (bestSwitch && (bestSwitch.score > stayScore + switchMargin || urgentSaveEx)) {
-              const old = s.enemy.active;
-              for (let k = 0; k < retreatCost; k++) {
-                let discIdx = old.energies.findIndex((el) => el !== actDef.element);
-                if (discIdx === -1) discIdx = old.energies.length - 1;
-                const discardedElem = old.energies.splice(discIdx, 1)[0];
-                if (discardedElem) s.enemy.trash.push(`energy_${discardedElem}`);
-              }
-              old.guard = 0;
-              s.enemy.active = bestSwitch.entry.unit;
-              s.enemy.bench[bestSwitch.entry.idx] = old;
-              SoundFX.play("switch");
-              TableUI.appendLog(`レンは${bestSwitch.entry.def.name_ja}と交代した！`, `对手莲撤退并换上${bestSwitch.entry.def.name_zh}！`);
+          const actDefE = SpecEngine.getMonster(actUnit.id);
+          if (actDefE) {
+            let eIdx = !(actUnit.energies || []).includes(actDefE.element)
+              ? s.enemy.hand.indexOf(`energy_${actDefE.element}`)
+              : -1;
+            if (eIdx === -1) eIdx = s.enemy.hand.findIndex((id) => id.startsWith("energy_"));
+            if (eIdx !== -1) {
+              const cardId = s.enemy.hand.splice(eIdx, 1)[0];
+              const itDef = SpecEngine.getItem(cardId);
+              actUnit.energies.push(itDef.element);
+              TableUI.appendLog(`レンは${actDefE.name_ja}に${itDef.name_ja}をつけた。`, `对手莲为${actDefE.name_zh}贴上了${itDef.name_zh}。`);
               TableUI.renderAll();
-              TableUI.flashAnim("enemy_active", "anim-enter");
-              if (!(await this.matchDelay(520, seq))) return;
+              if (!(await this.matchDelay(480, seq))) return;
             }
           }
         }
 
-        /* 阶段 6：召唤笛博弈（困难模式专属：主动击倒/抓ex/破防/抓弱点） */
-        if (hardAi && !enemySupporterUsed && s.enemy.active && s.player.active) {
-          const basePlan = this.evaluateAttackPlan(s.enemy.active, 0);
-          const fluteIdx = s.enemy.hand.indexOf("item_flute");
-          const pBench = this.getBenchEntries("player");
-          let bestFlute = null;
-
-          if (fluteIdx !== -1 && pBench.length > 0 && !(basePlan && basePlan.isWin)) {
-            for (const pb of pBench) {
-              const flPlan = this.evaluateAttackPlan(s.enemy.active, 0, pb);
-              if (!flPlan) continue;
-              const baseScore = basePlan ? basePlan.score : 0;
-              const gain = flPlan.score - baseScore;
-              const upgradesToWin = flPlan.isWin;
-              const upgradesToExKo = hardAi && flPlan.isKo && flPlan.prizeVal === 2 && !(basePlan && basePlan.isKo && basePlan.prizeVal === 2);
-              const upgradesToKo = hardAi && flPlan.isKo && !(basePlan && basePlan.isKo);
-              const breaksGuardOrWeak = hardAi && (
-                (s.player.active.guard >= 20 && flPlan.dmg >= (basePlan ? basePlan.dmg : 0) + 20)
-                || (flPlan.weakBonus > 0 && gain >= 140)
-                || (pb.def.is_ex && flPlan.dmg >= 50 && !(basePlan && basePlan.isKo))
-              );
-              if (upgradesToWin || upgradesToExKo || upgradesToKo || breaksGuardOrWeak) {
-                if (!bestFlute || flPlan.score > bestFlute.plan.score) {
-                  bestFlute = { target: pb, plan: flPlan };
-                }
-              }
-            }
-          }
-
-          if (bestFlute) {
-            enemySupporterUsed = true;
-            s.enemy.hand.splice(fluteIdx, 1);
-            s.enemy.trash.push("item_flute");
-            const oldPlayerAct = s.player.active;
-            oldPlayerAct.guard = 0;
-            s.player.active = bestFlute.target.unit;
-            s.player.bench[bestFlute.target.idx] = oldPlayerAct;
-            TableUI.renderAll();
-            SoundFX.play("switch");
-            TableUI.flashAnim("player_active", "anim-enter");
-            TableUI.spawnFloatText("player_active", "強制交代！", "guard");
-            TableUI.appendLog(`レンはサポート『よびだし笛』で${bestFlute.target.def.name_ja}を引きずり出した！`, `对手莲发动支援者「召唤笛」，强行将你的${bestFlute.target.def.name_zh}拉上战斗区！`);
-            if (!(await this.matchDelay(480, seq))) return;
-          }
-        }
-
-        /* 阶段 7：执行最优攻击（必要时发动力量徽章）或困难模式保命防御 / 结束回合（不调用 stopPlayback 避免腰斩玩家回合 KO 语音） */
+        /* 阶段 5：正面进攻（选择前排最高基础伤技能，有力量徽章直接交；无法攻击时防御 -30） */
         const act = s.enemy.active;
         if (act && s.player.active) {
           const actDef = SpecEngine.getMonster(act.id);
-          const basePlan = this.evaluateAttackPlan(act, 0);
-          const actThreat7 = hardAi ? this.estimatePlayerNextTurnThreat(act, true) : null;
-          const powerCanKo = Boolean(
-            !enemySupporterUsed && s.enemy.hand.includes("item_power")
-            && this.evaluateAttackPlan(act, 20)?.isKo
-          );
-          const preferTacticalGuard = Boolean(
-            hardAi && basePlan && !basePlan.isKo && !basePlan.isWin && !powerCanKo
-            && act.lastDefendedTurn !== s.turn - 1
-            && (actDef?.is_ex || s.player.prizesLeft <= 1)
-            && actThreat7 && actThreat7.lethal && (act.hp + 30 > actThreat7.maxDmg)
-            && basePlan.dmg <= 40
-          );
-          if (basePlan && !preferTacticalGuard) {
+          const usableSkills = actDef
+            ? actDef.skills.filter((sk) => this.canPayCost(act.energies, sk.cost)).sort((a, b) => b.damage - a.damage)
+            : [];
+          if (usableSkills.length > 0) {
+            const sk = usableSkills[0];
             const pwrIdx = s.enemy.hand.indexOf("item_power");
-            if (!enemySupporterUsed && pwrIdx !== -1 && !basePlan.isKo) {
-              const boostPlan = this.evaluateAttackPlan(act, 20);
-              const turnsIntoKo = Boolean(boostPlan && boostPlan.isKo);
-              const meaningfulChip = hardAi && Boolean(
-                boostPlan
-                && boostPlan.dmg >= basePlan.dmg + 20
-                && (boostPlan.tDef.is_ex || (s.player.active.guard || 0) >= 20 || (boostPlan.targetUnit.hp - boostPlan.dmg) <= boostPlan.dmg)
-              );
-              if (turnsIntoKo || meaningfulChip) {
-                enemySupporterUsed = true;
-                s.enemy.hand.splice(pwrIdx, 1);
-                s.enemy.trash.push("item_power");
-                s.enemy.attackBoost = (s.enemy.attackBoost || 0) + 20;
-                TableUI.appendLog("レンはサポート『パワーバッジ』を使用！（攻撃+20）", "对手莲使用支援者「力量徽章」！（本回合攻击 +20）");
-                TableUI.spawnFloatText("enemy_active", "⚔️ 攻撃+20！", "energy");
-                TableUI.renderAll();
-                if (!(await this.matchDelay(320, seq))) return;
-              }
+            if (!enemySupporterUsed && pwrIdx !== -1) {
+              enemySupporterUsed = true;
+              s.enemy.hand.splice(pwrIdx, 1);
+              s.enemy.trash.push("item_power");
+              s.enemy.attackBoost = (s.enemy.attackBoost || 0) + 20;
+              TableUI.appendLog("レンはサポート『パワーバッジ』を使用！（攻撃+20）", "对手莲使用支援者「力量徽章」！（本回合攻击 +20）");
+              TableUI.spawnFloatText("enemy_active", "⚔️ 攻撃+20！", "energy");
+              TableUI.renderAll();
+              if (!(await this.matchDelay(320, seq))) return;
             }
-
             const boost = s.enemy.attackBoost || 0;
             s.enemy.attackBoost = 0;
-            const bestPlan = this.evaluateAttackPlan(act, boost) || basePlan;
-            const { sk, targetSlot, targetUnit, tDef } = bestPlan;
-            const ok = await this.executeEnemySkillAttack(act, actDef, sk, targetSlot, targetUnit, tDef, boost, seq);
+            const targetUnit = s.player.active;
+            const tDef = SpecEngine.getMonster(targetUnit.id);
+            const ok = await this.executeEnemySkillAttack(act, actDef, sk, "player_active", targetUnit, tDef, boost, seq);
             if (!ok) return;
           } else if (act.lastDefendedTurn !== s.turn - 1) {
             act.guard = 30;
