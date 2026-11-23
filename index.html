@@ -2902,10 +2902,28 @@
     align-items: center;
     justify-content: center;
     gap: 14px;
-    background: #000000;
+    background:
+      radial-gradient(circle at 50% 44%, rgba(212, 166, 76, 0.08) 0%, transparent 42%),
+      radial-gradient(ellipse at 50% 48%, #222124 0%, #17171a 52%, #0e0e10 100%);
     color: #f6e6c2;
+    overflow: hidden;
     will-change: opacity;
     transition: opacity 0.45s ease, visibility 0.45s ease;
+  }
+  .boot-splash::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.11;
+    background-image:
+      repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0px, rgba(255, 255, 255, 0.03) 1px, transparent 1px, transparent 6px),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.85'/%3E%3C/svg%3E");
+    background-size: auto, 140px 140px;
+  }
+  .boot-splash > * {
+    position: relative;
+    z-index: 1;
   }
   .boot-splash.fade-out {
     opacity: 0;
