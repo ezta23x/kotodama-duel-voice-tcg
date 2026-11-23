@@ -2,9 +2,9 @@
  * ============================================================================
  * 言霊デュエル（言灵对决）— 主程序逻辑
  * 模块结构：
- *   1. ConfigManager  ：Vertex API 密钥、模型与语音配置持久化
- *   2. SpecEngine     ：三级 MD 规则/卡牌数据热加载 + 卡牌/技能模糊匹配引擎
- *   3. VoiceEngine    ：全双工持续通话 + Vertex Gemini TTS / 浏览器语音降级
+ *   1. ConfigManager  ：Gemini LLM 与SenseTime Nia ASR/TTS 配置持久化及 HS256 JWT 签发
+ *   2. SpecEngine     ：三级 MD/JSON 规则与卡牌数据热加载 + 卡牌/技能模糊匹配引擎
+ *   3. VoiceEngine    ：全双工持续通话 + SenseTime Nia 流式 ASR/TTS + Vertex / 浏览器语音降级
  *   4. NLUEngine      ：Vertex Gemini 中日语解析 + 追问记忆 + 本地解析
  *   5. BattleEngine   ：完整对战状态机、贴能解锁、奖赏抽牌与对手 AI
  *   6. TableUI        ：全屏牌桌渲染、双语换行日志与实时战术建议
@@ -80,7 +80,7 @@
   const CARD_ART = {
     p_fox: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fde8e1"/><polygon points="8,18 11,6 19,14" fill="#e25b37"/><polygon points="32,18 29,6 21,14" fill="#e25b37"/><polygon points="10,16 12,9 16,14" fill="#fff0d9"/><polygon points="30,16 28,9 24,14" fill="#fff0d9"/><ellipse cx="20" cy="23" rx="12" ry="10" fill="#f06d42"/><path d="M11,25 Q20,33 29,25 Q24,34 20,34 Q16,34 11,25 Z" fill="#fff6ea"/><path d="M20,11 Q23,14 20,17 Q17,14 20,11 Z" fill="#ffd15c"/><circle cx="15.5" cy="22" r="2" fill="#272018"/><circle cx="24.5" cy="22" r="2" fill="#272018"/><circle cx="16.2" cy="21.3" r="0.7" fill="#fff"/><circle cx="25.2" cy="21.3" r="0.7" fill="#fff"/><polygon points="18.5,25 21.5,25 20,27" fill="#272018"/></svg>',
     p_turtle: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#e3f1fc"/><path d="M8,28 Q20,10 32,28 Z" fill="#3f8f7b"/><path d="M13,26 Q20,17 27,26" fill="none" stroke="#d8f0e8" stroke-width="1.8"/><circle cx="20" cy="21" r="9" fill="#5ba4dc"/><circle cx="16.5" cy="20" r="2" fill="#272018"/><circle cx="23.5" cy="20" r="2" fill="#272018"/><circle cx="17.1" cy="19.3" r="0.7" fill="#fff"/><circle cx="24.1" cy="19.3" r="0.7" fill="#fff"/><path d="M17,24 Q20,26.5 23,24" fill="none" stroke="#272018" stroke-width="1.6" stroke-linecap="round"/><path d="M31,11 Q34,15 31,17 Q28,15 31,11 Z" fill="#2c6da4"/></svg>',
-    p_lion: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fcf2d4"/><polygon points="20,4 24,11 32,9 29,16 35,21 29,26 32,33 24,31 20,36 16,31 8,33 11,26 5,21 11,16 8,9 16,11" fill="#e0a419"/><circle cx="20" cy="21" r="9" fill="#ffe082"/><circle cx="16.5" cy="20" r="2" fill="#272018"/><circle cx="23.5" cy="20" r="2" fill="#272018"/><circle cx="17.1" cy="19.3" r="0.7" fill="#fff"/><circle cx="24.1" cy="19.3" r="0.7" fill="#fff"/><polygon points="18.2,23 21.8,23 20,25.2" fill="#9c5611"/><path d="M17.5,26.5 Q20,28.5 22.5,26.5" fill="none" stroke="#63380c" stroke-width="1.4" stroke-linecap="round"/></svg>',
+    p_lion: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fcf2d4"/><circle cx="20" cy="22" r="14" fill="#cc7a10"/><circle cx="11" cy="14" r="5" fill="#d98a14"/><circle cx="29" cy="14" r="5" fill="#d98a14"/><circle cx="8.5" cy="22" r="5" fill="#d98a14"/><circle cx="31.5" cy="22" r="5" fill="#d98a14"/><circle cx="12" cy="30" r="5" fill="#c4710e"/><circle cx="28" cy="30" r="5" fill="#c4710e"/><circle cx="20" cy="32.5" r="5" fill="#c4710e"/><circle cx="20" cy="11" r="5.5" fill="#e09418"/><circle cx="11.5" cy="11.2" r="4.2" fill="#f7c852" stroke="#b5670c" stroke-width="1.2"/><circle cx="11.5" cy="11.4" r="2.1" fill="#c97228"/><circle cx="28.5" cy="11.2" r="4.2" fill="#f7c852" stroke="#b5670c" stroke-width="1.2"/><circle cx="28.5" cy="11.4" r="2.1" fill="#c97228"/><ellipse cx="20" cy="22.5" rx="9.4" ry="8.6" fill="#ffdc73"/><polygon points="20.6,14.3 18.4,17.3 20.1,17.3 19.2,19.7 21.8,16.6 20.1,16.6" fill="#d9531e"/><ellipse cx="17.2" cy="26.2" rx="3.5" ry="2.6" fill="#fff6db"/><ellipse cx="22.8" cy="26.2" rx="3.5" ry="2.6" fill="#fff6db"/><path d="M13.5,18.7 L17.3,19.6" stroke="#8a4b0f" stroke-width="1.3" stroke-linecap="round"/><path d="M26.5,18.7 L22.7,19.6" stroke="#8a4b0f" stroke-width="1.3" stroke-linecap="round"/><circle cx="15.8" cy="21.4" r="1.9" fill="#272018"/><circle cx="24.2" cy="21.4" r="1.9" fill="#272018"/><circle cx="16.4" cy="20.7" r="0.65" fill="#fff"/><circle cx="24.8" cy="20.7" r="0.65" fill="#fff"/><polygon points="17.8,23.5 22.2,23.5 20,25.8" fill="#7a3e0e"/><path d="M17.2,27.2 Q18.6,28.5 20,27.0 Q21.4,28.5 22.8,27.2" fill="none" stroke="#63380c" stroke-width="1.3" stroke-linecap="round"/><path d="M11.8,25.2 L14.5,25.7 M12.2,27.2 L14.7,26.9 M28.2,25.2 L25.5,25.7 M27.8,27.2 L25.3,26.9" stroke="#8a4b0f" stroke-width="1.05" stroke-linecap="round"/></svg>',
     p_dragon_ex: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fde4cf"/><polygon points="7,14 13,5 17,15" fill="#c98d18"/><polygon points="33,14 27,5 23,15" fill="#c98d18"/><polygon points="5,24 12,18 11,29" fill="#d94f2b"/><polygon points="35,24 28,18 29,29" fill="#d94f2b"/><ellipse cx="20" cy="23" rx="11" ry="10" fill="#d94f2b"/><ellipse cx="20" cy="27" rx="7" ry="5" fill="#ffd56b"/><circle cx="15.5" cy="21" r="2.2" fill="#fff"/><circle cx="24.5" cy="21" r="2.2" fill="#fff"/><circle cx="15.8" cy="21" r="1.1" fill="#9e1c0e"/><circle cx="24.2" cy="21" r="1.1" fill="#9e1c0e"/><polygon points="16,28 17.5,31 19,28" fill="#fff"/><polygon points="21,28 22.5,31 24,28" fill="#fff"/></svg>',
     e_dog: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fbe5df"/><polygon points="9,17 8,7 17,13" fill="#5a3a31"/><polygon points="31,17 32,7 23,13" fill="#5a3a31"/><ellipse cx="20" cy="23" rx="11.5" ry="10" fill="#75473b"/><ellipse cx="20" cy="27" rx="7" ry="5" fill="#d96c47"/><path d="M13,18 L18,20" stroke="#ffb14a" stroke-width="2" stroke-linecap="round"/><path d="M27,18 L22,20" stroke="#ffb14a" stroke-width="2" stroke-linecap="round"/><circle cx="15.5" cy="21.5" r="1.9" fill="#fff"/><circle cx="24.5" cy="21.5" r="1.9" fill="#fff"/><circle cx="15.8" cy="21.5" r="1" fill="#c9472d"/><circle cx="24.2" cy="21.5" r="1" fill="#c9472d"/><polygon points="18,25 22,25 20,27.3" fill="#272018"/><polygon points="16,29 17.5,31.5 19,29" fill="#fff"/><polygon points="21,29 22.5,31.5 24,29" fill="#fff"/></svg>',
     e_fish: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#e2f2fb"/><polygon points="30,22 37,15 37,29" fill="#458ec4"/><ellipse cx="19" cy="22" rx="11" ry="9" fill="#5baee2"/><ellipse cx="19" cy="25" rx="8" ry="4.5" fill="#d8f1ff"/><circle cx="15" cy="20" r="2.4" fill="#fff"/><circle cx="14.6" cy="20" r="1.3" fill="#1d2c3a"/><circle cx="28" cy="10" r="3" fill="none" stroke="#3b82b8" stroke-width="1.6"/><circle cx="33" cy="7" r="1.8" fill="none" stroke="#3b82b8" stroke-width="1.4"/></svg>',
@@ -93,7 +93,7 @@
     item_recycle: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#e8f4ee"/><path d="M20,9 A11,11 0 1 1 10,24" fill="none" stroke="#2e6b47" stroke-width="3" stroke-linecap="round"/><polygon points="20,5 25,10 18,13" fill="#2e6b47"/><polygon points="18,14 23,14 20,20 24,20 17,28 19,21 15,21" fill="#d48c1d"/></svg>'
   };
 
-  const STORAGE_KEY_CFG  = "elemental_table_api_cfg_v12";
+  const STORAGE_KEY_CFG  = "elemental_table_api_cfg_v13";
   const STORAGE_KEY_DATA = "kotodama_duel_imported_gamedata_v2";
   const STORAGE_KEY_MD   = "elemental_table_imported_md_v1";
 
@@ -104,17 +104,35 @@
     return e.map((b, i) => String.fromCharCode(b ^ m[i % m.length])).join("");
   }
 
-  /* Vertex AI 默认配置（LLM / ASR: gemini-3.5-flash-lite 极简思考，TTS: gemini-3.8-flash-lite-tts） */
+  function _decodeBuiltinNiaAk() {
+    const m = [83, 39, 109, 29, 77, 61, 103];
+    const e = [96, 106, 56, 103, 52, 122, 61, 1, 116, 4, 82, 23, 114, 11, 9, 83, 36, 104, 57, 91, 55, 7, 16, 10, 122, 123, 4];
+    return e.map((b, i) => String.fromCharCode(b ^ m[i % m.length])).join("");
+  }
+
+  function _decodeBuiltinNiaSk() {
+    const m = [71, 53, 113, 31, 89, 43, 97];
+    const e = [0, 112, 50, 78, 19, 66, 23, 12, 4, 67, 78, 40, 98, 18, 1, 88, 71, 70, 12, 102, 0, 20, 67, 64, 115, 19, 76, 23, 126, 66, 62, 121];
+    return e.map((b, i) => String.fromCharCode(b ^ m[i % m.length])).join("");
+  }
+
+  /* 默认配置：LLM 保持 Vertex Gemini，ASR 与 TTS 默认使用SenseTime Nia 语音引擎 */
   const DEFAULT_CONFIG = {
     apiKey: _decodeBuiltinKey(),
     llmModel: "gemini-3.5-flash-lite",
     ttsModel: "gemini-3.8-flash-lite-tts",
-    asrMode: "gemini_audio",
+    asrMode: "nia_asr",
     asrLang: "ja-JP",
-    ttsEngine: "vertex_tts",
+    niaAk: _decodeBuiltinNiaAk(),
+    niaSk: _decodeBuiltinNiaSk(),
+    niaAsrLang: "",
+    ttsEngine: "nia_tts",
+    niaVoiceReferee: "female_luna",
+    niaVoiceRival: "male_haru",
     voiceReferee: "Kore",
     voiceRival: "Fenrir",
     chromeVoiceURI: "",
+    chromeVoiceRivalURI: "",
     idlePromptSec: 15,
     aiDifficulty: "normal",
     autoSpeak: true,
@@ -211,7 +229,10 @@
           ttsModel: cfg.ttsModel,
           asrMode: cfg.asrMode,
           asrLang: cfg.asrLang,
+          niaAsrLang: cfg.niaAsrLang,
           ttsEngine: cfg.ttsEngine,
+          niaVoiceReferee: cfg.niaVoiceReferee,
+          niaVoiceRival: cfg.niaVoiceRival,
           apiAsrBlocked: VoiceEngine.apiAsrBlocked,
           apiTtsBlocked: VoiceEngine.apiTtsBlocked
         },
@@ -389,29 +410,41 @@
   };
 
   /* =========================================================================
-     1. ConfigManager（Vertex API 接入层与本地持久化）
+     1. ConfigManager（Gemini LLM 与SenseTime Nia ASR/TTS 接入层、JWT 签发与持久化）
      ========================================================================= */
   const ConfigManager = {
     data: { ...DEFAULT_CONFIG },
+    _niaJwtCache: null,
 
     /** 白名单校验配置字段类型与合法枚举，防止旧版脏数据或注入污染 */
     sanitize(rawObj) {
       const src = (rawObj && typeof rawObj === "object") ? rawObj : {};
       const out = { ...DEFAULT_CONFIG };
-      const VALID_ASR = new Set(["gemini_audio", "chrome_asr_llm", "chrome_local"]);
+      const VALID_ASR = new Set(["nia_asr", "gemini_audio", "chrome_asr_llm", "chrome_local"]);
       const VALID_LANG = new Set(["ja-JP", "zh-CN"]);
-      const VALID_TTS = new Set(["vertex_tts", "chrome_tts"]);
+      const VALID_NIA_LANG = new Set(["", "ja", "zh"]);
+      const VALID_TTS = new Set(["nia_tts", "vertex_tts", "chrome_tts"]);
       const VALID_VOICES = new Set(["Zephyr", "Leda", "Kore", "Aoede", "Puck", "Charon", "Fenrir"]);
+      const VALID_NIA_VOICES = new Set([
+        "female_luna", "female_meihe", "female_lora", "female_shuying", "female_xiaowan",
+        "male_haru", "male_shantian", "male_youzhen", "male_zichen"
+      ]);
       const VALID_DIFF = new Set(["normal", "hard"]);
       if (typeof src.apiKey === "string") out.apiKey = src.apiKey.trim();
       if (typeof src.llmModel === "string" && src.llmModel.trim()) out.llmModel = src.llmModel.trim();
       if (typeof src.ttsModel === "string" && src.ttsModel.trim()) out.ttsModel = src.ttsModel.trim();
+      if (typeof src.niaAk === "string") out.niaAk = src.niaAk.trim();
+      if (typeof src.niaSk === "string") out.niaSk = src.niaSk.trim();
       if (VALID_ASR.has(src.asrMode)) out.asrMode = src.asrMode;
       if (VALID_LANG.has(src.asrLang)) out.asrLang = src.asrLang;
+      if (VALID_NIA_LANG.has(src.niaAsrLang)) out.niaAsrLang = src.niaAsrLang;
       if (VALID_TTS.has(src.ttsEngine)) out.ttsEngine = src.ttsEngine;
+      if (VALID_NIA_VOICES.has(src.niaVoiceReferee)) out.niaVoiceReferee = src.niaVoiceReferee;
+      if (VALID_NIA_VOICES.has(src.niaVoiceRival)) out.niaVoiceRival = src.niaVoiceRival;
       if (VALID_VOICES.has(src.voiceReferee)) out.voiceReferee = src.voiceReferee;
       if (VALID_VOICES.has(src.voiceRival)) out.voiceRival = src.voiceRival;
       if (typeof src.chromeVoiceURI === "string") out.chromeVoiceURI = src.chromeVoiceURI;
+      if (typeof src.chromeVoiceRivalURI === "string") out.chromeVoiceRivalURI = src.chromeVoiceRivalURI;
       const sec = Number(src.idlePromptSec);
       if (Number.isFinite(sec) && sec >= 0 && sec <= 120) out.idlePromptSec = Math.round(sec);
       if (VALID_DIFF.has(src.aiDifficulty)) out.aiDifficulty = src.aiDifficulty;
@@ -429,11 +462,13 @@
       } catch (e) {
         this.data = { ...DEFAULT_CONFIG };
       }
+      this._niaJwtCache = null;
       return this.data;
     },
 
     save(partial) {
       this.data = this.sanitize({ ...this.data, ...partial });
+      this._niaJwtCache = null;
       try { localStorage.setItem(STORAGE_KEY_CFG, JSON.stringify(this.data)); } catch (e) {}
     },
 
@@ -442,6 +477,118 @@
       try { localStorage.removeItem(STORAGE_KEY_DATA); } catch (e) {}
       try { localStorage.removeItem(STORAGE_KEY_MD); } catch (e) {}
       this.data = { ...DEFAULT_CONFIG };
+      this._niaJwtCache = null;
+    },
+
+    hasNiaCredentials() {
+      return Boolean(String(this.data.niaAk || "").trim() && String(this.data.niaSk || "").trim());
+    },
+
+    /** Uint8Array → Base64URL（无填充） */
+    _base64UrlBytes(bytes) {
+      let bin = "";
+      for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+      return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+    },
+
+    /** 纯 JS SHA-256（仅当非 HTTPS/localhost 环境缺少 crypto.subtle 时兜底） */
+    _sha256Fallback(msgBytes) {
+      const K = [
+        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+        0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+        0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+        0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+        0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+        0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+        0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+        0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+      ];
+      let h0 = 0x6a09e667, h1 = 0xbb67ae85, h2 = 0x3c6ef372, h3 = 0xa54ff53a;
+      let h4 = 0x510e527f, h5 = 0x9b05688c, h6 = 0x1f83d9ab, h7 = 0x5be0cd19;
+      const len = msgBytes.length;
+      const bitLenHi = Math.floor((len * 8) / 0x100000000);
+      const bitLenLo = (len * 8) >>> 0;
+      const totalLen = ((len + 9 + 63) >> 6) << 6;
+      const buf = new Uint8Array(totalLen);
+      buf.set(msgBytes, 0);
+      buf[len] = 0x80;
+      const dv = new DataView(buf.buffer);
+      dv.setUint32(totalLen - 8, bitLenHi, false);
+      dv.setUint32(totalLen - 4, bitLenLo, false);
+      const w = new Uint32Array(64);
+      const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+      for (let off = 0; off < totalLen; off += 64) {
+        for (let i = 0; i < 16; i++) w[i] = dv.getUint32(off + i * 4, false);
+        for (let i = 16; i < 64; i++) {
+          const s0 = rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >>> 3);
+          const s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >>> 10);
+          w[i] = (w[i - 16] + s0 + w[i - 7] + s1) >>> 0;
+        }
+        let a = h0, b = h1, c = h2, d = h3, e = h4, f = h5, g = h6, h = h7;
+        for (let i = 0; i < 64; i++) {
+          const S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
+          const ch = (e & f) ^ ((~e) & g);
+          const t1 = (h + S1 + ch + K[i] + w[i]) >>> 0;
+          const S0 = rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22);
+          const maj = (a & b) ^ (a & c) ^ (b & c);
+          const t2 = (S0 + maj) >>> 0;
+          h = g; g = f; f = e; e = (d + t1) >>> 0;
+          d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+        }
+        h0 = (h0 + a) >>> 0; h1 = (h1 + b) >>> 0; h2 = (h2 + c) >>> 0; h3 = (h3 + d) >>> 0;
+        h4 = (h4 + e) >>> 0; h5 = (h5 + f) >>> 0; h6 = (h6 + g) >>> 0; h7 = (h7 + h) >>> 0;
+      }
+      const out = new Uint8Array(32);
+      const odv = new DataView(out.buffer);
+      [h0, h1, h2, h3, h4, h5, h6, h7].forEach((val, idx) => odv.setUint32(idx * 4, val, false));
+      return out;
+    },
+
+    _hmacSha256Fallback(keyBytes, dataBytes) {
+      let k = keyBytes;
+      if (k.length > 64) k = this._sha256Fallback(k);
+      const block = new Uint8Array(64);
+      block.set(k, 0);
+      const oPad = new Uint8Array(64 + 32);
+      const iPad = new Uint8Array(64 + dataBytes.length);
+      for (let i = 0; i < 64; i++) {
+        oPad[i] = block[i] ^ 0x5c;
+        iPad[i] = block[i] ^ 0x36;
+      }
+      iPad.set(dataBytes, 64);
+      const innerHash = this._sha256Fallback(iPad);
+      oPad.set(innerHash, 64);
+      return this._sha256Fallback(oPad);
+    },
+
+    /** 签发SenseTime Nia HS256 JWT（支持 Web Crypto 与纯 JS 兜底，带 28 分钟缓存） */
+    async generateNiaJwt() {
+      const ak = String(this.data.niaAk || "").trim();
+      const sk = String(this.data.niaSk || "").trim();
+      if (!ak || !sk) throw new Error("Nia AK/SK 未設定");
+      const nowSec = Math.floor(Date.now() / 1000);
+      const credSig = `${ak}|${sk.length}|${sk.slice(0, 4)}|${sk.slice(-4)}`;
+      if (this._niaJwtCache && this._niaJwtCache.credSig === credSig && this._niaJwtCache.exp - nowSec > 120) {
+        return this._niaJwtCache.token;
+      }
+      const enc = new TextEncoder();
+      const headerB64 = this._base64UrlBytes(enc.encode(JSON.stringify({ alg: "HS256", typ: "JWT" })));
+      const exp = nowSec + 1800;
+      const payloadB64 = this._base64UrlBytes(enc.encode(JSON.stringify({ iss: ak, exp, nbf: nowSec - 5 })));
+      const signingInput = `${headerB64}.${payloadB64}`;
+      const keyBytes = enc.encode(sk);
+      const dataBytes = enc.encode(signingInput);
+      let sigBytes;
+      if (typeof crypto !== "undefined" && crypto.subtle && typeof crypto.subtle.importKey === "function") {
+        const cryptoKey = await crypto.subtle.importKey("raw", keyBytes, { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+        const sigBuf = await crypto.subtle.sign("HMAC", cryptoKey, dataBytes);
+        sigBytes = new Uint8Array(sigBuf);
+      } else {
+        sigBytes = this._hmacSha256Fallback(keyBytes, dataBytes);
+      }
+      const token = `${signingInput}.${this._base64UrlBytes(sigBytes)}`;
+      this._niaJwtCache = { credSig, token, exp };
+      return token;
     },
 
     /** 根据模型型号返回最低延迟思考配置 */
@@ -496,12 +643,27 @@
         .map((line) => escapeHtml(line).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>"));
     },
 
+    /** 统一解析技能特效字段（支持 guard_N / discard_self_N / heal_self_N / draw_N / bench_splash_N / recoil_N 及组合） */
+    parseSkillEffects(effectRaw) {
+      const fx = { guardVal: 0, discardSelfVal: 0, healSelfVal: 0, drawVal: 0, benchSplashVal: 0, recoilVal: 0 };
+      const parts = String(effectRaw || "none").split(/[+,|]/).map((x) => x.trim()).filter(Boolean);
+      for (const p of parts) {
+        let m;
+        if ((m = /^guard_(\d+)$/.exec(p))) fx.guardVal = Math.max(fx.guardVal, Number(m[1]));
+        else if ((m = /^discard_self_(\d+)$/.exec(p))) fx.discardSelfVal += Number(m[1]);
+        else if ((m = /^heal_self_(\d+)$/.exec(p))) fx.healSelfVal += Number(m[1]);
+        else if ((m = /^draw_(\d+)$/.exec(p))) fx.drawVal += Number(m[1]);
+        else if ((m = /^bench_splash_(\d+)$/.exec(p))) fx.benchSplashVal = Math.max(fx.benchSplashVal, Number(m[1]));
+        else if ((m = /^recoil_(\d+)$/.exec(p))) fx.recoilVal += Number(m[1]);
+      }
+      return fx;
+    },
+
     normalizeSkillObj(s) {
       if (!s) return null;
       if (typeof s === "string") return this.parseSkill(s);
       const effectRaw = this.stripHtmlTags(s.effect || "none") || "none";
-      const guardMatch = /^guard_(\d+)$/.exec(effectRaw);
-      const discardMatch = /^discard_self_(\d+)$/.exec(effectRaw);
+      const fx = this.parseSkillEffects(effectRaw);
       const costArr = Array.isArray(s.cost)
         ? s.cost.map((c) => this.stripHtmlTags(c)).filter(Boolean)
         : String(s.cost || "").split(",").map((c) => c.trim()).filter(Boolean);
@@ -515,8 +677,12 @@
         damage: Number(s.damage) || 0,
         target: this.stripHtmlTags(s.target || "enemy_active") || "enemy_active",
         effect: effectRaw,
-        guardVal: guardMatch ? Number(guardMatch[1]) : (Number(s.guardVal) || 0),
-        discardSelfVal: discardMatch ? Number(discardMatch[1]) : (Number(s.discardSelfVal) || 0),
+        guardVal: fx.guardVal || (Number(s.guardVal) || 0),
+        discardSelfVal: fx.discardSelfVal || (Number(s.discardSelfVal) || 0),
+        healSelfVal: fx.healSelfVal || (Number(s.healSelfVal) || 0),
+        drawVal: fx.drawVal || (Number(s.drawVal) || 0),
+        benchSplashVal: fx.benchSplashVal || (Number(s.benchSplashVal) || 0),
+        recoilVal: fx.recoilVal || (Number(s.recoilVal) || 0),
         aliases
       };
     },
@@ -716,8 +882,7 @@
       const parts = str.split(/\s*[｜/]\s*/).map((s) => s.trim());
       const nameMatch = (parts[0] || "").match(/^(.+?)[（(](.+?)[）)]$/);
       const effectRaw = parts[4] || "none";
-      const guardMatch = /^guard_(\d+)$/.exec(effectRaw);
-      const discardMatch = /^discard_self_(\d+)$/.exec(effectRaw);
+      const fx = this.parseSkillEffects(effectRaw);
       return {
         name_ja: nameMatch ? nameMatch[1].trim() : parts[0],
         name_zh: nameMatch ? nameMatch[2].trim() : parts[0],
@@ -725,8 +890,7 @@
         damage: Number(parts[2]) || 0,
         target: parts[3] || "enemy_active",
         effect: effectRaw,
-        guardVal: guardMatch ? Number(guardMatch[1]) : 0,
-        discardSelfVal: discardMatch ? Number(discardMatch[1]) : 0,
+        ...fx,
         aliases: []
       };
     },
@@ -1038,7 +1202,7 @@
     apiAsrBlocked: false,
     apiAsrBlockReason: "",
 
-    /* 持续通话与监听状态（单流 VAD 全双工监听 + 浏览器 ASR 降级） */
+    /* 持续通话与监听状态（单流 VAD 全双工监听 + SenseTime Nia 流式 ASR + 浏览器 ASR 降级） */
     callActive: false,
     callMode: "vad",
     callMicStream: null,
@@ -1051,6 +1215,7 @@
     vadPreRoll: [],
     vadCaptureChunks: [],
     vadCapturing: false,
+    vadNiaSession: null,
     vadTimer: null,
     vadRecorder: null,
     vadSpeechStart: 0,
@@ -1070,6 +1235,32 @@
     mediaRecorder: null,
     audioChunks: [],
     chromeRec: null,
+    singleNiaSession: null,
+    singleNiaStop: null,
+
+    /* 各 TTS 引擎可用音色目录（切换语音模型时同一组音色下拉框自动切换可选列表） */
+    VOICE_CATALOG: {
+      nia_tts: [
+        { value: "female_luna", label: "Luna · 温柔少女（日/中/英 · 推荐裁判）" },
+        { value: "female_meihe", label: "美和 · 清澈女声（日语）" },
+        { value: "female_lora", label: "Lora · 温柔青年（日语）" },
+        { value: "female_shuying", label: "疏影 · 知性女声（日语）" },
+        { value: "female_xiaowan", label: "小婉 · 轻柔女声（日语）" },
+        { value: "male_haru", label: "Haru · 低沉松弛青年（日/英 · 推荐对手）" },
+        { value: "male_shantian", label: "山田 · 温柔成年男声（日语）" },
+        { value: "male_youzhen", label: "悠真 · 爽朗青年男声（日语）" },
+        { value: "male_zichen", label: "子宸 · 沉稳男声（日语）" }
+      ],
+      vertex_tts: [
+        { value: "Kore", label: "Kore（清脆女声 · 推荐裁判）" },
+        { value: "Fenrir", label: "Fenrir（低沉男声 · 推荐对手）" },
+        { value: "Zephyr", label: "Zephyr（明亮轻快）" },
+        { value: "Leda", label: "Leda（温和女声）" },
+        { value: "Aoede", label: "Aoede（柔和女声）" },
+        { value: "Puck", label: "Puck（活力少年）" },
+        { value: "Charon", label: "Charon（稳重男声）" }
+      ]
+    },
 
     getAudioCtx() {
       if (!this.audioCtx) {
@@ -1136,6 +1327,23 @@
 
     stopAll() {
       this.stopPlayback();
+      if (this.singleNiaSession) {
+        try { this.singleNiaSession.abort(); } catch (_) {}
+        this.singleNiaSession = null;
+      }
+      if (this.singleNiaStop) {
+        const fn = this.singleNiaStop;
+        this.singleNiaStop = null;
+        try { fn(true); } catch (_) {}
+      }
+      if (this.isRecording) {
+        this.isRecording = false;
+        const btn = $("btnRecordVoice");
+        if (btn) {
+          btn.classList.remove("recording");
+          btn.innerHTML = `${SVG_ICONS.mic}単発<br><span class="btn-zh">（单次）</span>`;
+        }
+      }
       if (this.callActive) this.stopCall(true);
     },
 
@@ -1154,20 +1362,21 @@
       el.classList.toggle("live", isLive);
     },
 
-    populateChromeVoices() {
-      const sel = $("chromeVoiceSelect");
-      if (!sel) return;
+    getVoiceOptionsForEngine(engine) {
+      if (engine === "nia_tts") return this.VOICE_CATALOG.nia_tts;
+      if (engine === "vertex_tts") return this.VOICE_CATALOG.vertex_tts;
       const voices = (window.speechSynthesis ? speechSynthesis.getVoices() : [])
         .filter((v) => /^ja/i.test(v.lang));
-      const cur = ConfigManager.data.chromeVoiceURI;
-      sel.innerHTML = `<option value="">自動選択（自动选择日语发音人，共 ${voices.length} 个）</option>`;
-      voices.forEach((v) => {
-        const opt = document.createElement("option");
-        opt.value = v.voiceURI;
-        opt.textContent = `${v.name} (${v.lang})`;
-        if (v.voiceURI === cur) opt.selected = true;
-        sel.appendChild(opt);
-      });
+      return [
+        { value: "", label: `自動選択（自动选择日语发音人，共 ${voices.length} 个）` },
+        ...voices.map((v) => ({ value: v.voiceURI, label: `${v.name} (${v.lang})` }))
+      ];
+    },
+
+    populateChromeVoices() {
+      if ($("ttsEngine")?.value === "chrome_tts" && typeof populateVoiceSelectsForEngine === "function") {
+        populateVoiceSelectsForEngine("chrome_tts");
+      }
     },
 
     /** 提取纯日语部分用于 TTS 播报，跳过中文并将 +20/-30/HP分数等规范化为明确数值读法（防止误读成百分比） */
@@ -1235,8 +1444,11 @@
           u.rate = role === "rival" ? 1.07 : 1.08;
           u.pitch = role === "rival" ? 0.88 : 1.06;
           const voices = speechSynthesis.getVoices().filter((v) => /^ja/i.test(v.lang));
-          if (ConfigManager.data.chromeVoiceURI) {
-            const chosen = voices.find((v) => v.voiceURI === ConfigManager.data.chromeVoiceURI);
+          const wantedUri = role === "rival"
+            ? (ConfigManager.data.chromeVoiceRivalURI || ConfigManager.data.chromeVoiceURI)
+            : ConfigManager.data.chromeVoiceURI;
+          if (wantedUri) {
+            const chosen = voices.find((v) => v.voiceURI === wantedUri);
             if (chosen) u.voice = chosen;
           } else if (voices.length) {
             u.voice = voices[0];
@@ -1322,11 +1534,143 @@
       }
     },
 
+    /** 通过SenseTime Nia WebSocket TTS 合成 24kHz PCM 音频（带内存 LRU 缓存、并发去重与 12s 超时保护） */
+    async fetchNiaTtsAudioBuffer(text, role = "referee") {
+      const cfg = ConfigManager.data;
+      const voiceId = role === "rival"
+        ? (cfg.niaVoiceRival || "male_haru")
+        : (cfg.niaVoiceReferee || "female_luna");
+      const cacheKey = `nia|${voiceId}|${text}`;
+      if (this.audioCache.has(cacheKey)) return this.audioCache.get(cacheKey);
+      if (this.inflightCache.has(cacheKey)) return await this.inflightCache.get(cacheKey);
+      if (!ConfigManager.hasNiaCredentials()) throw new Error("Nia AK/SK 未設定");
+
+      const promise = (async () => {
+        const jwt = await ConfigManager.generateNiaJwt();
+        const url = `wss://nia.sensetime.com/biz/tts/ws?jwt=${encodeURIComponent(jwt)}`;
+        const pcmBytes = await new Promise((resolve, reject) => {
+          let settled = false;
+          let ws = null;
+          const chunks = [];
+          let totalBytes = 0;
+          const finishErr = (err) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            try { if (ws && ws.readyState < 2) ws.close(); } catch (_) {}
+            reject(err);
+          };
+          const finishOk = () => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timer);
+            try { if (ws && ws.readyState < 2) ws.close(); } catch (_) {}
+            const merged = new Uint8Array(totalBytes);
+            let off = 0;
+            for (const c of chunks) { merged.set(c, off); off += c.length; }
+            if (merged.length < 4) return reject(new Error("Nia TTS empty audio"));
+            resolve(merged);
+          };
+          const timer = setTimeout(() => finishErr(new Error("Nia TTS timeout")), 12000);
+          try {
+            ws = new WebSocket(url);
+          } catch (e) {
+            return finishErr(e);
+          }
+          ws.binaryType = "arraybuffer";
+          ws.onopen = () => {
+            try {
+              ws.send(JSON.stringify({
+                type: "start",
+                config: {
+                  voice_id: voiceId,
+                  language: "JAPANESE",
+                  speed: 1.0,
+                  volume: 0,
+                  pitch: 0,
+                  format: "pcm",
+                  sample_rate: 24000,
+                  stream_output: true,
+                  text_type: "PLAIN",
+                  output_subtitles: false,
+                  disable_tn: false
+                }
+              }));
+            } catch (e) {
+              finishErr(e);
+            }
+          };
+          ws.onmessage = (ev) => {
+            if (ev.data instanceof ArrayBuffer) {
+              const u8 = new Uint8Array(ev.data);
+              chunks.push(u8);
+              totalBytes += u8.length;
+              return;
+            }
+            if (typeof ev.data === "string") {
+              let msg = null;
+              try { msg = JSON.parse(ev.data); } catch (_) { return; }
+              if (msg.type === "started") {
+                try {
+                  ws.send(JSON.stringify({ type: "text", text, is_last: true }));
+                  ws.send(JSON.stringify({ type: "finish" }));
+                } catch (e) {
+                  finishErr(e);
+                }
+              } else if (msg.type === "finished") {
+                finishOk();
+              } else if (msg.type === "error") {
+                const err = new Error(msg.message || msg.code || "Nia TTS error");
+                err.code = msg.code || "";
+                if (/401|403|AUTH|TOKEN|UNAUTH|FORBID/i.test(String(msg.code || msg.message || ""))) {
+                  err.status = 401;
+                }
+                finishErr(err);
+              }
+            }
+          };
+          ws.onerror = () => finishErr(new Error("Nia TTS WebSocket error"));
+          ws.onclose = (ev) => {
+            if (!settled) {
+              if (totalBytes > 100 && ev.code === 1000) finishOk();
+              else finishErr(new Error(`Nia TTS closed (${ev.code})`));
+            }
+          };
+        });
+
+        const ctx = this.getAudioCtx();
+        const sampleCount = Math.floor(pcmBytes.byteLength / 2);
+        const dv = new DataView(pcmBytes.buffer, pcmBytes.byteOffset, sampleCount * 2);
+        const float32 = new Float32Array(sampleCount);
+        for (let i = 0; i < sampleCount; i++) float32[i] = dv.getInt16(i * 2, true) / 32768;
+        const buf = ctx.createBuffer(1, sampleCount, 24000);
+        buf.copyToChannel(float32, 0);
+        if (this.audioCache.size >= 80) {
+          const firstKey = this.audioCache.keys().next().value;
+          this.audioCache.delete(firstKey);
+        }
+        this.audioCache.set(cacheKey, buf);
+        return buf;
+      })();
+
+      this.inflightCache.set(cacheKey, promise);
+      try {
+        return await promise;
+      } finally {
+        this.inflightCache.delete(cacheKey);
+      }
+    },
+
     /** 后台预取下一句语音，消除裁判与对手台词之间的网络停顿 */
     prefetch(text, role = "rival") {
       const cfg = ConfigManager.data;
       const jaOnly = this.extractJapaneseOnly(text);
       if (!cfg.autoSpeak || !jaOnly || this.apiTtsBlocked || cfg.ttsEngine === "chrome_tts") return;
+      if (cfg.ttsEngine === "nia_tts") {
+        if (!ConfigManager.hasNiaCredentials()) return;
+        this.fetchNiaTtsAudioBuffer(jaOnly, role).catch(() => {});
+        return;
+      }
       if (!String(cfg.apiKey || "").trim()) return;
       this.fetchTtsAudioBuffer(jaOnly, role).catch(() => {});
     },
@@ -1399,15 +1743,8 @@
       return await this.aecInitPromise;
     },
 
-    /** 通过 Vertex Gemini TTS 播放纯日语音频（走 AEC3 回声参考通道，优先命中缓存/预取） */
-    async speakVertexTts(text, role = "referee", token = this.speakToken) {
-      const t0 = Date.now();
-      const cfg = ConfigManager.data;
-      const cacheKey = `${(cfg.ttsModel || "gemini-3.8-flash-lite-tts").trim()}|${role === "rival" ? cfg.voiceRival : cfg.voiceReferee}|${text}`;
-      const cached = this.audioCache.has(cacheKey);
-      const buf = await this.fetchTtsAudioBuffer(text, role);
-      if (token !== this.speakToken) return;
-      DebugLog.add("TTS", `Vertex TTS (${role}, ${cached ? "缓存命中" : `${Date.now() - t0}ms`})`, text);
+    /** 统一通过 WebAudio + AEC3 回声参考通道播放 AudioBuffer */
+    async playAudioBuffer(buf, token = this.speakToken) {
       const ctx = this.getAudioCtx();
       if (ctx.state === "suspended") { try { await ctx.resume(); } catch (_) {} }
       if (token !== this.speakToken) return;
@@ -1435,6 +1772,33 @@
         src.onended = finish;
         src.start();
       });
+    },
+
+    /** 通过SenseTime Nia TTS 播放纯日语音频（走 AEC3 回声参考通道，优先命中缓存/预取） */
+    async speakNiaTts(text, role = "referee", token = this.speakToken) {
+      const t0 = Date.now();
+      const cfg = ConfigManager.data;
+      const voiceId = role === "rival"
+        ? (cfg.niaVoiceRival || "male_haru")
+        : (cfg.niaVoiceReferee || "female_luna");
+      const cacheKey = `nia|${voiceId}|${text}`;
+      const cached = this.audioCache.has(cacheKey);
+      const buf = await this.fetchNiaTtsAudioBuffer(text, role);
+      if (token !== this.speakToken) return;
+      DebugLog.add("TTS", `SenseTime Nia TTS (${role}/${voiceId}, ${cached ? "缓存命中" : `${Date.now() - t0}ms`})`, text);
+      await this.playAudioBuffer(buf, token);
+    },
+
+    /** 通过 Vertex Gemini TTS 播放纯日语音频（走 AEC3 回声参考通道，优先命中缓存/预取） */
+    async speakVertexTts(text, role = "referee", token = this.speakToken) {
+      const t0 = Date.now();
+      const cfg = ConfigManager.data;
+      const cacheKey = `${(cfg.ttsModel || "gemini-3.8-flash-lite-tts").trim()}|${role === "rival" ? cfg.voiceRival : cfg.voiceReferee}|${text}`;
+      const cached = this.audioCache.has(cacheKey);
+      const buf = await this.fetchTtsAudioBuffer(text, role);
+      if (token !== this.speakToken) return;
+      DebugLog.add("TTS", `Vertex TTS (${role}, ${cached ? "缓存命中" : `${Date.now() - t0}ms`})`, text);
+      await this.playAudioBuffer(buf, token);
     },
 
     /** 记录最近播报的日语台词，用于在全双工收音时过滤或剥离扬声器残余回声 */
@@ -1563,6 +1927,7 @@
 
           const cfg = ConfigManager.data;
           const hasKey = String(cfg.apiKey || "").trim().length > 0;
+          const hasNia = ConfigManager.hasNiaCredentials();
           this.isSpeaking = true;
           this.pendingSpeakCount = 1 + this.speakQueue.length;
           this.recordSpoken(jaOnly);
@@ -1570,7 +1935,7 @@
           clearTimeout(this.chromeResumeTimer);
           clearTimeout(this.chromeUtterTimer);
           this.chromeUtterBuf = "";
-          if (this.vadRecorder || this.vadCapturing) this.abortVadRecorder();
+          if (this.vadRecorder || this.vadCapturing || this.vadNiaSession) this.abortVadRecorder();
           if (this.callActive && this.callMode === "chrome_asr" && this.callRec) {
             clearTimeout(this.recRestartTimer);
             try { this.callRec.onend = null; this.callRec.abort(); } catch (_) {}
@@ -1587,8 +1952,35 @@
           }
 
           try {
-            if (!hasKey || cfg.ttsEngine === "chrome_tts") {
+            if (cfg.ttsEngine === "chrome_tts") {
               this.setVoiceStatus("現在：Chrome標準日本語音声", "浏览器日语朗读");
+              DebugLog.add("TTS", `Chrome TTS (${role})`, jaOnly);
+              await this.speakChrome(jaOnly, role, myToken);
+            } else if (cfg.ttsEngine === "nia_tts") {
+              if (!hasNia || this.apiTtsBlocked) {
+                const reason = !hasNia ? "Nia AK/SK 未設定" : this.apiTtsBlockReason;
+                this.setVoiceStatus(`現在：Chrome標準日本語音声（SenseTime Nia ${reason} のため自動降級中）`);
+                DebugLog.add("TTS", `Chrome TTS 降级中 (${role}, ${reason})`, jaOnly);
+                await this.speakChrome(jaOnly, role, myToken);
+              } else {
+                try {
+                  await this.speakNiaTts(jaOnly, role, myToken);
+                  const vid = role === "rival" ? cfg.niaVoiceRival : cfg.niaVoiceReferee;
+                  this.setVoiceStatus(`現在：SenseTime Nia TTS (${vid}) 再生中`);
+                } catch (e) {
+                  if (myToken === this.speakToken) {
+                    if (e && (e.status === 401 || e.status === 402 || e.status === 403)) {
+                      this.apiTtsBlocked = true;
+                      this.apiTtsBlockReason = e.code || `HTTP ${e.status}`;
+                    }
+                    DebugLog.add("ERR", `SenseTime Nia TTS 失败 (${e.message}) → 降级 Chrome TTS`, jaOnly);
+                    this.setVoiceStatus(`SenseTime Nia 音声失敗 (${e.message}) → Chrome標準日本語音声へ降級`);
+                    await this.speakChrome(jaOnly, role, myToken);
+                  }
+                }
+              }
+            } else if (!hasKey) {
+              this.setVoiceStatus("現在：Chrome標準日本語音声", "Vertex Key 未填写，使用浏览器朗读");
               DebugLog.add("TTS", `Chrome TTS (${role})`, jaOnly);
               await this.speakChrome(jaOnly, role, myToken);
             } else if (this.apiTtsBlocked) {
@@ -1728,10 +2120,272 @@
       return btoa(bin);
     },
 
-    /** 中断当前尚未提交的 VAD 录音切片与 PCM 采集缓冲 */
+    /** 创建一次SenseTime Nia 流式语音识别会话（实时将任意采样率 Float32 PCM 降采样为 16kHz Int16LE 并按 100ms 帧流式上送） */
+    createNiaAsrSession(opts = {}) {
+      const lang = typeof opts.lang === "string" ? opts.lang : (ConfigManager.data.niaAsrLang || "");
+      const onPartial = typeof opts.onPartial === "function" ? opts.onPartial : null;
+      const FRAME_BYTES = 3200; // 16kHz * 2B * 100ms
+      const frameQueue = [];
+      let pendingBuf = new Uint8Array(0);
+      let resamplePhase = 0;
+      let prevSample = 0;
+      let hasPrevSample = false;
+
+      let ws = null;
+      let started = false;
+      let ending = false;
+      let endSent = false;
+      let aborted = false;
+      let settled = false;
+      let flushTimer = null;
+      let endWaitTimer = null;
+      let connectTimer = null;
+      let lastErr = null;
+
+      const finalSegments = [];
+      let lastPartial = "";
+      let finishResolve = null;
+      let finishReject = null;
+
+      const cleanupTimers = () => {
+        if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
+        if (endWaitTimer) { clearTimeout(endWaitTimer); endWaitTimer = null; }
+        if (connectTimer) { clearTimeout(connectTimer); connectTimer = null; }
+      };
+
+      const closeWsSafe = () => {
+        try { if (ws && ws.readyState < 2) ws.close(); } catch (_) {}
+      };
+
+      const getTranscript = () => {
+        const joined = finalSegments.join("").trim();
+        if (joined && lastPartial && !joined.endsWith(lastPartial)) return `${joined}${lastPartial}`.trim();
+        return (joined || lastPartial || "").trim();
+      };
+
+      const resolveDone = () => {
+        if (settled) return;
+        settled = true;
+        cleanupTimers();
+        closeWsSafe();
+        if (finishResolve) finishResolve(getTranscript());
+      };
+
+      const rejectFail = (err) => {
+        lastErr = err instanceof Error ? err : new Error(String(err || "Nia ASR error"));
+        if (settled) return;
+        settled = true;
+        cleanupTimers();
+        closeWsSafe();
+        if (finishReject) finishReject(lastErr);
+      };
+
+      const appendPcmBytes = (bytes) => {
+        if (!bytes || bytes.length === 0) return;
+        const merged = new Uint8Array(pendingBuf.length + bytes.length);
+        merged.set(pendingBuf, 0);
+        merged.set(bytes, pendingBuf.length);
+        let off = 0;
+        while (merged.length - off >= FRAME_BYTES) {
+          frameQueue.push(merged.slice(off, off + FRAME_BYTES));
+          off += FRAME_BYTES;
+        }
+        pendingBuf = merged.slice(off);
+      };
+
+      const trySendEnd = () => {
+        if (!started || !ending || endSent || !ws || ws.readyState !== 1) return;
+        if (frameQueue.length > 0) return;
+        if (pendingBuf.length > 0) {
+          try { ws.send(pendingBuf); } catch (_) {}
+          pendingBuf = new Uint8Array(0);
+        }
+        endSent = true;
+        if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
+        try {
+          ws.send(JSON.stringify({ type: "end" }));
+        } catch (e) {
+          rejectFail(e);
+          return;
+        }
+        endWaitTimer = setTimeout(() => resolveDone(), 4500);
+      };
+
+      const startPacer = () => {
+        if (flushTimer) return;
+        flushTimer = setInterval(() => {
+          if (aborted || settled || !started || !ws || ws.readyState !== 1) return;
+          // 正常按 100ms 节奏发送；若积压预缓冲超过 4 帧，温和追赶避免超时
+          const burst = frameQueue.length > 4 ? 2 : 1;
+          for (let i = 0; i < burst && frameQueue.length > 0; i++) {
+            const frame = frameQueue.shift();
+            try {
+              ws.send(frame);
+            } catch (e) {
+              rejectFail(e);
+              return;
+            }
+          }
+          if (ending && frameQueue.length === 0) trySendEnd();
+        }, 75);
+      };
+
+      (async () => {
+        try {
+          const jwt = await ConfigManager.generateNiaJwt();
+          if (aborted || settled) return;
+          const url = `wss://nia.sensetime.com/biz/asr/ws?jwt=${encodeURIComponent(jwt)}`;
+          ws = new WebSocket(url);
+          ws.binaryType = "arraybuffer";
+          connectTimer = setTimeout(() => {
+            if (!started && !aborted && !settled) rejectFail(new Error("Nia ASR connect timeout"));
+          }, 7000);
+          ws.onopen = () => {
+            if (aborted || settled) { closeWsSafe(); return; }
+            try {
+              ws.send(JSON.stringify({
+                type: "start",
+                language: lang,
+                format: "pcm_s16le",
+                sample_rate: 16000,
+                channels: 1,
+                server_vad: false
+              }));
+            } catch (e) {
+              rejectFail(e);
+            }
+          };
+          ws.onmessage = (ev) => {
+            if (aborted || settled || typeof ev.data !== "string") return;
+            let msg = null;
+            try { msg = JSON.parse(ev.data); } catch (_) { return; }
+            if (msg.type === "started") {
+              started = true;
+              if (connectTimer) { clearTimeout(connectTimer); connectTimer = null; }
+              startPacer();
+              if (ending && frameQueue.length === 0) trySendEnd();
+            } else if (msg.type === "partial") {
+              const t = String(msg.text || "").trim();
+              if (t) {
+                lastPartial = t;
+                if (onPartial) onPartial(getTranscript());
+              }
+            } else if (msg.type === "final") {
+              const t = String(msg.text || "").trim();
+              if (t) finalSegments.push(t);
+              lastPartial = "";
+              const preview = getTranscript();
+              if (preview && onPartial) onPartial(preview);
+              if (ending && endSent) {
+                clearTimeout(endWaitTimer);
+                endWaitTimer = setTimeout(() => resolveDone(), 260);
+              }
+            } else if (msg.type === "finished") {
+              resolveDone();
+            } else if (msg.type === "error") {
+              const err = new Error(msg.message || msg.code || "Nia ASR error");
+              err.code = msg.code || "";
+              if (/401|403|AUTH|TOKEN|UNAUTH|FORBID/i.test(String(msg.code || msg.message || ""))) {
+                err.status = 401;
+              }
+              rejectFail(err);
+            }
+          };
+          ws.onerror = () => {
+            if (!aborted && !settled) rejectFail(new Error("Nia ASR WebSocket error"));
+          };
+          ws.onclose = (ev) => {
+            if (aborted || settled) return;
+            if (endSent || (started && getTranscript())) {
+              resolveDone();
+            } else {
+              rejectFail(new Error(`Nia ASR closed (${ev.code})`));
+            }
+          };
+        } catch (e) {
+          if (!aborted && !settled) rejectFail(e);
+        }
+      })();
+
+      return {
+        /** 喂入一段 Float32 单声道音频并连续线性重采样至 16kHz Int16LE */
+        pushFloat32(float32Chunk, srcRate = 48000) {
+          if (aborted || ending || settled || !float32Chunk || float32Chunk.length === 0) return;
+          const rate = srcRate > 0 ? srcRate : 48000;
+          const step = rate / 16000;
+          const len = float32Chunk.length;
+          const estOut = Math.ceil((len + 2) / step) + 2;
+          const out = new Int16Array(estOut);
+          let outCount = 0;
+          let pos = resamplePhase;
+          while (pos < len) {
+            let sample;
+            if (pos < 0) {
+              const frac = pos + 1;
+              sample = (hasPrevSample ? prevSample : float32Chunk[0]) * (1 - frac) + float32Chunk[0] * frac;
+            } else {
+              const i0 = Math.floor(pos);
+              const i1 = i0 + 1;
+              if (i1 >= len) break;
+              const frac = pos - i0;
+              sample = float32Chunk[i0] * (1 - frac) + float32Chunk[i1] * frac;
+            }
+            const clamped = Math.max(-1, Math.min(1, sample));
+            out[outCount++] = clamped < 0 ? Math.round(clamped * 0x8000) : Math.round(clamped * 0x7fff);
+            pos += step;
+          }
+          prevSample = float32Chunk[len - 1];
+          hasPrevSample = true;
+          resamplePhase = pos - len;
+          if (outCount > 0) {
+            appendPcmBytes(new Uint8Array(out.buffer, 0, outCount * 2));
+          }
+        },
+
+        /** 结束收音，发完缓冲队列与 end 指令并等待最终识别文本 */
+        finish() {
+          if (aborted) return Promise.resolve("");
+          if (settled) {
+            if (lastErr) return Promise.reject(lastErr);
+            return Promise.resolve(getTranscript());
+          }
+          ending = true;
+          return new Promise((resolve, reject) => {
+            finishResolve = resolve;
+            finishReject = reject;
+            if (started && frameQueue.length === 0) {
+              trySendEnd();
+            } else if (!started) {
+              // 仍在进行 WS 握手：最长再等待 5 秒
+              clearTimeout(endWaitTimer);
+              endWaitTimer = setTimeout(() => {
+                if (!started) rejectFail(new Error("Nia ASR handshake timeout"));
+                else resolveDone();
+              }, 5000);
+            }
+          });
+        },
+
+        /** 静默丢弃本次会话（用于噪声误触发、打断或挂断） */
+        abort() {
+          if (aborted) return;
+          aborted = true;
+          settled = true;
+          cleanupTimers();
+          closeWsSafe();
+          if (finishResolve) finishResolve("");
+        }
+      };
+    },
+
+    /** 中断当前尚未提交的 VAD 录音切片、Nia 流式会话与 PCM 采集缓冲 */
     abortVadRecorder() {
       this.vadCapturing = false;
       this.vadCaptureChunks = [];
+      if (this.vadNiaSession) {
+        try { this.vadNiaSession.abort(); } catch (_) {}
+        this.vadNiaSession = null;
+      }
       const rec = this.vadRecorder;
       this.vadRecorder = null;
       if (rec && rec.state !== "inactive") {
@@ -1802,6 +2456,9 @@
             copy.set(input);
             if (this.vadCapturing) {
               this.vadCaptureChunks.push(copy);
+              if (this.vadNiaSession) {
+                this.vadNiaSession.pushFloat32(copy, ctx.sampleRate || 48000);
+              }
             } else {
               this.vadPreRoll.push(copy);
               if (this.vadPreRoll.length > maxPreChunks) this.vadPreRoll.shift();
@@ -1870,6 +2527,16 @@
               this.vadCaptureChunks = [...this.vadPreRoll];
               this.vadPreRoll = [];
               this.vadCapturing = true;
+              if (ConfigManager.data.asrMode === "nia_asr") {
+                if (this.vadNiaSession) { try { this.vadNiaSession.abort(); } catch (_) {} }
+                const niaSess = this.createNiaAsrSession({
+                  lang: ConfigManager.data.niaAsrLang || "",
+                  onPartial: (t) => { if (t && $("cmdInput")) $("cmdInput").value = t; }
+                });
+                const sr = ctx.sampleRate || 48000;
+                for (const c of this.vadCaptureChunks) niaSess.pushFloat32(c, sr);
+                this.vadNiaSession = niaSess;
+              }
             }
           }
           return;
@@ -1900,6 +2567,16 @@
               this.vadCaptureChunks = [...this.vadPreRoll];
               this.vadPreRoll = [];
               this.vadCapturing = true;
+              if (ConfigManager.data.asrMode === "nia_asr") {
+                if (this.vadNiaSession) { try { this.vadNiaSession.abort(); } catch (_) {} }
+                const niaSess = this.createNiaAsrSession({
+                  lang: ConfigManager.data.niaAsrLang || "",
+                  onPartial: (t) => { if (t && $("cmdInput")) $("cmdInput").value = t; }
+                });
+                const sr = ctx.sampleRate || 48000;
+                for (const c of this.vadCaptureChunks) niaSess.pushFloat32(c, sr);
+                this.vadNiaSession = niaSess;
+              }
             } else {
               try {
                 const rec = new MediaRecorder(this.callMicStream, mime ? { mimeType: mime } : undefined);
@@ -1949,18 +2626,46 @@
               this.vadCapturing = false;
               const pcmChunks = this.vadCaptureChunks;
               this.vadCaptureChunks = [];
+              const niaSession = this.vadNiaSession;
+              this.vadNiaSession = null;
               const peak = this.vadPeakRms;
               const loudFrames = this.vadLoudFrames;
               if (this.callActive) {
                 if (this.isSpeaking) this.updateCallButtonUI("播报中，开口可打断", "発話中（可打断）");
                 else this.updateCallButtonUI("持续监听中，点击挂断", "聴取中（监听）");
               }
-              if (!this.callActive || pcmChunks.length === 0 || loudFrames < minLoudFrames || peak < minPeak || dur < 220) return;
+              if (!this.callActive || pcmChunks.length === 0 || loudFrames < minLoudFrames || peak < minPeak || dur < 220) {
+                if (niaSession) niaSession.abort();
+                return;
+              }
               SoundFX.play("tap");
-              const b64 = this.encodePcmToWavBase64(pcmChunks, ctx.sampleRate || 24000);
-              if (b64 && this.callCallback) {
-                DebugLog.add("ASR", `VAD+PreRoll 提交 WAV (${Math.round((b64.length * 0.75) / 1024)}KB, ${dur}ms)`, `frames=${loudFrames}, peak=${peak.toFixed(3)}, tail=${tailSilenceMs}ms`);
-                this.callCallback({ audioBase64: b64, audioMime: "audio/wav", fromVoice: true });
+              if (niaSession) {
+                const durCaptured = dur;
+                niaSession.finish().then((transcript) => {
+                  const clean = String(transcript || "").trim();
+                  if (!clean) {
+                    DebugLog.add("ASR", `SenseTime Nia 流式识别结果为空 (${durCaptured}ms)`, `frames=${loudFrames}, peak=${peak.toFixed(3)}`);
+                    return;
+                  }
+                  if ($("cmdInput")) $("cmdInput").value = clean;
+                  DebugLog.add("ASR", `SenseTime Nia 流式识别完成 (${durCaptured}ms)`, clean);
+                  if (this.callActive && this.callCallback) {
+                    this.callCallback({ text: clean, fromVoice: true });
+                  }
+                }).catch((err) => {
+                  const reason = err?.code || err?.message || "Nia ASR 接続失敗";
+                  DebugLog.add("ERR", `SenseTime Nia 流式识别失败 (${reason})`);
+                  const switched = this.fallbackToChromeAsr(reason);
+                  if (switched) {
+                    TableUI.showToast("Chrome音声認識へ自動切替しました", "SenseTime Nia 识别失败，已自动切换浏览器语音识别");
+                  }
+                });
+              } else {
+                const b64 = this.encodePcmToWavBase64(pcmChunks, ctx.sampleRate || 24000);
+                if (b64 && this.callCallback) {
+                  DebugLog.add("ASR", `VAD+PreRoll 提交 WAV (${Math.round((b64.length * 0.75) / 1024)}KB, ${dur}ms)`, `frames=${loudFrames}, peak=${peak.toFixed(3)}, tail=${tailSilenceMs}ms`);
+                  this.callCallback({ audioBase64: b64, audioMime: "audio/wav", fromVoice: true });
+                }
               }
             } else {
               const rec = this.vadRecorder;
@@ -2074,7 +2779,7 @@
       }
     },
 
-    /** 在线语音识别恢复可用时：保护未提交半句缓冲，并无缝切回 Vertex 在线语音识别 */
+    /** 在线语音识别恢复可用时：保护未提交半句缓冲，并无缝切回SenseTime Nia / Vertex 在线语音识别 */
     onOnlineApiRecovered() {
       if (!this.apiAsrBlocked) return;
       this.clearApiAsrReconnectTimer();
@@ -2082,9 +2787,14 @@
       this.apiAsrBlockReason = "";
       this.apiAsrBlockedAt = 0;
       this.apiAsrRetryAttempt = 0;
-      DebugLog.add("ASR", "在线语音识别已恢复，自动切回 Vertex 语音识别");
       const cfg = ConfigManager.data;
-      if (this.callActive && this.callMode === "chrome_asr" && cfg.asrMode === "gemini_audio" && Boolean(window.MediaRecorder) && this.callMicStream) {
+      const engineName = cfg.asrMode === "nia_asr" ? "SenseTime Nia" : "Vertex AI";
+      DebugLog.add("ASR", `在线语音识别已恢复，自动切回 ${engineName} 语音识别`);
+      const canReturnVad = this.callMicStream && (
+        (cfg.asrMode === "nia_asr" && ConfigManager.hasNiaCredentials() && typeof WebSocket !== "undefined")
+        || (cfg.asrMode === "gemini_audio" && Boolean(window.MediaRecorder) && String(cfg.apiKey || "").trim().length > 0)
+      );
+      if (this.callActive && this.callMode === "chrome_asr" && canReturnVad) {
         const pendingBuf = String(this.chromeUtterBuf || "").trim();
         clearTimeout(this.chromeResumeTimer);
         clearTimeout(this.chromeUtterTimer);
@@ -2105,19 +2815,21 @@
         this.callMode = "vad";
         this.startVadMonitor();
         this.updateCallButtonUI("通话中，点击挂断", "通話中（通话中）");
-        this.setVoiceStatus("オンライン音声認識に自動復帰しました（Vertex AI）");
-        TableUI.showToast("オンライン音声認識に自動復帰しました", "已自动回连在线语音识别");
+        this.setVoiceStatus(`オンライン音声認識に自動復帰しました（${engineName}）`);
+        TableUI.showToast("オンライン音声認識に自動復帰しました", `已自动回连 ${engineName} 语音识别`);
       } else {
-        this.setVoiceStatus("オンライン音声認識が復旧しました（次回から自動使用）");
-        TableUI.showToast("オンライン音声認識が復旧しました", "在线语音识别已恢复");
+        this.setVoiceStatus(`オンライン音声認識が復旧しました（${engineName}・次回から自動使用）`);
+        TableUI.showToast("オンライン音声認識が復旧しました", `${engineName} 语音识别已恢复`);
       }
     },
 
     /** 后台静默探测在线语音识别接口是否恢复（采用 5s → 10s → 20s → 30s 快速退避重试，不打断当前本地识别） */
     scheduleApiAsrReconnect() {
       const cfg = ConfigManager.data;
-      if (!this.apiAsrBlocked || cfg.asrMode !== "gemini_audio" || !String(cfg.apiKey || "").trim()) return;
-      if (/(401|403|API_KEY_INVALID)/i.test(String(this.apiAsrBlockReason || ""))) return;
+      const isNia = cfg.asrMode === "nia_asr" && ConfigManager.hasNiaCredentials();
+      const isGemini = cfg.asrMode === "gemini_audio" && String(cfg.apiKey || "").trim().length > 0;
+      if (!this.apiAsrBlocked || (!isNia && !isGemini)) return;
+      if (/(401|403|API_KEY_INVALID|AUTH|UNAUTH|FORBID)/i.test(String(this.apiAsrBlockReason || ""))) return;
       this.clearApiAsrReconnectTimer();
       const delays = [5000, 10000, 20000, 30000];
       const attempt = this.apiAsrRetryAttempt || 0;
@@ -2129,7 +2841,47 @@
     async probeOnlineAsrRecovery() {
       this.apiAsrRetryTimer = null;
       const cfg = ConfigManager.data;
-      if (!this.apiAsrBlocked || cfg.asrMode !== "gemini_audio" || !String(cfg.apiKey || "").trim()) return;
+      if (!this.apiAsrBlocked) return;
+      if (cfg.asrMode === "nia_asr") {
+        if (!ConfigManager.hasNiaCredentials() || typeof WebSocket === "undefined") return;
+        try {
+          const jwt = await ConfigManager.generateNiaJwt();
+          await new Promise((resolve, reject) => {
+            let done = false;
+            const ws = new WebSocket(`wss://nia.sensetime.com/biz/asr/ws?jwt=${encodeURIComponent(jwt)}`);
+            const t = setTimeout(() => {
+              if (!done) { done = true; try { ws.close(); } catch (_) {} reject(new Error("timeout")); }
+            }, 4500);
+            ws.onopen = () => {
+              try {
+                ws.send(JSON.stringify({ type: "start", language: "", format: "pcm_s16le", sample_rate: 16000, channels: 1, server_vad: false }));
+              } catch (e) {
+                if (!done) { done = true; clearTimeout(t); reject(e); }
+              }
+            };
+            ws.onmessage = (ev) => {
+              if (done || typeof ev.data !== "string") return;
+              try {
+                const msg = JSON.parse(ev.data);
+                if (msg.type === "started") {
+                  done = true; clearTimeout(t); try { ws.close(); } catch (_) {} resolve();
+                } else if (msg.type === "error") {
+                  done = true; clearTimeout(t); try { ws.close(); } catch (_) {} reject(new Error(msg.message || msg.code || "error"));
+                }
+              } catch (_) {}
+            };
+            ws.onerror = () => { if (!done) { done = true; clearTimeout(t); reject(new Error("network")); } };
+            ws.onclose = (ev) => { if (!done) { done = true; clearTimeout(t); reject(new Error(`closed ${ev.code}`)); } };
+          });
+          this.onOnlineApiRecovered();
+        } catch (e) {
+          this.apiAsrRetryAttempt = (this.apiAsrRetryAttempt || 0) + 1;
+          DebugLog.add("ASR", `SenseTime Nia 语音识别回连探测未通 (${e?.message || "network"})，继续保持本地识别`);
+          if (this.apiAsrBlocked) this.scheduleApiAsrReconnect();
+        }
+        return;
+      }
+      if (cfg.asrMode !== "gemini_audio" || !String(cfg.apiKey || "").trim()) return;
       const url = ConfigManager.buildRestUrl(cfg.llmModel);
       if (!url) return;
       const ac = typeof AbortController !== "undefined" ? new AbortController() : null;
@@ -2161,20 +2913,21 @@
       }
     },
 
-    /** Vertex 语音识别失败时自动降级至 Chrome 标准语音识别（通话中无缝切换，并定时自动尝试回连在线） */
+    /** 在线语音识别（SenseTime Nia / Vertex）失败时自动降级至 Chrome 标准语音识别（通话中无缝切换，并定时自动尝试回连） */
     fallbackToChromeAsr(reason = "") {
       this.apiAsrBlocked = true;
       this.apiAsrBlockReason = reason || "接続失敗";
       this.apiAsrBlockedAt = Date.now();
+      const engineName = ConfigManager.data.asrMode === "nia_asr" ? "SenseTime Nia" : "Vertex";
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
       if (!SR) {
-        DebugLog.add("ERR", `Vertex ASR 失败 (${this.apiAsrBlockReason}) 且浏览器不支持 Chrome ASR`);
-        this.setVoiceStatus(`Vertex音声認識失敗 (${this.apiAsrBlockReason}) · Chrome音声認識未対応`);
+        DebugLog.add("ERR", `${engineName} ASR 失败 (${this.apiAsrBlockReason}) 且浏览器不支持 Chrome ASR`);
+        this.setVoiceStatus(`${engineName}音声認識失敗 (${this.apiAsrBlockReason}) · Chrome音声認識未対応`);
         this.scheduleApiAsrReconnect();
         return false;
       }
-      DebugLog.add("ASR", `Vertex ASR 失败 (${this.apiAsrBlockReason}) → 自动切换 Chrome ASR（后台自动回连）`);
-      this.setVoiceStatus(`Vertex音声認識失敗 (${this.apiAsrBlockReason}) → Chrome標準音声認識へ自動切替（自動再接続待機中）`);
+      DebugLog.add("ASR", `${engineName} ASR 失败 (${this.apiAsrBlockReason}) → 自动切换 Chrome ASR（后台自动回连）`);
+      this.setVoiceStatus(`${engineName}音声認識失敗 (${this.apiAsrBlockReason}) → Chrome標準音声認識へ自動切替（自動再接続待機中）`);
       if (this.callActive && this.callMode === "vad") {
         clearInterval(this.vadTimer);
         this.vadTimer = null;
@@ -2215,7 +2968,9 @@
         this.apiAsrBlockReason = "";
         this.apiAsrRetryAttempt = 0;
       }
-      const canUseVad = Boolean(window.MediaRecorder) && cfg.asrMode === "gemini_audio" && !this.apiAsrBlocked && String(cfg.apiKey || "").trim().length > 0;
+      const canUseNiaVad = cfg.asrMode === "nia_asr" && !this.apiAsrBlocked && ConfigManager.hasNiaCredentials() && typeof WebSocket !== "undefined";
+      const canUseGeminiVad = Boolean(window.MediaRecorder) && cfg.asrMode === "gemini_audio" && !this.apiAsrBlocked && String(cfg.apiKey || "").trim().length > 0;
+      const canUseVad = canUseNiaVad || canUseGeminiVad;
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
       if (!canUseVad && !SR) {
@@ -2313,13 +3068,18 @@
       }
     },
 
-    /* ---------- 单次按录（支持 Vertex Gemini 音频直传或浏览器语音识别） ---------- */
+    /* ---------- 单次按录（支持SenseTime Nia 流式识别 / Vertex Gemini 音频直传 / 浏览器语音识别） ---------- */
     async toggleRecord(onResult) {
       const btn = $("btnRecordVoice");
       if (this.isRecording) {
         this.isRecording = false;
         btn.classList.remove("recording");
         btn.innerHTML = `${SVG_ICONS.mic}単発<br><span class="btn-zh">（单次）</span>`;
+        if (this.singleNiaStop) {
+          const stopFn = this.singleNiaStop;
+          this.singleNiaStop = null;
+          stopFn();
+        }
         if (this.mediaRecorder && this.mediaRecorder.state !== "inactive") this.mediaRecorder.stop();
         if (this.chromeRec) try { this.chromeRec.stop(); } catch (e) {}
         return;
@@ -2330,14 +3090,98 @@
       this.stopPlayback();
 
       const cfg = ConfigManager.data;
-      if (this.apiAsrBlocked && this.apiAsrBlockedAt && Date.now() - this.apiAsrBlockedAt >= 5000 && !/(401|403|API_KEY_INVALID)/i.test(String(this.apiAsrBlockReason || ""))) {
+      if (this.apiAsrBlocked && this.apiAsrBlockedAt && Date.now() - this.apiAsrBlockedAt >= 5000 && !/(401|403|API_KEY_INVALID|AUTH|UNAUTH|FORBID)/i.test(String(this.apiAsrBlockReason || ""))) {
         this.apiAsrBlocked = false;
         this.apiAsrBlockReason = "";
         this.apiAsrRetryAttempt = 0;
       }
+      const useNiaStream = cfg.asrMode === "nia_asr" && !this.apiAsrBlocked && ConfigManager.hasNiaCredentials() && typeof WebSocket !== "undefined";
       const useDirectAudio = cfg.asrMode === "gemini_audio" && !this.apiAsrBlocked && String(cfg.apiKey || "").trim().length > 0;
 
-      if (useDirectAudio) {
+      if (useNiaStream) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false }
+          });
+          const ctx = this.getAudioCtx();
+          if (ctx.state === "suspended") { try { await ctx.resume(); } catch (_) {} }
+          const src = ctx.createMediaStreamSource(stream);
+          const proc = ctx.createScriptProcessor(2048, 1, 1);
+          const zeroGain = ctx.createGain();
+          zeroGain.gain.value = 0;
+          const session = this.createNiaAsrSession({
+            lang: cfg.niaAsrLang || "",
+            onPartial: (t) => { if (t && $("cmdInput")) $("cmdInput").value = t; }
+          });
+          this.singleNiaSession = session;
+          let stopped = false;
+          proc.onaudioprocess = (ev) => {
+            if (stopped) return;
+            const input = ev.inputBuffer.getChannelData(0);
+            const copy = new Float32Array(input.length);
+            copy.set(input);
+            session.pushFloat32(copy, ctx.sampleRate || 48000);
+          };
+          src.connect(proc);
+          proc.connect(zeroGain);
+          zeroGain.connect(ctx.destination);
+
+          this.singleNiaStop = async (silentAbort = false) => {
+            if (stopped) return;
+            stopped = true;
+            try { proc.disconnect(); proc.onaudioprocess = null; } catch (_) {}
+            try { zeroGain.disconnect(); } catch (_) {}
+            try { src.disconnect(); } catch (_) {}
+            try { stream.getTracks().forEach((t) => t.stop()); } catch (_) {}
+            this.singleNiaSession = null;
+            if (silentAbort) {
+              this.resumeCallAfterRecord = false;
+              try { session.abort(); } catch (_) {}
+              return;
+            }
+            const shouldResume = this.resumeCallAfterRecord;
+            this.resumeCallAfterRecord = false;
+            const maybeResume = () => {
+              if (shouldResume && !this.callActive && !this.isRecording) {
+                setTimeout(() => { if (!this.callActive && !this.isRecording) this.startContinuousAsrCall(true); }, 450);
+              }
+            };
+            try {
+              const text = String(await session.finish() || "").trim();
+              if (text) {
+                if ($("cmdInput")) $("cmdInput").value = text;
+                DebugLog.add("ASR", "SenseTime Nia 单次识别完成", text);
+                onResult({ text, fromVoice: true, manualVoice: true });
+              } else {
+                TableUI.setReferee("音声が認識できませんでした。もう一度お試しください。", "未能识别到有效语音，请再按一次重试。");
+              }
+            } catch (err) {
+              const reason = err?.code || err?.message || "Nia ASR 接続失敗";
+              DebugLog.add("ERR", `SenseTime Nia 单次识别失败 (${reason})`);
+              const switched = this.fallbackToChromeAsr(reason);
+              TableUI.setReferee(
+                switched
+                  ? `SenseTime Nia 音声認識失敗（${reason}）のため Chrome 音声認識へ切替しました。もう一度お試しください。`
+                  : `SenseTime Nia 音声認識失敗（${reason}）。テキスト入力をご利用ください。`,
+                switched
+                  ? `SenseTime Nia 识别失败（${reason}），已自动切换浏览器语音识别，请再按一次重试。`
+                  : `SenseTime Nia 识别失败（${reason}），请改用文字输入或点击卡牌。`
+              );
+            } finally {
+              maybeResume();
+            }
+          };
+
+          this.isRecording = true;
+          btn.classList.add("recording");
+          btn.innerHTML = `${SVG_ICONS.stop}送信<br><span class="btn-zh">（发送）</span>`;
+        } catch (e) {
+          TableUI.setReferee(
+            "マイクの使用が許可されていません。テキスト入力をご利用ください。",
+            "未获得麦克风权限，请使用下方输入框或直接点击卡牌。"
+          );
+        }
+      } else if (useDirectAudio) {
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
           const preferredMime = (window.MediaRecorder && MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) ? "audio/webm;codecs=opus" : "";
@@ -2548,7 +3392,7 @@
           signal: ac ? ac.signal : undefined
         });
         if (!res.ok) throw new Error(`HTTP ${res.status} (${cfg.llmModel})`);
-        if (VoiceEngine.apiAsrBlocked) VoiceEngine.onOnlineApiRecovered();
+        if (VoiceEngine.apiAsrBlocked && cfg.asrMode === "gemini_audio") VoiceEngine.onOnlineApiRecovered();
         const data = await res.json();
         const raw = data?.candidates?.[0]?.content?.parts?.find((p) => p.text)?.text || "";
         const parsed = this.safeParseJson(raw);
@@ -2889,7 +3733,7 @@
       return seq === this.matchSeq && Boolean(this.state) && !this.state.gameOver;
     },
 
-    /** 20 张快节奏牌组随机洗牌：保底起手 5 张至少含 1 对同色「怪兽+能量」（优先非 ex），且奖赏卡最多盖入 1 只怪兽 */
+    /** 26 张快节奏牌组随机洗牌：保底起手 5 张至少含 1 对同色「怪兽+能量」（优先非 ex），且奖赏卡最多盖入 1 只怪兽 */
     dealGuaranteedOpening(pool) {
       const arr = [...pool];
       for (let i = arr.length - 1; i > 0; i--) {
@@ -2938,17 +3782,21 @@
       return { hand, prizes, deck };
     },
 
-    /** 双方 20 张对称标准卡表（双方均为 5 怪兽 + 8 能量 + 4 支援者 + 2 伤药 + 1 能量回收） */
+    /** 双方 26 张对称标准卡表（双方均为 8 怪兽含双 ex + 10 能量 + 5 支援者 + 1 伤药 + 2 能量回收） */
     INITIAL_DECKS: {
       player: [
-        "p_fox", "p_turtle", "p_lion", "p_lion", "p_dragon_ex",
-        "energy_fire", "energy_fire", "energy_fire", "energy_water", "energy_water", "energy_thunder", "energy_thunder", "energy_thunder",
-        "item_bag", "item_bag", "item_power", "item_flute", "item_potion", "item_potion", "item_recycle"
+        "p_fox", "p_fox", "p_turtle", "p_turtle", "p_lion", "p_lion", "p_dragon_ex", "p_dragon_ex",
+        "energy_fire", "energy_fire", "energy_fire", "energy_fire",
+        "energy_water", "energy_water", "energy_water",
+        "energy_thunder", "energy_thunder", "energy_thunder",
+        "item_bag", "item_bag", "item_flute", "item_flute", "item_power", "item_potion", "item_recycle", "item_recycle"
       ],
       enemy: [
-        "e_dog", "e_dog", "e_fish", "e_bird", "e_shark_ex",
-        "energy_fire", "energy_fire", "energy_fire", "energy_water", "energy_water", "energy_water", "energy_thunder", "energy_thunder",
-        "item_bag", "item_bag", "item_power", "item_flute", "item_potion", "item_potion", "item_recycle"
+        "e_dog", "e_dog", "e_fish", "e_fish", "e_bird", "e_bird", "e_shark_ex", "e_shark_ex",
+        "energy_fire", "energy_fire", "energy_fire",
+        "energy_water", "energy_water", "energy_water", "energy_water",
+        "energy_thunder", "energy_thunder", "energy_thunder",
+        "item_bag", "item_bag", "item_flute", "item_flute", "item_power", "item_potion", "item_recycle", "item_recycle"
       ]
     },
 
@@ -3004,7 +3852,7 @@
       return true;
     },
 
-    /** 开局状态：空场开局，双方 20 张快节奏卡组洗牌发 5 张保底起手 + 3 张盖放奖赏卡 + 12 张牌库 */
+    /** 开局状态：空场开局，双方 26 张快节奏卡组洗牌发 5 张保底起手 + 3 张盖放奖赏卡 + 18 张牌库 */
     createInitialState() {
       const pDeckSrc = SpecEngine.decks?.player || this.INITIAL_DECKS.player;
       const eDeckSrc = SpecEngine.decks?.enemy || this.INITIAL_DECKS.enemy;
@@ -3212,16 +4060,22 @@
       s.player.hand.splice(handIdx, 1);
       s.player.active = { id: monId, hp: def.hp, energies: [], guard: 0 };
 
-      /* 对手从起手手牌挑选最优首发（优先有对应属性手牌能量的普通怪兽，其次按血量挑） */
+      /* 对手从起手手牌挑选最优首发（普通优先有对应能量的普通怪；困难模式兼顾与玩家首发的属性克制） */
       const eMonIndices = s.enemy.hand
         .map((id, idx) => ({ id, idx, def: SpecEngine.getMonster(id) }))
         .filter((x) => x.def);
+      const hardOpening = this.isHardAi();
       eMonIndices.sort((a, b) => {
-        const aMatch = s.enemy.hand.includes(`energy_${a.def.element}`) ? 1 : 0;
-        const bMatch = s.enemy.hand.includes(`energy_${b.def.element}`) ? 1 : 0;
-        const aScore = aMatch * 40 + (a.def.is_ex ? 5 : 20) + a.def.hp * 0.2;
-        const bScore = bMatch * 40 + (b.def.is_ex ? 5 : 20) + b.def.hp * 0.2;
-        return bScore - aScore;
+        const calcOpenScore = (x) => {
+          const match = s.enemy.hand.includes(`energy_${x.def.element}`) ? 1 : 0;
+          let sc = match * 40 + (x.def.is_ex ? 5 : 20) + x.def.hp * 0.2;
+          if (hardOpening && def) {
+            if (this.getWeaknessBonus(x.def.element, def.element) > 0) sc += 38;
+            if (this.getWeaknessBonus(def.element, x.def.element) > 0) sc -= x.def.is_ex ? 45 : 26;
+          }
+          return sc;
+        };
+        return calcOpenScore(b) - calcOpenScore(a);
       });
       const ePick = eMonIndices[0];
       let eStarterDef = null;
@@ -3230,10 +4084,10 @@
         eStarterDef = ePick.def;
         s.enemy.active = { id: ePick.id, hp: ePick.def.hp, energies: [], guard: 0 };
       }
-      /* 开局准备：若对手起手还有多余非 ex 怪兽，同步暗置 1 只到备战区，杜绝先手 T1 秒杀猝死 */
+      /* 开局准备：若对手起手还有多余怪兽，同步暗置 1 只到备战区（困难模式允许把 ex 怪兽也提前置入备战区蓄能） */
       const extraEnemyIdx = s.enemy.hand.findIndex((id) => {
         const d = SpecEngine.getMonster(id);
-        return d && !d.is_ex;
+        return d && (hardOpening || !d.is_ex);
       });
       if (extraEnemyIdx !== -1 && s.enemy.bench[0] === null) {
         const extraId = s.enemy.hand.splice(extraEnemyIdx, 1)[0];
@@ -4619,12 +5473,36 @@
           const reduction = isBenchSnipe ? 0 : (targetUnit.guard || 0);
           const dmg = Math.max(0, chosenSkill.damage + weakBonus + boost + chantBonus - reduction);
           targetUnit.hp = Math.max(0, targetUnit.hp - dmg);
-          const guardVal = chosenSkill.guardVal || (chosenSkill.effect === "guard_20" ? 20 : 0);
+          const fx = SpecEngine.parseSkillEffects(chosenSkill.effect);
+          const guardVal = chosenSkill.guardVal || fx.guardVal;
+          const discardVal = chosenSkill.discardSelfVal || fx.discardSelfVal;
+          const healSelfVal = chosenSkill.healSelfVal || fx.healSelfVal;
+          const drawVal = chosenSkill.drawVal || fx.drawVal;
+          const splashVal = chosenSkill.benchSplashVal || fx.benchSplashVal;
+          const recoilVal = chosenSkill.recoilVal || fx.recoilVal;
+
+          const splashedSlots = [];
+          if (splashVal > 0) {
+            for (const b of this.getBenchEntries("enemy")) {
+              b.unit.hp = Math.max(0, b.unit.hp - splashVal);
+              splashedSlots.push(b.slot);
+            }
+          }
           if (guardVal > 0) {
             actUnit.guard = Math.max(actUnit.guard || 0, guardVal);
           }
-          const discardMatch = /^discard_self_(\d+)$/.exec(chosenSkill.effect || "");
-          const discardVal = chosenSkill.discardSelfVal || (discardMatch ? Number(discardMatch[1]) : 0);
+          let healedAmt = 0;
+          if (healSelfVal > 0 && actUnit.hp < actDef.hp) {
+            healedAmt = Math.min(healSelfVal, actDef.hp - actUnit.hp);
+            actUnit.hp += healedAmt;
+          }
+          let drawnCards = [];
+          if (drawVal > 0) {
+            drawnCards = this.drawCard("player", drawVal);
+          }
+          if (recoilVal > 0) {
+            actUnit.hp = Math.max(0, actUnit.hp - recoilVal);
+          }
           let discardedCount = 0;
           for (let k = 0; k < discardVal && actUnit.energies.length > 0; k++) {
             let discIdx = actUnit.energies.findIndex((el) => el !== actDef.element);
@@ -4642,23 +5520,30 @@
           if (!(await this.matchDelay(140, seq))) return false;
           SoundFX.play("hit");
           TableUI.flashAnim(targetSlot, "anim-hit");
-          if (dmg >= 40 || weakBonus || chantBonus) TableUI.shakePlaymat();
+          if (dmg >= 40 || weakBonus || chantBonus || splashedSlots.length > 0) TableUI.shakePlaymat();
           TableUI.spawnSlotVfx(targetSlot, actDef.element);
           TableUI.spawnFloatText(targetSlot, weakBonus ? `-${dmg} 弱点!` : `-${dmg}`, (dmg >= 50 || weakBonus || chantBonus) ? "crit" : "dmg");
+          for (const sl of splashedSlots) {
+            TableUI.flashAnim(sl, "anim-hit");
+            TableUI.spawnFloatText(sl, `-${splashVal} 拡散`, "dmg");
+          }
           if (chantBonus) TableUI.spawnFloatText("player_active", "✨ 言霊共鳴 +10！", "energy");
-          if (guardVal > 0) {
-            TableUI.spawnFloatText("player_active", `被ダメ -${guardVal}`, "guard");
-          }
-          if (discardedCount > 0) {
-            TableUI.spawnFloatText("player_active", `エネ -${discardedCount}`, "dmg");
-          }
+          if (guardVal > 0) TableUI.spawnFloatText("player_active", `被ダメ -${guardVal}`, "guard");
+          if (healedAmt > 0) { SoundFX.play("heal"); TableUI.spawnFloatText("player_active", `+${healedAmt} HP`, "heal"); }
+          if (drawnCards.length > 0) TableUI.spawnFloatText("player_active", `+${drawnCards.length} ドロー`, "energy");
+          if (recoilVal > 0) TableUI.spawnFloatText("player_active", `反動 -${recoilVal}`, "dmg");
+          if (discardedCount > 0) TableUI.spawnFloatText("player_active", `エネ -${discardedCount}`, "dmg");
 
           const notesJa = [];
           const notesZh = [];
           if (chantBonus) { notesJa.push("言霊共鳴+10"); notesZh.push("言灵共鸣+10"); }
           if (weakBonus) { notesJa.push("弱点+20"); notesZh.push("弱点+20"); }
           if (boost) { notesJa.push(`強化+${boost}`); notesZh.push(`强化+${boost}`); }
+          if (splashedSlots.length > 0) { notesJa.push(`相手ベンチ全体にも${splashVal}ダメージ`); notesZh.push(`对手全部备战区溅射 ${splashVal} 伤害`); }
           if (guardVal > 0) { notesJa.push(`次の被ダメージ-${guardVal}`); notesZh.push(`下回合受击-${guardVal}`); }
+          if (healedAmt > 0) { notesJa.push(`自身HP+${healedAmt}`); notesZh.push(`自身回复 ${healedAmt} HP`); }
+          if (drawnCards.length > 0) { notesJa.push(`${drawnCards.length}枚ドロー`); notesZh.push(`抽 ${drawnCards.length} 张牌`); }
+          if (recoilVal > 0) { notesJa.push(`反動${recoilVal}ダメージ`); notesZh.push(`自身反伤 ${recoilVal}`); }
           if (discardedCount > 0) { notesJa.push(`自身エネ-${discardedCount}`); notesZh.push(`弃置自身能量×${discardedCount}`); }
           const noteJaStr = notesJa.length ? `（${notesJa.join("・")}）` : "";
           const noteZhStr = notesZh.length ? `（${notesZh.join("，")}）` : "";
@@ -4671,9 +5556,15 @@
           const ko = await this.checkKnockOuts();
           if (seq !== this.matchSeq) return false;
           if (!ko) {
-            const rivalEv = weakBonus ? "weakness" : (isBenchSnipe ? "snipe" : "attack_hit");
-            const rJa = (customRival && customRival.ja) || SpecEngine.getRivalLine(rivalEv).ja;
-            const rZh = (customRival && customRival.zh) || SpecEngine.getRivalLine(rivalEv).zh;
+            const rivalEv = splashedSlots.length > 0
+              ? "splash"
+              : (guardVal >= 30
+                ? "heavy_guard"
+                : (drawnCards.length > 0
+                  ? "draw_skill"
+                  : (weakBonus ? "weakness" : (isBenchSnipe ? "snipe" : "attack_hit"))));
+            const rJa = (customRival && customRival.ja) || SpecEngine.getRivalLine(rivalEv).ja || SpecEngine.getRivalLine("attack_hit").ja;
+            const rZh = (customRival && customRival.zh) || SpecEngine.getRivalLine(rivalEv).zh || SpecEngine.getRivalLine("attack_hit").zh;
             if (rJa) {
               TableUI.setRival(rJa, rZh);
               VoiceEngine.speak(rJa, "rival");
@@ -4693,98 +5584,95 @@
       const s = this.state;
       let anyKo = false;
 
-      for (const e of [...this.getAllEntries("enemy")]) {
-        if (e.unit.hp <= 0) {
-          anyKo = true;
-          s.enemy.trash.push(e.unit.id);
-          for (const el of (e.unit.energies || [])) s.enemy.trash.push(`energy_${el}`);
-          if (e.slot === "enemy_active") s.enemy.active = null;
-          else s.enemy.bench[e.idx] = null;
-          const prizeVal = this.getPrizeValue(e.unit.id);
-          const prizeCards = this.takePrizes("player", prizeVal);
-          TableUI.renderAll();
-          SoundFX.play("ko");
-          TableUI.spawnFloatText(e.slot, prizeVal === 2 ? "💥 ex撃破！サイド2枚" : "💥 きぜつ！", "ko");
-          TableUI.flashPrize("player", prizeCards.length);
-          TableUI.showPrizeBanner("player", prizeCards, prizeVal, s.player.prizesLeft);
+      /* 两阶段结算：先统一清理所有 HP<=0 的前排与备战怪兽，再从存活备战区补位，避免群攻溅射同时击倒时误推 0HP 怪兽上场 */
+      const deadEnemies = this.getAllEntries("enemy").filter((e) => e.unit.hp <= 0);
+      for (const e of deadEnemies) {
+        anyKo = true;
+        s.enemy.trash.push(e.unit.id);
+        for (const el of (e.unit.energies || [])) s.enemy.trash.push(`energy_${el}`);
+        if (e.slot === "enemy_active") s.enemy.active = null;
+        else s.enemy.bench[e.idx] = null;
+        const prizeVal = this.getPrizeValue(e.unit.id);
+        const prizeCards = this.takePrizes("player", prizeVal);
+        TableUI.renderAll();
+        SoundFX.play("ko");
+        TableUI.spawnFloatText(e.slot, prizeVal === 2 ? "💥 ex撃破！サイド2枚" : "💥 きぜつ！", "ko");
+        TableUI.flashPrize("player", prizeCards.length);
+        TableUI.showPrizeBanner("player", prizeCards, prizeVal, s.player.prizesLeft);
 
-          if (s.player.prizesLeft === 0) {
-            const r = SpecEngine.getRivalLine("player_win");
-            TableUI.setRival(r.ja, r.zh);
-            VoiceEngine.speak(r.ja, "rival");
-            this.endGame("player", `サイドを${TOTAL_PRIZES}枚取り切りました！あなたの勝利です！`, `你拿完 ${TOTAL_PRIZES} 张奖赏卡，赢得胜利！`);
-            return true;
-          }
-
-          const koLine = SpecEngine.getRivalLine(prizeVal === 2 ? "enemy_ex_ko" : "enemy_ko");
-          TableUI.setRival(koLine.ja, koLine.zh);
-          const prizeJa = prizeCards.length ? `サイドから「${prizeCards.map((c) => c.ja).join("・")}」を手札に加えました！` : "";
-          const prizeZh = prizeCards.length ? `从奖赏卡抽到「${prizeCards.map((c) => c.zh).join("、")}」加入手牌！` : "";
-          TableUI.appendLog(`相手の${e.def.name_ja}を撃破！${prizeJa}`, `击倒对手的${e.def.name_zh}，${prizeZh}`);
-          VoiceEngine.speak(koLine.ja, "rival");
-
-          if (!s.enemy.active) {
-            const bench = this.getBenchEntries("enemy");
-            if (bench.length === 0) {
-              this.endGame("player", "相手の場にモンスターがいなくなりました！勝利です！", "对手场上已无怪兽，你获胜了！");
-              return true;
-            }
-            const next = this.chooseBestEnemyPromotion() || bench[0];
-            s.enemy.active = next.unit;
-            s.enemy.bench[next.idx] = null;
-            TableUI.appendLog(`レンはベンチから${next.def.name_ja}をバトル場に出した。`, `对手莲派出${next.def.name_zh}进入战斗区。`);
-            TableUI.renderAll();
-            TableUI.flashAnim("enemy_active", "anim-enter");
-          }
+        if (s.player.prizesLeft === 0) {
+          const r = SpecEngine.getRivalLine("player_win");
+          TableUI.setRival(r.ja, r.zh);
+          VoiceEngine.speak(r.ja, "rival");
+          this.endGame("player", `サイドを${TOTAL_PRIZES}枚取り切りました！あなたの勝利です！`, `你拿完 ${TOTAL_PRIZES} 张奖赏卡，赢得胜利！`);
+          return true;
         }
+
+        const koLine = SpecEngine.getRivalLine(prizeVal === 2 ? "enemy_ex_ko" : "enemy_ko");
+        TableUI.setRival(koLine.ja, koLine.zh);
+        const prizeJa = prizeCards.length ? `サイドから「${prizeCards.map((c) => c.ja).join("・")}」を手札に加えました！` : "";
+        const prizeZh = prizeCards.length ? `从奖赏卡抽到「${prizeCards.map((c) => c.zh).join("、")}」加入手牌！` : "";
+        TableUI.appendLog(`相手の${e.def.name_ja}を撃破！${prizeJa}`, `击倒对手的${e.def.name_zh}，${prizeZh}`);
+        VoiceEngine.speak(koLine.ja, "rival");
+      }
+      if (deadEnemies.length > 0 && !s.enemy.active) {
+        const bench = this.getBenchEntries("enemy").filter((b) => b.unit.hp > 0);
+        if (bench.length === 0) {
+          this.endGame("player", "相手の場にモンスターがいなくなりました！勝利です！", "对手场上已无怪兽，你获胜了！");
+          return true;
+        }
+        const next = this.chooseBestEnemyPromotion() || bench[0];
+        s.enemy.active = next.unit;
+        s.enemy.bench[next.idx] = null;
+        TableUI.appendLog(`レンはベンチから${next.def.name_ja}をバトル場に出した。`, `对手莲派出${next.def.name_zh}进入战斗区。`);
+        TableUI.renderAll();
+        TableUI.flashAnim("enemy_active", "anim-enter");
       }
 
-      for (const p of [...this.getAllEntries("player")]) {
-        if (p.unit.hp <= 0) {
-          anyKo = true;
-          s.player.trash.push(p.unit.id);
-          for (const el of (p.unit.energies || [])) s.player.trash.push(`energy_${el}`);
-          if (p.slot === "player_active") s.player.active = null;
-          else s.player.bench[p.idx] = null;
-          const prizeVal = this.getPrizeValue(p.unit.id);
-          this.takePrizes("enemy", prizeVal);
-          TableUI.renderAll();
-          SoundFX.play("ko");
-          TableUI.spawnFloatText(p.slot, prizeVal === 2 ? "💥 exきぜつ！サイド2枚" : "💥 きぜつ！", "ko");
-          TableUI.flashPrize("enemy", prizeVal);
-          TableUI.showPrizeBanner("enemy", [], prizeVal, s.enemy.prizesLeft);
+      const deadPlayers = this.getAllEntries("player").filter((p) => p.unit.hp <= 0);
+      for (const p of deadPlayers) {
+        anyKo = true;
+        s.player.trash.push(p.unit.id);
+        for (const el of (p.unit.energies || [])) s.player.trash.push(`energy_${el}`);
+        if (p.slot === "player_active") s.player.active = null;
+        else s.player.bench[p.idx] = null;
+        const prizeVal = this.getPrizeValue(p.unit.id);
+        this.takePrizes("enemy", prizeVal);
+        TableUI.renderAll();
+        SoundFX.play("ko");
+        TableUI.spawnFloatText(p.slot, prizeVal === 2 ? "💥 exきぜつ！サイド2枚" : "💥 きぜつ！", "ko");
+        TableUI.flashPrize("enemy", prizeVal);
+        TableUI.showPrizeBanner("enemy", [], prizeVal, s.enemy.prizesLeft);
 
-          if (s.enemy.prizesLeft === 0) {
-            const r = SpecEngine.getRivalLine("enemy_win");
-            TableUI.setRival(r.ja, r.zh);
-            VoiceEngine.speak(r.ja, "rival");
-            this.endGame("enemy", `相手にサイドを${TOTAL_PRIZES}枚取られました。`, `对手拿完 ${TOTAL_PRIZES} 张奖赏卡，本局败北。`);
-            return true;
-          }
-
-          const r = SpecEngine.getRivalLine(prizeVal === 2 ? "player_ex_ko" : "player_ko");
+        if (s.enemy.prizesLeft === 0) {
+          const r = SpecEngine.getRivalLine("enemy_win");
           TableUI.setRival(r.ja, r.zh);
-          TableUI.appendLog(`自分の${p.def.name_ja}がきぜつ…相手がサイドを${prizeVal}枚手札に加えた。`, `己方${p.def.name_zh}倒下，对手拿走 ${prizeVal} 张奖赏卡加入手牌。`);
           VoiceEngine.speak(r.ja, "rival");
+          this.endGame("enemy", `相手にサイドを${TOTAL_PRIZES}枚取られました。`, `对手拿完 ${TOTAL_PRIZES} 张奖赏卡，本局败北。`);
+          return true;
+        }
 
-          if (!s.player.active) {
-            const myBench = this.getBenchEntries("player");
-            if (myBench.length === 0) {
-              this.endGame("enemy", "自分の場にモンスターがいなくなりました。", "己方场上已无怪兽，本局败北。");
-              return true;
-            }
-            if (myBench.length === 1) {
-              await this.promotePlayerBench(myBench[0].idx);
-            } else {
-              const ja = "バトル場に出すベンチのモンスターを選んでください。";
-              const zh = "请选择备战区一只怪兽补位至战斗区。";
-              this.setPending({
-                type: "promote_bench", promptJa: ja, promptZh: zh,
-                options: myBench.map((e) => ({ label: `${POS_JA[e.idx]}・${e.def.name_ja}（${e.def.name_zh}）`, reply: POS_JA[e.idx] }))
-              });
-              TableUI.setReferee(ja, zh);
-            }
-          }
+        const r = SpecEngine.getRivalLine(prizeVal === 2 ? "player_ex_ko" : "player_ko");
+        TableUI.setRival(r.ja, r.zh);
+        TableUI.appendLog(`自分の${p.def.name_ja}がきぜつ…相手がサイドを${prizeVal}枚手札に加えた。`, `己方${p.def.name_zh}倒下，对手拿走 ${prizeVal} 张奖赏卡加入手牌。`);
+        VoiceEngine.speak(r.ja, "rival");
+      }
+      if (deadPlayers.length > 0 && !s.player.active) {
+        const myBench = this.getBenchEntries("player").filter((b) => b.unit.hp > 0);
+        if (myBench.length === 0) {
+          this.endGame("enemy", "自分の場にモンスターがいなくなりました。", "己方场上已无怪兽，本局败北。");
+          return true;
+        }
+        if (myBench.length === 1) {
+          await this.promotePlayerBench(myBench[0].idx);
+        } else {
+          const ja = "バトル場に出すベンチのモンスターを選んでください。";
+          const zh = "请选择备战区一只怪兽补位至战斗区。";
+          this.setPending({
+            type: "promote_bench", promptJa: ja, promptZh: zh,
+            options: myBench.map((e) => ({ label: `${POS_JA[e.idx]}・${e.def.name_ja}（${e.def.name_zh}）`, reply: POS_JA[e.idx] }))
+          });
+          TableUI.setReferee(ja, zh);
         }
       }
       return anyKo;
@@ -4854,7 +5742,8 @@
         return { baseMaxDmg, maxDmg: baseMaxDmg, lethal: baseMaxDmg >= enemyUnit.hp };
       }
       const pDef = SpecEngine.getMonster(pAct.id);
-      const extra = (pDef && (pAct.energies || []).length < 2) ? [pDef.element] : [];
+      const pMaxCost = pDef ? Math.max(...pDef.skills.map((sk) => sk.cost.length)) : 2;
+      const extra = (pDef && (pAct.energies || []).length < pMaxCost) ? [pDef.element] : [];
       const maxDmg = this.estimateUnitMaxOutput(pAct, enemyUnit, isEnemyActive, extra);
       return { baseMaxDmg, maxDmg, lethal: maxDmg >= enemyUnit.hp };
     },
@@ -4884,12 +5773,20 @@
         ];
       }
 
-      const playerBenchCount = allTargets.length - 1;
+      const playerBenchTargets = allTargets.slice(1);
+      const playerBenchCount = playerBenchTargets.length;
       const maxSkillBase = Math.max(...actDef.skills.map((x) => x.damage));
       let bestPlan = null;
 
       const hardAi = this.isHardAi();
       for (const sk of usable) {
+        const fx = SpecEngine.parseSkillEffects(sk.effect);
+        const guardVal = sk.guardVal || fx.guardVal;
+        const discardCost = sk.discardSelfVal || fx.discardSelfVal;
+        const healVal = sk.healSelfVal || fx.healSelfVal;
+        const drawVal = sk.drawVal || fx.drawVal;
+        const splashVal = sk.benchSplashVal || fx.benchSplashVal;
+        const recoilVal = sk.recoilVal || fx.recoilVal;
         const targets = (sk.target === "enemy_any" && hardAi) ? allTargets : [virtualPlayerActive];
         for (const t of targets) {
           const isActTarget = t.slot === "player_active";
@@ -4898,15 +5795,33 @@
           const dmg = Math.max(0, sk.damage + wb + boost - red);
           const isKo = dmg >= t.unit.hp;
           const prizeVal = this.getPrizeValue(t.unit.id);
-          const isWin = isKo && (prizeVal >= s.enemy.prizesLeft || (isActTarget && playerBenchCount === 0));
+          let totalPrizes = isKo ? prizeVal : 0;
+          let splashScore = 0;
+          if (splashVal > 0) {
+            for (const b of playerBenchTargets) {
+              splashScore += splashVal * 6;
+              if (b.unit.hp <= splashVal) {
+                const bpv = this.getPrizeValue(b.unit.id);
+                totalPrizes += bpv;
+                splashScore += bpv === 2 ? 2200 : 1200;
+              }
+            }
+          }
+          const isWin = totalPrizes >= s.enemy.prizesLeft || (isKo && isActTarget && playerBenchCount === 0);
           const remainHp = Math.max(0, t.unit.hp - dmg);
           const setupNextKo = !isKo && dmg > 0 && remainHp <= (maxSkillBase + wb);
-          const guardBonus = sk.effect === "guard_20" ? 45 : 0;
 
           let score = 0;
           if (isWin) score += 10000;
           if (isKo) score += prizeVal === 2 ? 2600 : 1400;
-          score += dmg * 8 + guardBonus;
+          score += dmg * 8 + splashScore;
+          score += guardVal * 2.5;
+          score += Math.min(healVal, actDef.hp - attUnit.hp) * 5;
+          score += drawVal * 95;
+          if (recoilVal > 0 && !isWin) {
+            score -= recoilVal * 4;
+            if (attUnit.hp <= recoilVal) score -= actDef.is_ex ? 2200 : 1100;
+          }
           if (!isKo && dmg > 0) {
             if (t.def.is_ex) score += 130;
             score += (t.unit.energies || []).length * 45;
@@ -4915,11 +5830,14 @@
           if (isKo && dmg > t.unit.hp) {
             score -= Math.min(20, Math.floor((dmg - t.unit.hp) / 10));
           }
+          if (hardAi && discardCost > 0 && !isWin) {
+            score -= isKo ? discardCost * 70 : discardCost * 35;
+          }
 
           if (!bestPlan || score > bestPlan.score) {
             bestPlan = {
               sk, targetSlot: t.slot, targetUnit: t.unit, tDef: t.def,
-              weakBonus: wb, dmg, isKo, isWin, prizeVal, score
+              weakBonus: wb, dmg, isKo, isWin, prizeVal: totalPrizes || prizeVal, score
             };
           }
         }
@@ -5026,6 +5944,379 @@
       return best;
     },
 
+    /** 困难 AI 2 回合前瞻：估算玩家下回合（再贴 1 能或撤退换主力后）对我方前排与备战区的反击威胁 */
+    evalEnemyCounterThreat(simEnemy, simPlayer) {
+      if (!simEnemy.active || !simPlayer.active) {
+        return { maxDmgToActive: 0, activeLethal: false, oppCanWin: false, worstBenchLoss: 0 };
+      }
+      const myAct = simEnemy.active;
+      const myDef = SpecEngine.getMonster(myAct.id);
+      const myBenchCnt = simEnemy.bench.filter(Boolean).length;
+      let maxDmgToActive = 0;
+      let oppCanWin = false;
+      let worstBenchLoss = 0;
+
+      const checkAttacker = (attUnit, allowExtraEnergy) => {
+        const aDef = SpecEngine.getMonster(attUnit.id);
+        if (!aDef) return;
+        const maxC = Math.max(...aDef.skills.map((sk) => sk.cost.length));
+        const pool = (allowExtraEnergy && (attUnit.energies || []).length < maxC)
+          ? [...(attUnit.energies || []), aDef.element]
+          : [...(attUnit.energies || [])];
+        for (const sk of aDef.skills) {
+          if (!this.canPayCost(pool, sk.cost)) continue;
+          const fx = SpecEngine.parseSkillEffects(sk.effect);
+          const dmg = Math.max(0, sk.damage + this.getWeaknessBonus(aDef.element, myDef.element) - (myAct.guard || 0));
+          if (dmg > maxDmgToActive) maxDmgToActive = dmg;
+          let prizes = dmg >= myAct.hp ? (myDef.is_ex ? 2 : 1) : 0;
+          if (fx.benchSplashVal > 0) {
+            for (const b of simEnemy.bench) {
+              if (!b) continue;
+              const bd = SpecEngine.getMonster(b.id);
+              if (b.hp <= fx.benchSplashVal) {
+                const bpv = bd && bd.is_ex ? 2 : 1;
+                prizes += bpv;
+                worstBenchLoss = Math.max(worstBenchLoss, bpv);
+              }
+            }
+          }
+          if (prizes >= simPlayer.prizesLeft || (dmg >= myAct.hp && myBenchCnt === 0)) oppCanWin = true;
+          if (sk.target === "enemy_any") {
+            for (const b of simEnemy.bench) {
+              if (!b) continue;
+              const bd = SpecEngine.getMonster(b.id);
+              if (sk.damage >= b.hp) {
+                const pv = bd && bd.is_ex ? 2 : 1;
+                worstBenchLoss = Math.max(worstBenchLoss, pv);
+                if (pv >= simPlayer.prizesLeft) oppCanWin = true;
+              }
+            }
+          }
+        }
+      };
+
+      checkAttacker(simPlayer.active, true);
+      const pActDef = SpecEngine.getMonster(simPlayer.active.id);
+      const pRetCost = pActDef && pActDef.is_ex ? 2 : 1;
+      if ((simPlayer.active.energies || []).length >= pRetCost) {
+        for (const pb of simPlayer.bench) {
+          if (pb) checkAttacker(pb, true);
+        }
+      }
+      return { maxDmgToActive, activeLethal: maxDmgToActive >= myAct.hp, oppCanWin, worstBenchLoss };
+    },
+
+    /** 困难 AI 核心：整回合联合连招搜索（穷举 贴能目标 × 撤退换人 × 支援者[召唤笛/力量徽章] × 攻击/狙击/防御，配 2 回合局势评估，< 1ms 完成） */
+    planHardEnemyTurn(suppUsedAlready = false) {
+      const s = this.state;
+      if (!s || !s.enemy.active || !s.player.active) return null;
+      const cloneSide = (sideObj) => ({
+        hand: [...sideObj.hand],
+        prizesLeft: sideObj.prizesLeft,
+        active: sideObj.active ? { ...sideObj.active, energies: [...(sideObj.active.energies || [])] } : null,
+        bench: sideObj.bench.map((u) => (u ? { ...u, energies: [...(u.energies || [])] } : null))
+      });
+      const getSimEntries = (sideObj, prefix) => {
+        const res = [];
+        if (sideObj.active) res.push({ slot: `${prefix}_active`, idx: -1, unit: sideObj.active, def: SpecEngine.getMonster(sideObj.active.id) });
+        sideObj.bench.forEach((u, i) => {
+          if (u) res.push({ slot: `${prefix}_bench_${i}`, idx: i, unit: u, def: SpecEngine.getMonster(u.id) });
+        });
+        return res;
+      };
+
+      const hasEnergy = s.enemy.hand.some((id) => id.startsWith("energy_"));
+      const enemyEntries0 = this.getAllEntries("enemy");
+      const attachSlots = hasEnergy ? enemyEntries0.map((e) => e.slot) : [null];
+      const hasFlute = !suppUsedAlready && s.enemy.hand.includes("item_flute");
+      const hasPower = !suppUsedAlready && s.enemy.hand.includes("item_power");
+
+      let bestPlan = null;
+
+      for (const attachSlot of attachSlots) {
+        const s1E = cloneSide(s.enemy);
+        let attachEnergyId = null;
+        if (attachSlot) {
+          const entries1 = getSimEntries(s1E, "enemy");
+          const targetEntry = entries1.find((e) => e.slot === attachSlot);
+          if (!targetEntry) continue;
+          const others = entries1.map((e) => e.unit).filter((u) => u !== targetEntry.unit);
+          const eIdx = this.pickBestEnergyForUnit(s1E.hand, targetEntry.unit, targetEntry.def, others);
+          if (eIdx === -1) continue;
+          attachEnergyId = s1E.hand.splice(eIdx, 1)[0];
+          targetEntry.unit.energies.push(attachEnergyId.replace("energy_", ""));
+        }
+
+        const retreatOpts = [-1];
+        if (s1E.active) {
+          const actDef1 = SpecEngine.getMonster(s1E.active.id);
+          const rCost = actDef1 && actDef1.is_ex ? 2 : 1;
+          if (s1E.active.energies.length >= rCost) {
+            s1E.bench.forEach((b, i) => { if (b) retreatOpts.push(i); });
+          }
+        }
+
+        for (const retreatIdx of retreatOpts) {
+          const s2E = cloneSide(s1E);
+          if (retreatIdx !== -1) {
+            const old = s2E.active;
+            const oldDef = SpecEngine.getMonster(old.id);
+            const rCost = oldDef && oldDef.is_ex ? 2 : 1;
+            for (let k = 0; k < rCost; k++) {
+              let di = old.energies.findIndex((el) => el !== oldDef.element);
+              if (di === -1) di = old.energies.length - 1;
+              old.energies.splice(di, 1);
+            }
+            old.guard = 0;
+            s2E.active = s2E.bench[retreatIdx];
+            s2E.bench[retreatIdx] = old;
+          }
+
+          const suppOpts = [{ type: "none" }];
+          if (hasPower) suppOpts.push({ type: "power" });
+          if (hasFlute) {
+            s.player.bench.forEach((pb, i) => { if (pb) suppOpts.push({ type: "flute", benchIdx: i }); });
+          }
+
+          for (const supp of suppOpts) {
+            const s3E = cloneSide(s2E);
+            const s3P = cloneSide(s.player);
+            let boost = 0;
+            let cardPenalty = 0;
+            if (supp.type === "power") {
+              boost = 20;
+              cardPenalty = 55;
+            } else if (supp.type === "flute") {
+              const oldP = s3P.active;
+              oldP.guard = 0;
+              s3P.active = s3P.bench[supp.benchIdx];
+              s3P.bench[supp.benchIdx] = oldP;
+              cardPenalty = 65;
+            }
+
+            const act = s3E.active;
+            const actDef = SpecEngine.getMonster(act.id);
+            const usable = actDef.skills.filter((sk) => this.canPayCost(act.energies, sk.cost));
+            const pTargets = getSimEntries(s3P, "player");
+            const endActions = [];
+            for (const sk of usable) {
+              const tgts = sk.target === "enemy_any" ? pTargets : [pTargets[0]];
+              for (const t of tgts) {
+                endActions.push({ kind: "attack", sk, targetSlot: t.slot, targetIdx: t.idx });
+              }
+            }
+            if (act.lastDefendedTurn !== s.turn - 1) {
+              endActions.push({ kind: "defend" });
+            }
+            if (endActions.length === 0) endActions.push({ kind: "pass" });
+
+            for (const ea of endActions) {
+              if (supp.type === "power" && ea.kind !== "attack") continue;
+              const simE = cloneSide(s3E);
+              const simP = cloneSide(s3P);
+              const simAct = simE.active;
+              let bonusScore = -cardPenalty;
+              let prizesGained = 0;
+              let mySelfDead = false;
+              let isImmediateWin = false;
+
+              if (ea.kind === "attack") {
+                const sk = ea.sk;
+                const fx = SpecEngine.parseSkillEffects(sk.effect);
+                const tgt = ea.targetSlot === "player_active" ? simP.active : simP.bench[ea.targetIdx];
+                const tgtDef = SpecEngine.getMonster(tgt.id);
+                const isActT = ea.targetSlot === "player_active";
+                const wb = isActT ? this.getWeaknessBonus(actDef.element, tgtDef.element) : 0;
+                const dmg = Math.max(0, sk.damage + wb + boost - (isActT ? (tgt.guard || 0) : 0));
+                tgt.hp = Math.max(0, tgt.hp - dmg);
+                if (fx.benchSplashVal > 0) {
+                  for (const b of simP.bench) if (b) b.hp = Math.max(0, b.hp - fx.benchSplashVal);
+                }
+                if (fx.guardVal > 0) simAct.guard = Math.max(simAct.guard || 0, fx.guardVal);
+                if (fx.healSelfVal > 0) simAct.hp = Math.min(actDef.hp, simAct.hp + fx.healSelfVal);
+                if (fx.drawVal > 0) bonusScore += fx.drawVal * 115;
+                if (fx.recoilVal > 0) simAct.hp = Math.max(0, simAct.hp - fx.recoilVal);
+                for (let k = 0; k < fx.discardSelfVal && simAct.energies.length > 0; k++) {
+                  let di = simAct.energies.findIndex((el) => el !== actDef.element);
+                  if (di === -1) di = simAct.energies.length - 1;
+                  simAct.energies.splice(di, 1);
+                }
+
+                if (simP.active.hp <= 0) {
+                  prizesGained += this.getPrizeValue(simP.active.id);
+                  simP.active = null;
+                }
+                for (let i = 0; i < 3; i++) {
+                  if (simP.bench[i] && simP.bench[i].hp <= 0) {
+                    prizesGained += this.getPrizeValue(simP.bench[i].id);
+                    simP.bench[i] = null;
+                  }
+                }
+                const pSurvBench = simP.bench.filter(Boolean);
+                if (prizesGained >= simE.prizesLeft || (!simP.active && pSurvBench.length === 0)) {
+                  isImmediateWin = true;
+                } else if (!simP.active && pSurvBench.length > 0) {
+                  pSurvBench.sort((a, b) => ((b.energies.length * 60 + b.hp) - (a.energies.length * 60 + a.hp)));
+                  const prom = pSurvBench[0];
+                  simP.bench[simP.bench.indexOf(prom)] = null;
+                  simP.active = prom;
+                }
+
+                if (!isImmediateWin && simAct.hp <= 0) {
+                  mySelfDead = true;
+                  const pv = actDef.is_ex ? 2 : 1;
+                  bonusScore -= pv * 2100;
+                  if (pv >= simP.prizesLeft || simE.bench.filter(Boolean).length === 0) bonusScore -= 12000;
+                }
+              } else if (ea.kind === "defend") {
+                simAct.guard = 30;
+              }
+
+              let score = bonusScore;
+              if (isImmediateWin) {
+                score += 50000;
+              } else {
+                score += prizesGained * 2200;
+                if (simE.prizesLeft - prizesGained === 1) score += 320;
+
+                for (const pe of getSimEntries(simP, "player")) {
+                  const dmgRatio = (pe.def.hp - pe.unit.hp) / pe.def.hp;
+                  const val = pe.def.is_ex ? 900 : 480;
+                  score -= (1 - dmgRatio) * val + pe.unit.energies.length * 140;
+                  if (pe.unit.hp <= 60) score += pe.def.is_ex ? 220 : 110;
+                }
+
+                for (const me of getSimEntries(simE, "enemy")) {
+                  const maxC = Math.max(...me.def.skills.map((sk) => sk.cost.length));
+                  const usefulE = Math.min(me.unit.energies.length, maxC);
+                  const val = me.def.is_ex ? 950 : 460;
+                  score += (me.unit.hp / me.def.hp) * val;
+                  score += usefulE * (me.def.is_ex ? 245 : 155);
+                  if (me.def.is_ex && me.unit.energies.length >= 3) score += 340;
+                  if (me.def.is_ex && me.unit.energies.length === 2) score += 170;
+                  if (me.unit.energies.includes(me.def.element)) score += 90;
+                  if (me.unit.energies.length > maxC) score -= (me.unit.energies.length - maxC) * 140;
+                }
+
+                if (retreatIdx !== -1) score -= 90;
+
+                if (!mySelfDead) {
+                  const threat = this.evalEnemyCounterThreat(simE, simP);
+                  if (threat.oppCanWin) {
+                    score -= 9500;
+                  } else if (threat.activeLethal) {
+                    const actD = SpecEngine.getMonster(simE.active.id);
+                    const losePrize = actD && actD.is_ex ? 2 : 1;
+                    score -= losePrize * 1550 + simE.active.energies.length * 140;
+                  } else {
+                    score -= threat.maxDmgToActive * 4.5;
+                  }
+                  if (threat.worstBenchLoss > 0) score -= threat.worstBenchLoss * 900;
+                }
+              }
+
+              if (!bestPlan || score > bestPlan.score) {
+                bestPlan = { attachSlot, attachEnergyId, retreatIdx, supp, endAction: ea, score };
+              }
+            }
+          }
+        }
+      }
+      return bestPlan;
+    },
+
+    /** 统一执行对手选定攻击（含 6 种技能特效、特效飘字、彩蛋台词与击倒结算） */
+    async executeEnemySkillAttack(act, actDef, sk, targetSlot, targetUnit, tDef, boost, seq) {
+      const s = this.state;
+      const isActTarget = targetSlot === "player_active";
+      const weakBonus = isActTarget ? this.getWeaknessBonus(actDef.element, tDef.element) : 0;
+      const red = isActTarget ? (targetUnit.guard || 0) : 0;
+      const dmg = Math.max(0, sk.damage + weakBonus + boost - red);
+      targetUnit.hp = Math.max(0, targetUnit.hp - dmg);
+      const fxE = SpecEngine.parseSkillEffects(sk.effect);
+      const guardVal = sk.guardVal || fxE.guardVal;
+      const discardValE = sk.discardSelfVal || fxE.discardSelfVal;
+      const healValE = sk.healSelfVal || fxE.healSelfVal;
+      const drawValE = sk.drawVal || fxE.drawVal;
+      const splashValE = sk.benchSplashVal || fxE.benchSplashVal;
+      const recoilValE = sk.recoilVal || fxE.recoilVal;
+
+      const splashedSlotsE = [];
+      if (splashValE > 0) {
+        for (const pb of this.getBenchEntries("player")) {
+          pb.unit.hp = Math.max(0, pb.unit.hp - splashValE);
+          splashedSlotsE.push(pb.slot);
+        }
+      }
+      if (guardVal > 0) act.guard = Math.max(act.guard || 0, guardVal);
+      let healedE = 0;
+      if (healValE > 0 && act.hp < actDef.hp) {
+        healedE = Math.min(healValE, actDef.hp - act.hp);
+        act.hp += healedE;
+      }
+      let drawnE = 0;
+      if (drawValE > 0) drawnE = this.drawCard("enemy", drawValE).length;
+      if (recoilValE > 0) act.hp = Math.max(0, act.hp - recoilValE);
+      let discardedCountE = 0;
+      for (let k = 0; k < discardValE && act.energies.length > 0; k++) {
+        let discIdx = act.energies.findIndex((el) => el !== actDef.element);
+        if (discIdx === -1) discIdx = act.energies.length - 1;
+        const discardedElem = act.energies.splice(discIdx, 1)[0];
+        if (discardedElem) {
+          s.enemy.trash.push(`energy_${discardedElem}`);
+          discardedCountE += 1;
+        }
+      }
+      TableUI.renderAll();
+      SoundFX.play("attack", actDef.element);
+      TableUI.flashAnim("enemy_active", "anim-lunge-down");
+      if (!(await this.matchDelay(140, seq))) return false;
+      SoundFX.play("hit");
+      TableUI.flashAnim(targetSlot, "anim-hit");
+      if (dmg >= 40 || weakBonus || splashedSlotsE.length > 0) TableUI.shakePlaymat();
+      TableUI.spawnSlotVfx(targetSlot, actDef.element);
+      TableUI.spawnFloatText(targetSlot, weakBonus ? `-${dmg} 弱点!` : `-${dmg}`, (dmg >= 50 || weakBonus) ? "crit" : "dmg");
+      for (const sl of splashedSlotsE) {
+        TableUI.flashAnim(sl, "anim-hit");
+        TableUI.spawnFloatText(sl, `-${splashValE} 拡散`, "dmg");
+      }
+      if (guardVal > 0) TableUI.spawnFloatText("enemy_active", `被ダメ -${guardVal}`, "guard");
+      if (healedE > 0) { SoundFX.play("heal"); TableUI.spawnFloatText("enemy_active", `+${healedE} HP`, "heal"); }
+      if (drawnE > 0) TableUI.spawnFloatText("enemy_active", `+${drawnE} ドロー`, "energy");
+      if (recoilValE > 0) TableUI.spawnFloatText("enemy_active", `反動 -${recoilValE}`, "dmg");
+      if (discardedCountE > 0) TableUI.spawnFloatText("enemy_active", `エネ -${discardedCountE}`, "dmg");
+
+      const eNotesJa = [];
+      const eNotesZh = [];
+      if (weakBonus) { eNotesJa.push("弱点+20"); eNotesZh.push("弱点+20"); }
+      if (splashedSlotsE.length > 0) { eNotesJa.push(`ベンチ全体にも${splashValE}ダメージ`); eNotesZh.push(`己方备战区全员受溅射 ${splashValE}`); }
+      if (guardVal > 0) { eNotesJa.push(`次の被ダメ-${guardVal}`); eNotesZh.push(`下回合受击-${guardVal}`); }
+      if (healedE > 0) { eNotesJa.push(`HP+${healedE}回復`); eNotesZh.push(`自身回复 ${healedE} HP`); }
+      if (drawnE > 0) { eNotesJa.push(`${drawnE}枚ドロー`); eNotesZh.push(`抽 ${drawnE} 张牌`); }
+      if (recoilValE > 0) { eNotesJa.push(`反動${recoilValE}`); eNotesZh.push(`自身反伤 ${recoilValE}`); }
+      if (discardedCountE > 0) { eNotesJa.push(`エネ-${discardedCountE}`); eNotesZh.push(`弃置能量×${discardedCountE}`); }
+      const wkJa = eNotesJa.length ? `（${eNotesJa.join("・")}）` : "";
+      const wkZh = eNotesZh.length ? `（${eNotesZh.join("，")}）` : "";
+
+      let easter = null;
+      if (actDef.is_ex && sk.cost.length >= 3) easter = SpecEngine.getRivalLine("enemy_ex_ult");
+      else if (recoilValE > 0) easter = SpecEngine.getRivalLine("enemy_recoil");
+      else if (splashedSlotsE.length > 0) easter = SpecEngine.getRivalLine("enemy_splash");
+
+      const rivalCallJa = (easter && easter.ja) || `いくぜ！${actDef.name_ja}の『${sk.name_ja}』だ！`;
+      const rivalCallZh = (easter && easter.zh) || `接招吧！${actDef.name_zh}的“${sk.name_zh}”！`;
+      const ja = `レンの${actDef.name_ja}が『${sk.name_ja}』！${tDef.name_ja}に${dmg}ダメージ！${wkJa}`;
+      const zh = `对手莲的${actDef.name_zh}发动“${sk.name_zh}”，对${tDef.name_zh}造成 ${dmg} 点伤害！${wkZh}`;
+      TableUI.setRival(rivalCallJa, rivalCallZh);
+      TableUI.setReferee(ja, zh);
+      TableUI.appendLog(ja, zh);
+      VoiceEngine.speak(rivalCallJa, "rival");
+      VoiceEngine.speak(ja, "referee");
+      if (!(await this.matchDelay(480, seq))) return false;
+      await this.checkKnockOuts();
+      return seq === this.matchSeq && !s.gameOver;
+    },
+
     async runEnemyTurn(seq = this.matchSeq) {
       const s = this.state;
       if (!s || s.gameOver || seq !== this.matchSeq) return;
@@ -5064,34 +6355,269 @@
         let enemySupporterUsed = false;
         const hardAi = this.isHardAi();
 
-        /* 阶段 1：补给包过牌（严格要求剩余牌库 >= 4 且不低于玩家牌库，防止自削牌库）+ 双向能量回收 */
-        const bagIdx = s.enemy.hand.indexOf("item_bag");
-        if (bagIdx !== -1 && s.enemy.deck.length >= 4 && s.enemy.deck.length >= s.player.deck.length && s.enemy.active && s.player.active) {
-          const curSim = this.simulateBestAfterEnergy(s.enemy.active, s.enemy.hand, 0);
-          const baseKo = Boolean(curSim.withEnergyPlan && curSim.withEnergyPlan.isKo);
-          const baseWin = Boolean(curSim.withEnergyPlan && curSim.withEnergyPlan.isWin);
-          let reserveForLethalSupporter = false;
-
-          if (hardAi && !baseWin && s.enemy.hand.includes("item_power")) {
-            const pwrSim = this.simulateBestAfterEnergy(s.enemy.active, s.enemy.hand, 20);
-            if (pwrSim.withEnergyPlan && pwrSim.withEnergyPlan.isKo && !baseKo) reserveForLethalSupporter = true;
+        const tryEnemyEnergyRecycle = async () => {
+          const recIdx = s.enemy.hand.indexOf("item_recycle");
+          if (recIdx === -1 || !s.enemy.active) return true;
+          const actDefR = SpecEngine.getMonster(s.enemy.active.id);
+          let wantId = actDefR ? `energy_${actDefR.element}` : null;
+          if (hardAi) {
+            const needEx = this.getAllEntries("enemy").find(
+              (e) => e.def.is_ex && !(e.unit.energies || []).includes(e.def.element) && !s.enemy.hand.includes(`energy_${e.def.element}`)
+            );
+            if (needEx) wantId = `energy_${needEx.def.element}`;
+            else if (actDefR && (s.enemy.active.energies || []).includes(actDefR.element)) {
+              const needyBench = this.getBenchEntries("enemy")
+                .filter((b) => !(b.unit.energies || []).includes(b.def.element) && !s.enemy.hand.includes(`energy_${b.def.element}`))
+                .sort((a, b) => (b.def.is_ex ? 1 : 0) - (a.def.is_ex ? 1 : 0));
+              if (needyBench[0]) wantId = `energy_${needyBench[0].def.element}`;
+            }
           }
-          if (hardAi && !baseWin && !reserveForLethalSupporter && s.enemy.hand.includes("item_flute")) {
-            for (const pb of this.getBenchEntries("player")) {
-              const flSim = this.simulateBestAfterEnergy(s.enemy.active, s.enemy.hand, 0, pb);
-              if (flSim.withEnergyPlan && (flSim.withEnergyPlan.isWin || (flSim.withEnergyPlan.isKo && (!baseKo || flSim.withEnergyPlan.prizeVal === 2)))) {
-                reserveForLethalSupporter = true;
-                break;
+          const needEnergy = !s.enemy.hand.some((id) => id.startsWith("energy_")) || (wantId && !s.enemy.hand.includes(wantId));
+          if (!needEnergy) return true;
+          let tIdx = wantId ? s.enemy.trash.indexOf(wantId) : -1;
+          if (tIdx === -1) tIdx = s.enemy.trash.findIndex((id) => id.startsWith("energy_"));
+          if (tIdx !== -1) {
+            s.enemy.hand.splice(recIdx, 1);
+            s.enemy.trash.push("item_recycle");
+            const got = s.enemy.trash.splice(tIdx, 1)[0];
+            s.enemy.hand.push(got);
+            TableUI.appendLog("レンは『エネ回収』でトラッシュからエネルギーを回収した。", "对手莲使用「能量回收」从弃牌区取回 1 张能量。");
+            TableUI.renderAll();
+            return await this.matchDelay(380, seq);
+          }
+          let dIdx = wantId ? s.enemy.deck.indexOf(wantId) : -1;
+          if (dIdx === -1) dIdx = s.enemy.deck.findIndex((id) => id.startsWith("energy_"));
+          if (dIdx !== -1) {
+            s.enemy.hand.splice(recIdx, 1);
+            s.enemy.trash.push("item_recycle");
+            const got = s.enemy.deck.splice(dIdx, 1)[0];
+            s.enemy.hand.push(got);
+            TableUI.appendLog("レンは『エネ回収』で山札からエネルギーを探索した。", "对手莲使用「能量回收」从牌库检索 1 张能量。");
+            TableUI.renderAll();
+            return await this.matchDelay(380, seq);
+          }
+          return true;
+        };
+
+        /* ===== 困难模式专属：铺场 + 能量回收 + 前瞻判断是否过牌 + 伤药 + 整回合联合连招搜索 ===== */
+        if (hardAi && s.enemy.active && s.player.active) {
+          const pActDefH = SpecEngine.getMonster(s.player.active.id);
+          const benchAllAvailable = async () => {
+            while (s.enemy.bench.includes(null)) {
+              const handMons = s.enemy.hand
+                .map((id, idx) => ({ id, idx, def: SpecEngine.getMonster(id) }))
+                .filter((x) => x.def);
+              if (handMons.length === 0) break;
+              handMons.sort((a, b) => {
+                const sc = (m) => (m.def.is_ex ? 140 : 0) + m.def.hp * 0.5
+                  + (pActDefH && this.getWeaknessBonus(m.def.element, pActDefH.element) > 0 ? 110 : 0)
+                  + (s.enemy.hand.includes(`energy_${m.def.element}`) ? 50 : 0);
+                return sc(b) - sc(a);
+              });
+              const pick = handMons[0];
+              const emptyB = s.enemy.bench.findIndex((b) => b === null);
+              s.enemy.hand.splice(pick.idx, 1);
+              s.enemy.bench[emptyB] = { id: pick.id, hp: pick.def.hp, energies: [], guard: 0 };
+              TableUI.appendLog(`レンはベンチに${pick.def.name_ja}を出した。`, `对手莲将${pick.def.name_zh}放入备战区。`);
+              TableUI.renderAll();
+              if (!(await this.matchDelay(360, seq))) return false;
+            }
+            return true;
+          };
+
+          if (!(await benchAllAvailable())) return;
+          while (s.enemy.hand.includes("item_recycle")) {
+            const beforeRecCnt = s.enemy.hand.filter((id) => id === "item_recycle").length;
+            if (!(await tryEnemyEnergyRecycle())) return;
+            if (s.enemy.hand.filter((id) => id === "item_recycle").length === beforeRecCnt) break;
+          }
+
+          /* 补给包决策：先探查当前手牌是否存在召唤笛/力量徽章斩杀，无必杀且手牌/能量偏紧时先抽 2 扩充选择面 */
+          const bagIdxH = s.enemy.hand.indexOf("item_bag");
+          if (bagIdxH !== -1 && s.enemy.deck.length >= 3) {
+            const probePlan = this.planHardEnemyTurn(false);
+            const hasImmediateWin = probePlan && probePlan.score >= 40000;
+            const hasSuppKo = probePlan && probePlan.supp && probePlan.supp.type !== "none" && probePlan.score >= 2100;
+            const needBag = !hasImmediateWin && !hasSuppKo
+              && (s.enemy.hand.length <= 5 || !s.enemy.hand.some((id) => id.startsWith("energy_")));
+            if (needBag) {
+              enemySupporterUsed = true;
+              s.enemy.hand.splice(bagIdxH, 1);
+              s.enemy.trash.push("item_bag");
+              this.drawCard("enemy", 2);
+              TableUI.appendLog("レンはサポート『補給バッグ』で2枚引いた。", "对手莲使用支援者「补给包」抽了 2 张牌。");
+              TableUI.renderAll();
+              if (!(await this.matchDelay(400, seq))) return;
+              if (!(await benchAllAvailable())) return;
+              if (s.enemy.hand.includes("item_recycle")) {
+                if (!(await tryEnemyEnergyRecycle())) return;
               }
             }
           }
 
+          /* 伤药决策：优先救助前排与高价值 ex */
+          while (s.enemy.hand.includes("item_potion")) {
+            const wounded = this.getAllEntries("enemy")
+              .filter((e) => e.unit.hp < e.def.hp)
+              .map((e) => {
+                const miss = e.def.hp - e.unit.hp;
+                const sc = (miss >= 30 ? 300 : 0) + (e.def.is_ex ? 220 : 0) + (e.slot === "enemy_active" ? 160 : 0) + miss;
+                return { entry: e, sc, heal: Math.min(30, miss) };
+              })
+              .filter((x) => x.sc >= 300)
+              .sort((a, b) => b.sc - a.sc);
+            if (wounded.length === 0) break;
+            const bestH = wounded[0];
+            s.enemy.hand.splice(s.enemy.hand.indexOf("item_potion"), 1);
+            s.enemy.trash.push("item_potion");
+            bestH.entry.unit.hp += bestH.heal;
+            TableUI.appendLog(`レンはきずぐすりで${bestH.entry.def.name_ja}を${bestH.heal}回復！`, `对手莲用伤药为${bestH.entry.def.name_zh}回复 ${bestH.heal} HP！`);
+            TableUI.renderAll();
+            if (!(await this.matchDelay(400, seq))) return;
+          }
+
+          /* 联合连招规划并按序执行（贴能 → 撤退 → 召唤笛/力量徽章 → 攻击/防御） */
+          const hardPlan = this.planHardEnemyTurn(enemySupporterUsed);
+          if (hardPlan) {
+            if (hardPlan.attachSlot && hardPlan.attachEnergyId) {
+              const eIdx = s.enemy.hand.indexOf(hardPlan.attachEnergyId);
+              const tgtEntry = this.getAllEntries("enemy").find((e) => e.slot === hardPlan.attachSlot);
+              if (eIdx !== -1 && tgtEntry) {
+                const cardId = s.enemy.hand.splice(eIdx, 1)[0];
+                const itDef = SpecEngine.getItem(cardId);
+                tgtEntry.unit.energies.push(itDef.element);
+                TableUI.appendLog(`レンは${tgtEntry.def.name_ja}に${itDef.name_ja}をつけた。`, `对手莲为${tgtEntry.def.name_zh}贴上了${itDef.name_zh}。`);
+                TableUI.renderAll();
+                if (!(await this.matchDelay(440, seq))) return;
+              }
+            }
+
+            if (hardPlan.retreatIdx !== -1 && s.enemy.bench[hardPlan.retreatIdx]) {
+              const old = s.enemy.active;
+              const oldDef = SpecEngine.getMonster(old.id);
+              const rCost = oldDef && oldDef.is_ex ? 2 : 1;
+              for (let k = 0; k < rCost; k++) {
+                let discIdx = old.energies.findIndex((el) => el !== oldDef.element);
+                if (discIdx === -1) discIdx = old.energies.length - 1;
+                const discardedElem = old.energies.splice(discIdx, 1)[0];
+                if (discardedElem) s.enemy.trash.push(`energy_${discardedElem}`);
+              }
+              const incoming = s.enemy.bench[hardPlan.retreatIdx];
+              const incomingDef = SpecEngine.getMonster(incoming.id);
+              old.guard = 0;
+              s.enemy.active = incoming;
+              s.enemy.bench[hardPlan.retreatIdx] = old;
+              SoundFX.play("switch");
+              TableUI.appendLog(`レンは${incomingDef.name_ja}と交代した！`, `对手莲撤退并换上${incomingDef.name_zh}！`);
+              TableUI.renderAll();
+              TableUI.flashAnim("enemy_active", "anim-enter");
+              if (!(await this.matchDelay(480, seq))) return;
+            }
+
+            let hardBoost = 0;
+            if (hardPlan.supp && hardPlan.supp.type === "power" && s.enemy.hand.includes("item_power")) {
+              enemySupporterUsed = true;
+              s.enemy.hand.splice(s.enemy.hand.indexOf("item_power"), 1);
+              s.enemy.trash.push("item_power");
+              hardBoost = 20;
+              TableUI.appendLog("レンはサポート『パワーバッジ』を使用！（攻撃+20）", "对手莲使用支援者「力量徽章」！（本回合攻击 +20）");
+              TableUI.spawnFloatText("enemy_active", "⚔️ 攻撃+20！", "energy");
+              TableUI.renderAll();
+              if (!(await this.matchDelay(320, seq))) return;
+            } else if (hardPlan.supp && hardPlan.supp.type === "flute" && s.enemy.hand.includes("item_flute") && s.player.bench[hardPlan.supp.benchIdx]) {
+              enemySupporterUsed = true;
+              s.enemy.hand.splice(s.enemy.hand.indexOf("item_flute"), 1);
+              s.enemy.trash.push("item_flute");
+              const pulledUnit = s.player.bench[hardPlan.supp.benchIdx];
+              const pulledDef = SpecEngine.getMonster(pulledUnit.id);
+              const oldPlayerAct = s.player.active;
+              oldPlayerAct.guard = 0;
+              s.player.active = pulledUnit;
+              s.player.bench[hardPlan.supp.benchIdx] = oldPlayerAct;
+              TableUI.renderAll();
+              SoundFX.play("switch");
+              TableUI.flashAnim("player_active", "anim-enter");
+              TableUI.spawnFloatText("player_active", "強制交代！", "guard");
+              TableUI.appendLog(`レンはサポート『よびだし笛』で${pulledDef.name_ja}を引きずり出した！`, `对手莲发动支援者「召唤笛」，强行将你的${pulledDef.name_zh}拉上战斗区！`);
+              if (!(await this.matchDelay(480, seq))) return;
+            }
+
+            const actH = s.enemy.active;
+            const actDefH = SpecEngine.getMonster(actH.id);
+            const ea = hardPlan.endAction;
+            if (ea && ea.kind === "attack" && s.player.active) {
+              const targetUnit = ea.targetSlot === "player_active" ? s.player.active : s.player.bench[ea.targetIdx];
+              const realSlot = targetUnit ? ea.targetSlot : "player_active";
+              const realUnit = targetUnit || s.player.active;
+              const realDef = SpecEngine.getMonster(realUnit.id);
+              const ok = await this.executeEnemySkillAttack(actH, actDefH, ea.sk, realSlot, realUnit, realDef, hardBoost, seq);
+              if (!ok) return;
+            } else if (ea && ea.kind === "defend" && actH.lastDefendedTurn !== s.turn - 1) {
+              actH.guard = 30;
+              actH.lastDefendedTurn = s.turn;
+              TableUI.renderAll();
+              SoundFX.play("guard");
+              TableUI.flashAnim("enemy_active", "anim-guard");
+              TableUI.spawnFloatText("enemy_active", "🛡️ 防御 -30", "guard");
+              const ja = "レンは防御態勢に入りターンを終了した。";
+              const zh = "对手莲进入防御姿态并结束了回合。";
+              const guardCallJa = "ここは守りを固めておくぜ。";
+              TableUI.setRival(guardCallJa, "这回合先稳住防守。");
+              TableUI.setReferee(ja, zh);
+              TableUI.appendLog(ja, zh);
+              VoiceEngine.speak(guardCallJa, "rival");
+            } else {
+              const ja = "レンはそのままターンを終了した。";
+              const zh = "对手莲直接结束了回合。";
+              TableUI.setReferee(ja, zh);
+              TableUI.appendLog(ja, zh);
+            }
+          }
+
+          if (!(await this.matchDelay(460, seq))) return;
+          s.turn += 1;
+          s.currentPlayer = "player";
+          s.energyUsedThisTurn = false;
+          s.supporterUsedThisTurn = false;
+          s.retreatedThisTurn = false;
+          s.player.attackBoost = 0;
+          if (s.player.active) s.player.active.guard = 0;
+
+          if (s.player.deck.length === 0) {
+            if (s.player.active) {
+              s.player.active.hp = Math.max(0, s.player.active.hp - 20);
+              TableUI.renderAll();
+              TableUI.spawnFloatText("player_active", "⚡ 疲労 -20", "dmg");
+              TableUI.appendLog("自分の山札が空のため疲労ダメージ20！", "己方牌库已空，主战怪兽受到 20 点疲劳伤害！");
+              if (!(await this.matchDelay(420, seq))) return;
+              await this.checkKnockOuts();
+              if (seq !== this.matchSeq || s.gameOver) return;
+            }
+          } else {
+            const drawn = this.drawCard("player", 1);
+            TableUI.renderAll();
+            const dJa = drawn[0] ? `「${drawn[0].ja}」を引きました。` : "";
+            const dZh = drawn[0] ? `抽到了「${drawn[0].zh}」。` : "";
+            TableUI.showTurnBanner(`✨ ターン ${s.turn} · あなたのターン`, `第 ${s.turn} 回合 · 你的回合`, false);
+            TableUI.setReferee(`あなたのターンです！${dJa}`, `轮到你的回合了！${dZh}`);
+            TableUI.appendLog(`ターン ${s.turn} 開始：${dJa}`, `第 ${s.turn} 回合开始：${dZh}`);
+            VoiceEngine.speak(`あなたのターンです！${dJa}`, "referee", { priority: "low" });
+          }
+          TableUI.renderAll();
+          this.resetIdleTimer(true);
+          return;
+        }
+
+        /* ===== 普通模式：保持完整且有对抗感的稳健打法 ===== */
+        const bagIdx = s.enemy.hand.indexOf("item_bag");
+        const bagDeckOk = s.enemy.deck.length >= 4 && s.enemy.deck.length >= s.player.deck.length;
+        if (bagIdx !== -1 && bagDeckOk && s.enemy.active && s.player.active) {
           const actDef0 = SpecEngine.getMonster(s.enemy.active.id);
           const needCards = s.enemy.hand.length <= 4
             || !s.enemy.hand.some((id) => id.startsWith("energy_"))
             || (actDef0 && !s.enemy.active.energies.includes(actDef0.element) && !s.enemy.hand.includes(`energy_${actDef0.element}`))
             || this.getBenchEntries("enemy").length === 0;
-          if (!reserveForLethalSupporter && needCards) {
+          if (needCards) {
             enemySupporterUsed = true;
             s.enemy.hand.splice(bagIdx, 1);
             s.enemy.trash.push("item_bag");
@@ -5101,38 +6627,7 @@
             if (!(await this.matchDelay(420, seq))) return;
           }
         }
-
-        const recIdx = s.enemy.hand.indexOf("item_recycle");
-        if (recIdx !== -1 && s.enemy.active) {
-          const actDefR = SpecEngine.getMonster(s.enemy.active.id);
-          const wantId = actDefR ? `energy_${actDefR.element}` : null;
-          const needEnergy = !s.enemy.hand.some((id) => id.startsWith("energy_")) || (wantId && !s.enemy.hand.includes(wantId));
-          if (needEnergy) {
-            let tIdx = wantId ? s.enemy.trash.indexOf(wantId) : -1;
-            if (tIdx === -1) tIdx = s.enemy.trash.findIndex((id) => id.startsWith("energy_"));
-            if (tIdx !== -1) {
-              s.enemy.hand.splice(recIdx, 1);
-              s.enemy.trash.push("item_recycle");
-              const got = s.enemy.trash.splice(tIdx, 1)[0];
-              s.enemy.hand.push(got);
-              TableUI.appendLog("レンは『エネ回収』でトラッシュからエネルギーを回収した。", "对手莲使用「能量回收」从弃牌区取回 1 张能量。");
-              TableUI.renderAll();
-              if (!(await this.matchDelay(380, seq))) return;
-            } else {
-              let dIdx = wantId ? s.enemy.deck.indexOf(wantId) : -1;
-              if (dIdx === -1) dIdx = s.enemy.deck.findIndex((id) => id.startsWith("energy_"));
-              if (dIdx !== -1) {
-                s.enemy.hand.splice(recIdx, 1);
-                s.enemy.trash.push("item_recycle");
-                const got = s.enemy.deck.splice(dIdx, 1)[0];
-                s.enemy.hand.push(got);
-                TableUI.appendLog("レンは『エネ回収』で山札からエネルギーを探索した。", "对手莲使用「能量回收」从牌库检索 1 张能量。");
-                TableUI.renderAll();
-                if (!(await this.matchDelay(380, seq))) return;
-              }
-            }
-          }
-        }
+        if (!(await tryEnemyEnergyRecycle())) return;
 
         /* 阶段 2：铺场备战区（普通模式每回合最多铺 1 只；困难模式全力铺满最多 3 只） */
         const pActDef = s.player.active ? SpecEngine.getMonster(s.player.active.id) : null;
@@ -5161,6 +6656,10 @@
           TableUI.appendLog(`レンはベンチに${pick.def.name_ja}を出した。`, `对手莲将${pick.def.name_zh}放入备战区。`);
           TableUI.renderAll();
           if (!(await this.matchDelay(420, seq))) return;
+        }
+        /* 困难模式：铺完新怪兽后若手里还有能量回收，再次检查是否可为刚上场的 ex/主力补齐对应能量 */
+        if (hardAi && s.enemy.hand.includes("item_recycle")) {
+          if (!(await tryEnemyEnergyRecycle())) return;
         }
 
         /* 阶段 3：先评估战术回血（若喝药能让主战怪脱离斩杀线，则留场输出而非浪费能量撤退） */
@@ -5354,7 +6853,8 @@
               const upgradesToKo = hardAi && flPlan.isKo && !(basePlan && basePlan.isKo);
               const breaksGuardOrWeak = hardAi && (
                 (s.player.active.guard >= 20 && flPlan.dmg >= (basePlan ? basePlan.dmg : 0) + 20)
-                || (flPlan.weakBonus > 0 && gain >= 180)
+                || (flPlan.weakBonus > 0 && gain >= 140)
+                || (pb.def.is_ex && flPlan.dmg >= 50 && !(basePlan && basePlan.isKo))
               );
               if (upgradesToWin || upgradesToExKo || upgradesToKo || breaksGuardOrWeak) {
                 if (!bestFlute || flPlan.score > bestFlute.plan.score) {
@@ -5381,12 +6881,24 @@
           }
         }
 
-        /* 阶段 7：执行最优攻击（必要时发动力量徽章）或防御/结束回合（不调用 stopPlayback 避免腰斩玩家回合 KO 语音） */
+        /* 阶段 7：执行最优攻击（必要时发动力量徽章）或困难模式保命防御 / 结束回合（不调用 stopPlayback 避免腰斩玩家回合 KO 语音） */
         const act = s.enemy.active;
         if (act && s.player.active) {
           const actDef = SpecEngine.getMonster(act.id);
           const basePlan = this.evaluateAttackPlan(act, 0);
-          if (basePlan) {
+          const actThreat7 = hardAi ? this.estimatePlayerNextTurnThreat(act, true) : null;
+          const powerCanKo = Boolean(
+            !enemySupporterUsed && s.enemy.hand.includes("item_power")
+            && this.evaluateAttackPlan(act, 20)?.isKo
+          );
+          const preferTacticalGuard = Boolean(
+            hardAi && basePlan && !basePlan.isKo && !basePlan.isWin && !powerCanKo
+            && act.lastDefendedTurn !== s.turn - 1
+            && (actDef?.is_ex || s.player.prizesLeft <= 1)
+            && actThreat7 && actThreat7.lethal && (act.hp + 30 > actThreat7.maxDmg)
+            && basePlan.dmg <= 40
+          );
+          if (basePlan && !preferTacticalGuard) {
             const pwrIdx = s.enemy.hand.indexOf("item_power");
             if (!enemySupporterUsed && pwrIdx !== -1 && !basePlan.isKo) {
               const boostPlan = this.evaluateAttackPlan(act, 20);
@@ -5411,54 +6923,9 @@
             const boost = s.enemy.attackBoost || 0;
             s.enemy.attackBoost = 0;
             const bestPlan = this.evaluateAttackPlan(act, boost) || basePlan;
-            const { sk, targetSlot, targetUnit, tDef, weakBonus, dmg } = bestPlan;
-            targetUnit.hp = Math.max(0, targetUnit.hp - dmg);
-            const guardVal = sk.guardVal || (sk.effect === "guard_20" ? 20 : 0);
-            if (guardVal > 0) {
-              act.guard = Math.max(act.guard || 0, guardVal);
-            }
-            const discardMatchE = /^discard_self_(\d+)$/.exec(sk.effect || "");
-            const discardValE = sk.discardSelfVal || (discardMatchE ? Number(discardMatchE[1]) : 0);
-            let discardedCountE = 0;
-            for (let k = 0; k < discardValE && act.energies.length > 0; k++) {
-              let discIdx = act.energies.findIndex((el) => el !== actDef.element);
-              if (discIdx === -1) discIdx = act.energies.length - 1;
-              const discardedElem = act.energies.splice(discIdx, 1)[0];
-              if (discardedElem) {
-                s.enemy.trash.push(`energy_${discardedElem}`);
-                discardedCountE += 1;
-              }
-            }
-            TableUI.renderAll();
-            SoundFX.play("attack", actDef.element);
-            TableUI.flashAnim("enemy_active", "anim-lunge-down");
-            if (!(await this.matchDelay(140, seq))) return;
-            SoundFX.play("hit");
-            TableUI.flashAnim(targetSlot, "anim-hit");
-            if (dmg >= 40 || weakBonus) TableUI.shakePlaymat();
-            TableUI.spawnSlotVfx(targetSlot, actDef.element);
-            TableUI.spawnFloatText(targetSlot, weakBonus ? `-${dmg} 弱点!` : `-${dmg}`, (dmg >= 50 || weakBonus) ? "crit" : "dmg");
-            if (guardVal > 0) {
-              TableUI.spawnFloatText("enemy_active", `被ダメ -${guardVal}`, "guard");
-            }
-            if (discardedCountE > 0) {
-              TableUI.spawnFloatText("enemy_active", `エネ -${discardedCountE}`, "dmg");
-            }
-
-            const wkJa = weakBonus ? "（弱点+20）" : "";
-            const wkZh = weakBonus ? "（弱点+20）" : "";
-            const rivalCallJa = `いくぜ！${actDef.name_ja}の『${sk.name_ja}』だ！`;
-            const rivalCallZh = `接招吧！${actDef.name_zh}的“${sk.name_zh}”！`;
-            const ja = `レンの${actDef.name_ja}が『${sk.name_ja}』！${tDef.name_ja}に${dmg}ダメージ！${wkJa}`;
-            const zh = `对手莲的${actDef.name_zh}发动“${sk.name_zh}”，对${tDef.name_zh}造成 ${dmg} 点伤害！${wkZh}`;
-            TableUI.setRival(rivalCallJa, rivalCallZh);
-            TableUI.setReferee(ja, zh);
-            TableUI.appendLog(ja, zh);
-            VoiceEngine.speak(rivalCallJa, "rival");
-            VoiceEngine.speak(ja, "referee");
-            if (!(await this.matchDelay(480, seq))) return;
-            await this.checkKnockOuts();
-            if (seq !== this.matchSeq || s.gameOver) return;
+            const { sk, targetSlot, targetUnit, tDef } = bestPlan;
+            const ok = await this.executeEnemySkillAttack(act, actDef, sk, targetSlot, targetUnit, tDef, boost, seq);
+            if (!ok) return;
           } else if (act.lastDefendedTurn !== s.turn - 1) {
             act.guard = 30;
             act.lastDefendedTurn = s.turn;
@@ -5700,14 +7167,7 @@
         const targetTag = sk.target === "enemy_any"
           ? `<span class="skill-tag snipe" title="狙撃ワザ：バトル場・ベンチどちらにも攻撃可（ベンチは弱点なし）／狙击技能：可攻击对手战斗区或备战区任意怪兽（对备战区不计弱点）">${SVG_ICONS.snipe}狙撃</span>`
           : '<span class="skill-tag normal" title="通常ワザ：相手バトル場のみ攻撃可／普通技能：仅限攻击对手战斗区怪兽">通常・前</span>';
-        const gVal = sk.guardVal || (sk.effect === "guard_20" ? 20 : 0);
-        const dMatch = /^discard_self_(\d+)$/.exec(sk.effect || "");
-        const dVal = sk.discardSelfVal || (dMatch ? Number(dMatch[1]) : 0);
-        const effectTag = (gVal > 0
-          ? `<span class="skill-tag guard" title="次の相手ターン被ダメ-${gVal}／发动后下回合受击伤害 -${gVal}">被ダメ-${gVal}</span>`
-          : "") + (dVal > 0
-          ? `<span class="skill-tag guard" title="発動後自身のエネルギーを${dVal}枚トラッシュ／发动后弃置自身 ${dVal} 张能量">エネ-${dVal}</span>`
-          : "");
+        const effectTag = this.buildSkillEffectTags(sk);
         const canDirectClick = ready && slot === "player_active";
         let dmgHtml = `<span class="skill-dmg">${sk.damage}</span>`;
         let lethalHtml = "";
@@ -5807,8 +7267,9 @@
               ${mon.skills.map((sk) => `
                 <div class="skill-line">
                   <div class="skill-left">
+                    ${(sk.cost || []).map((c) => `<span class="pip ${escapeHtml(c)} filled">${SVG_ICONS[c] || SVG_ICONS.any}</span>`).join("")}
                     <span class="skill-name">${escapeHtml(sk.name_ja)}<span class="zh-inline" lang="zh-CN">（${escapeHtml(sk.name_zh)}）</span></span>
-                    ${sk.target === "enemy_any" ? `<span class="skill-tag snipe">${SVG_ICONS.snipe}狙撃</span>` : '<span class="skill-tag normal">通常·前</span>'}
+                    ${sk.target === "enemy_any" ? `<span class="skill-tag snipe">${SVG_ICONS.snipe}狙撃</span>` : ""}${this.buildSkillEffectTags(sk)}
                   </div>
                   <span class="skill-dmg">${sk.damage}</span>
                 </div>
@@ -5837,6 +7298,24 @@
           </div>
         </div>
       `;
+    },
+
+    buildSkillEffectTags(sk) {
+      const fx = SpecEngine.parseSkillEffects(sk.effect);
+      const gVal = sk.guardVal || fx.guardVal;
+      const dVal = sk.discardSelfVal || fx.discardSelfVal;
+      const hVal = sk.healSelfVal || fx.healSelfVal;
+      const drVal = sk.drawVal || fx.drawVal;
+      const spVal = sk.benchSplashVal || fx.benchSplashVal;
+      const rcVal = sk.recoilVal || fx.recoilVal;
+      let html = "";
+      if (spVal > 0) html += `<span class="skill-tag splash" title="相手ベンチ全員にも${spVal}ダメージ／同时对对手全体备战怪兽造成 ${spVal} 溅射伤害">後列${spVal}</span>`;
+      if (gVal > 0) html += `<span class="skill-tag guard" title="次の相手ターン被ダメ-${gVal}／发动后下回合受击伤害 -${gVal}">被ダメ-${gVal}</span>`;
+      if (hVal > 0) html += `<span class="skill-tag heal" title="自身のHPを${hVal}回復／发动后回复自身 ${hVal} HP">回復+${hVal}</span>`;
+      if (drVal > 0) html += `<span class="skill-tag draw" title="山札から${drVal}枚ドロー／发动后额外抽 ${drVal} 张牌">+${drVal}ドロー</span>`;
+      if (rcVal > 0) html += `<span class="skill-tag recoil" title="自身にも反動${rcVal}ダメージ／发动后自身承受 ${rcVal} 反伤">反動${rcVal}</span>`;
+      if (dVal > 0) html += `<span class="skill-tag recoil" title="発動後自身のエネルギーを${dVal}枚トラッシュ／发动后弃置自身 ${dVal} 张能量">エネ-${dVal}</span>`;
+      return html;
     },
 
     codexFilter: "ALL",
@@ -5873,18 +7352,25 @@
             const tagHtml = isSnipe
               ? `<span class="skill-tag snipe">${SVG_ICONS.snipe}狙撃</span>`
               : '<span class="skill-tag normal">通常·前</span>';
-            const gVal = sk.guardVal || (sk.effect === "guard_20" ? 20 : 0);
-            const dMatch = /^discard_self_(\d+)$/.exec(sk.effect || "");
-            const dVal = sk.discardSelfVal || (dMatch ? Number(dMatch[1]) : 0);
-            const effHtml = (gVal > 0 ? `<span class="skill-tag guard">被ダメ-${gVal}</span>` : "")
-              + (dVal > 0 ? `<span class="skill-tag guard">エネ-${dVal}</span>` : "");
-            const desc = isSnipe
-              ? '狙撃ワザ：相手バトル場・ベンチどちらも可（ベンチは弱点なし）<br><span class="zh-inline" lang="zh-CN">定点狙击：可打对手战斗区或备战区任意怪兽（对备战区不计弱点）</span>'
-              : (gVal > 0
-                ? `通常ワザ：相手バトル場のみ（次の相手ターン被ダメ-${gVal}）<br><span class="zh-inline" lang="zh-CN">普通攻击：仅打对手战斗区，发动后下回合受击 -${gVal}</span>`
-                : (dVal > 0
-                  ? `通常ワザ：相手バトル場のみ（発動後自身のエネルギーを${dVal}枚トラッシュ）<br><span class="zh-inline" lang="zh-CN">普通攻击：仅打对手战斗区，发动后弃置自身 ${dVal} 张能量</span>`
-                  : '通常ワザ：相手バトル場のみ（弱点+20）<br><span class="zh-inline" lang="zh-CN">普通攻击：仅打对手战斗区（计算弱点 +20）</span>'));
+            const fx = SpecEngine.parseSkillEffects(sk.effect);
+            const gVal = sk.guardVal || fx.guardVal;
+            const dVal = sk.discardSelfVal || fx.discardSelfVal;
+            const hVal = sk.healSelfVal || fx.healSelfVal;
+            const drVal = sk.drawVal || fx.drawVal;
+            const spVal = sk.benchSplashVal || fx.benchSplashVal;
+            const rcVal = sk.recoilVal || fx.recoilVal;
+            const effHtml = this.buildSkillEffectTags(sk);
+            const jaExtras = [];
+            const zhExtras = [];
+            if (spVal > 0) { jaExtras.push(`相手ベンチ全員にも${spVal}ダメージ`); zhExtras.push(`对手全部备战区额外溅射 ${spVal} 伤害`); }
+            if (gVal > 0) { jaExtras.push(`次の相手ターン被ダメ-${gVal}`); zhExtras.push(`下回合受击 -${gVal}`); }
+            if (hVal > 0) { jaExtras.push(`自身のHPを${hVal}回復`); zhExtras.push(`自身回复 ${hVal} HP`); }
+            if (drVal > 0) { jaExtras.push(`山札を${drVal}枚引く`); zhExtras.push(`额外抽 ${drVal} 张牌`); }
+            if (rcVal > 0) { jaExtras.push(`自身に反動${rcVal}ダメージ`); zhExtras.push(`自身反伤 ${rcVal}`); }
+            if (dVal > 0) { jaExtras.push(`発動後自身のエネルギーを${dVal}枚トラッシュ`); zhExtras.push(`发动后弃置自身 ${dVal} 张能量`); }
+            const baseJa = isSnipe ? "狙撃ワザ：相手バトル場・ベンチどちらも可（ベンチは弱点なし）" : "通常ワザ：相手バトル場のみ（弱点+20）";
+            const baseZh = isSnipe ? "定点狙击：可打对手战斗区或备战区任意怪兽（对备战区不计弱点）" : "普通攻击：仅打对手战斗区（计算弱点 +20）";
+            const desc = `${baseJa}${jaExtras.length ? `／${jaExtras.join("・")}` : ""}<br><span class="zh-inline" lang="zh-CN">${baseZh}${zhExtras.length ? `；${zhExtras.join("，")}` : ""}</span>`;
             return `
               <div class="codex-skill-row">
                 <div class="codex-skill-top">
@@ -5991,7 +7477,7 @@
 
       let bannerHtml = "";
       if (isDeck) {
-        bannerHtml = `<div class="pile-modal-banner"><span>※山札の順番やサイドの中身は非公開です（初期構成のみ表示）</span><span class="zh-inline" lang="zh-CN" style="font-weight:500;color:var(--ink-sub);">牌库顺序与奖赏卡内容保密，仅展示初始 20 张卡表</span></div>`;
+        bannerHtml = `<div class="pile-modal-banner"><span>※山札の順番やサイドの中身は非公開です（初期構成のみ表示）</span><span class="zh-inline" lang="zh-CN" style="font-weight:500;color:var(--ink-sub);">牌库顺序与奖赏卡内容保密，仅展示初始 ${ids.length} 张卡表</span></div>`;
       } else if (isPlayer) {
         const elemSummary = energies.map((e) => `${escapeHtml(e.ja)}×${escapeHtml(e.qty)}`).join("・");
         bannerHtml = `<div class="pile-modal-banner recycle"><span>⚡ エネ回収対象：<strong>${totalEnergy}枚</strong><span class="zh-inline" lang="zh-CN">（可回收能量 <strong>${totalEnergy}</strong> 张）</span></span><span style="font-size:11px;">${elemSummary || '回収可能なエネルギーなし<span class="zh-inline" lang="zh-CN">（暂无可回收能量）</span>'}</span></div>`;
@@ -6668,6 +8154,14 @@
   /* =========================================================================
      7. 初始化、设置表单同步与全局事件绑定
      ========================================================================= */
+  let settingsTtsEnginePrev = "nia_tts";
+  let settingsVoiceDraft = {
+    nia_tts: { referee: DEFAULT_CONFIG.niaVoiceReferee, rival: DEFAULT_CONFIG.niaVoiceRival },
+    vertex_tts: { referee: DEFAULT_CONFIG.voiceReferee, rival: DEFAULT_CONFIG.voiceRival },
+    chrome_tts: { referee: "", rival: "" }
+  };
+  let savedConfigDuringTtsTest = false;
+
   function syncDifficultyUi() {
     const isHard = ConfigManager.data.aiDifficulty === "hard";
     $("diffOptNormal")?.classList.toggle("active", !isHard);
@@ -6675,20 +8169,88 @@
     if ($("aiDifficulty")) $("aiDifficulty").value = isHard ? "hard" : "normal";
   }
 
+  function populateVoiceSelectsForEngine(engine) {
+    const refSel = $("voiceReferee");
+    const rivSel = $("voiceRival");
+    if (!refSel || !rivSel) return;
+    const opts = VoiceEngine.getVoiceOptionsForEngine(engine);
+    const fill = (sel, wanted, fallbackIdx) => {
+      sel.innerHTML = "";
+      opts.forEach((o) => {
+        const el = document.createElement("option");
+        el.value = o.value;
+        el.textContent = o.label;
+        sel.appendChild(el);
+      });
+      const valid = opts.some((o) => o.value === wanted);
+      if (valid) sel.value = wanted;
+      else if (opts[fallbackIdx]) sel.value = opts[fallbackIdx].value;
+      else if (opts[0]) sel.value = opts[0].value;
+    };
+    const draft = settingsVoiceDraft[engine] || { referee: "", rival: "" };
+    const defaultRivIdx = engine === "nia_tts" ? Math.min(5, opts.length - 1) : (engine === "vertex_tts" ? Math.min(1, opts.length - 1) : 0);
+    fill(refSel, draft.referee, 0);
+    fill(rivSel, draft.rival, defaultRivIdx);
+    settingsVoiceDraft[engine] = { referee: refSel.value, rival: rivSel.value };
+
+    const tag = $("voiceEngineTag");
+    if (tag) {
+      if (engine === "nia_tts") tag.textContent = `· SenseTime Nia (${opts.length}種)`;
+      else if (engine === "vertex_tts") tag.textContent = `· Vertex (${opts.length}種)`;
+      else tag.textContent = `· Chrome (${Math.max(0, opts.length - 1)}種)`;
+    }
+  }
+
+  function syncSettingsVisibility() {
+    const asr = $("asrMode")?.value || "nia_asr";
+    const tts = $("ttsEngine")?.value || "nia_tts";
+
+    const asrBadgeMap = {
+      nia_asr: "SenseTime Nia",
+      gemini_audio: "Gemini 直传",
+      chrome_asr_llm: "Chrome + Gemini",
+      chrome_local: "离线本地"
+    };
+    if ($("asrEngineBadge")) $("asrEngineBadge").textContent = asrBadgeMap[asr] || asr;
+
+    $("niaAsrLangWrap")?.classList.toggle("cfg-hidden", asr !== "nia_asr");
+    $("chromeAsrLangWrap")?.classList.toggle("cfg-hidden", asr !== "chrome_asr_llm" && asr !== "chrome_local");
+    $("geminiAsrHintWrap")?.classList.toggle("cfg-hidden", asr !== "gemini_audio");
+
+    // 只要 ASR 或 TTS 任一使用SenseTime Nia，即展示 Nia AccessKey 区域
+    $("niaCredsBlock")?.classList.toggle("cfg-hidden", asr !== "nia_asr" && tts !== "nia_tts");
+
+    $("ttsModelField")?.classList.toggle("cfg-hidden", tts !== "vertex_tts");
+    $("ttsEngineHintField")?.classList.toggle("cfg-hidden", tts === "vertex_tts");
+    if ($("ttsEngineHintText")) {
+      $("ttsEngineHintText").textContent = tts === "nia_tts"
+        ? "SenseTime Nia 24kHz · 音色自动联动"
+        : "浏览器内置日语朗读 · 下方音色自动联动";
+    }
+  }
+
   function syncSettingsForm() {
     const c = ConfigManager.data;
-    $("apiKey").value = c.apiKey;
-    $("ttsEngine").value = c.ttsEngine;
-    $("llmModel").value = c.llmModel;
-    $("ttsModel").value = c.ttsModel;
-    $("asrMode").value = c.asrMode;
-    $("asrLang").value = c.asrLang || "ja-JP";
-    $("voiceReferee").value = c.voiceReferee;
-    $("voiceRival").value = c.voiceRival;
-    $("chromeVoiceSelect").value = c.chromeVoiceURI;
-    $("idlePromptSec").value = c.idlePromptSec;
-    $("chkAutoSpeak").checked = Boolean(c.autoSpeak);
-    $("mdStatusText").textContent = `読込元：${SpecEngine.sourceLabel}`;
+    if ($("apiKey")) $("apiKey").value = c.apiKey;
+    if ($("llmModel")) $("llmModel").value = c.llmModel;
+    if ($("niaAk")) $("niaAk").value = c.niaAk;
+    if ($("niaSk")) $("niaSk").value = c.niaSk;
+    if ($("niaAsrLang")) $("niaAsrLang").value = c.niaAsrLang || "";
+    if ($("ttsEngine")) $("ttsEngine").value = c.ttsEngine;
+    if ($("ttsModel")) $("ttsModel").value = c.ttsModel;
+    if ($("asrMode")) $("asrMode").value = c.asrMode;
+    if ($("asrLang")) $("asrLang").value = c.asrLang || "ja-JP";
+    if ($("idlePromptSec")) $("idlePromptSec").value = c.idlePromptSec;
+    if ($("chkAutoSpeak")) $("chkAutoSpeak").checked = Boolean(c.autoSpeak);
+    if ($("mdStatusText")) $("mdStatusText").textContent = `読込元：${SpecEngine.sourceLabel}`;
+    settingsVoiceDraft = {
+      nia_tts: { referee: c.niaVoiceReferee, rival: c.niaVoiceRival },
+      vertex_tts: { referee: c.voiceReferee, rival: c.voiceRival },
+      chrome_tts: { referee: c.chromeVoiceURI, rival: c.chromeVoiceRivalURI || c.chromeVoiceURI }
+    };
+    settingsTtsEnginePrev = c.ttsEngine;
+    populateVoiceSelectsForEngine(c.ttsEngine);
+    syncSettingsVisibility();
     syncDifficultyUi();
   }
 
@@ -6804,38 +8366,101 @@
     $("btnStartGame").addEventListener("click", closeRulesAndGuide);
 
     $("btnOpenSettings").addEventListener("click", () => {
-      VoiceEngine.populateChromeVoices();
       syncSettingsForm();
       $("settingsModal").classList.add("open");
     });
     $("btnCloseSettings").addEventListener("click", () => $("settingsModal").classList.remove("open"));
+    $("settingsModal")?.addEventListener("click", (e) => {
+      if (e.target === $("settingsModal")) $("settingsModal").classList.remove("open");
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && $("settingsModal")?.classList.contains("open")) {
+        $("settingsModal").classList.remove("open");
+      }
+    });
+
+    /* 切换 ASR / TTS 引擎时实时联动参数区与同一组音色下拉框 */
+    $("asrMode")?.addEventListener("change", () => syncSettingsVisibility());
+    $("ttsEngine")?.addEventListener("change", () => {
+      const prev = settingsTtsEnginePrev;
+      if (prev && $("voiceReferee") && $("voiceRival")) {
+        settingsVoiceDraft[prev] = {
+          referee: $("voiceReferee").value,
+          rival: $("voiceRival").value
+        };
+      }
+      const next = $("ttsEngine").value;
+      settingsTtsEnginePrev = next;
+      populateVoiceSelectsForEngine(next);
+      syncSettingsVisibility();
+    });
+    $("voiceReferee")?.addEventListener("change", () => {
+      const cur = $("ttsEngine")?.value || settingsTtsEnginePrev;
+      if (!settingsVoiceDraft[cur]) settingsVoiceDraft[cur] = { referee: "", rival: "" };
+      settingsVoiceDraft[cur].referee = $("voiceReferee").value;
+    });
+    $("voiceRival")?.addEventListener("change", () => {
+      const cur = $("ttsEngine")?.value || settingsTtsEnginePrev;
+      if (!settingsVoiceDraft[cur]) settingsVoiceDraft[cur] = { referee: "", rival: "" };
+      settingsVoiceDraft[cur].rival = $("voiceRival").value;
+    });
+
+    const readSettingsFormPatch = () => {
+      const curTts = $("ttsEngine")?.value || "nia_tts";
+      if ($("voiceReferee") && $("voiceRival")) {
+        settingsVoiceDraft[curTts] = {
+          referee: $("voiceReferee").value,
+          rival: $("voiceRival").value
+        };
+      }
+      return {
+        apiKey: ($("apiKey")?.value || "").trim(),
+        llmModel: ($("llmModel")?.value || "").trim(),
+        niaAk: ($("niaAk")?.value || "").trim(),
+        niaSk: ($("niaSk")?.value || "").trim(),
+        niaAsrLang: $("niaAsrLang") ? $("niaAsrLang").value : "",
+        asrMode: $("asrMode")?.value || "nia_asr",
+        asrLang: $("asrLang")?.value || "ja-JP",
+        ttsEngine: curTts,
+        ttsModel: ($("ttsModel")?.value || "").trim(),
+        niaVoiceReferee: settingsVoiceDraft.nia_tts.referee,
+        niaVoiceRival: settingsVoiceDraft.nia_tts.rival,
+        voiceReferee: settingsVoiceDraft.vertex_tts.referee,
+        voiceRival: settingsVoiceDraft.vertex_tts.rival,
+        chromeVoiceURI: settingsVoiceDraft.chrome_tts.referee,
+        chromeVoiceRivalURI: settingsVoiceDraft.chrome_tts.rival,
+        idlePromptSec: Math.max(0, Math.min(120, Number($("idlePromptSec")?.value) || 0)),
+        aiDifficulty: $("aiDifficulty") ? $("aiDifficulty").value : "normal",
+        autoSpeak: Boolean($("chkAutoSpeak")?.checked)
+      };
+    };
 
     $("btnSaveConfig").addEventListener("click", () => {
+      savedConfigDuringTtsTest = true;
+      const prevAsr = ConfigManager.data.asrMode;
+      const prevNiaAk = ConfigManager.data.niaAk;
+      const prevNiaSk = ConfigManager.data.niaSk;
       VoiceEngine.apiTtsBlocked = false;
       VoiceEngine.apiTtsBlockReason = "";
       VoiceEngine.apiAsrBlocked = false;
       VoiceEngine.apiAsrBlockReason = "";
-      ConfigManager.save({
-        apiKey: $("apiKey").value.trim(),
-        ttsEngine: $("ttsEngine").value,
-        llmModel: $("llmModel").value.trim(),
-        ttsModel: $("ttsModel").value.trim(),
-        asrMode: $("asrMode").value,
-        asrLang: $("asrLang").value,
-        voiceReferee: $("voiceReferee").value,
-        voiceRival: $("voiceRival").value,
-        chromeVoiceURI: $("chromeVoiceSelect").value,
-        idlePromptSec: Math.max(0, Math.min(120, Number($("idlePromptSec").value) || 0)),
-        aiDifficulty: $("aiDifficulty") ? $("aiDifficulty").value : "normal",
-        autoSpeak: $("chkAutoSpeak").checked
-      });
+      VoiceEngine.clearApiAsrReconnectTimer();
+      ConfigManager.save(readSettingsFormPatch());
       syncDifficultyUi();
       TableUI.renderLiveTip();
       TableUI.showToast("設定を保存しました", "配置已保存");
       BattleEngine.resetIdleTimer(true);
+      const asrChanged = prevAsr !== ConfigManager.data.asrMode
+        || prevNiaAk !== ConfigManager.data.niaAk
+        || prevNiaSk !== ConfigManager.data.niaSk;
+      if (VoiceEngine.callActive && asrChanged) {
+        VoiceEngine.stopCall(true);
+        VoiceEngine.startContinuousAsrCall(true);
+      }
     });
 
     $("btnResetDefaults").addEventListener("click", async () => {
+      savedConfigDuringTtsTest = true;
       VoiceEngine.apiTtsBlocked = false;
       VoiceEngine.apiTtsBlockReason = "";
       VoiceEngine.apiAsrBlocked = false;
@@ -6857,8 +8482,13 @@
     $("btnTestTts").addEventListener("click", async () => {
       if (testingTts) return;
       testingTts = true;
+      savedConfigDuringTtsTest = false;
       const btn = $("btnTestTts");
       btn.disabled = true;
+      const prevCfg = { ...ConfigManager.data };
+      const previewCfg = ConfigManager.sanitize({ ...prevCfg, ...readSettingsFormPatch(), autoSpeak: true });
+      ConfigManager.data = previewCfg;
+      ConfigManager._niaJwtCache = null;
       try {
         VoiceEngine.apiTtsBlocked = false;
         VoiceEngine.apiTtsBlockReason = "";
@@ -6867,6 +8497,10 @@
         await delay(240);
         await VoiceEngine.speak("なかなかやるじゃねえか。次は俺の番だぜ！", "rival");
       } finally {
+        if (!savedConfigDuringTtsTest) {
+          ConfigManager.data = prevCfg;
+          ConfigManager._niaJwtCache = null;
+        }
         testingTts = false;
         btn.disabled = false;
       }

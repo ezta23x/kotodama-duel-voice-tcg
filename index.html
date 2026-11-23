@@ -1203,6 +1203,26 @@
     color: #26547c;
     border: 1px solid rgba(61, 118, 166, 0.35);
   }
+  .skill-tag.heal {
+    background: rgba(43, 122, 75, 0.14);
+    color: #1f6139;
+    border: 1px solid rgba(43, 122, 75, 0.38);
+  }
+  .skill-tag.draw {
+    background: rgba(94, 72, 158, 0.14);
+    color: #49348a;
+    border: 1px solid rgba(94, 72, 158, 0.36);
+  }
+  .skill-tag.splash {
+    background: rgba(196, 86, 36, 0.15);
+    color: #96360e;
+    border: 1px solid rgba(196, 86, 36, 0.42);
+  }
+  .skill-tag.recoil {
+    background: rgba(168, 52, 48, 0.14);
+    color: #8f2622;
+    border: 1px solid rgba(168, 52, 48, 0.38);
+  }
 
   /* 手牌区：PC 全屏默认展示 4.5 张等宽统一卡面，第 5 张露出半张自然引导横向滚动 */
   .hand-section {
@@ -2139,15 +2159,130 @@
   }
 
 
+  #settingsModal .modal-box {
+    max-width: 680px;
+    max-height: 92vh;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  #settingsModal .modal-head {
+    padding: 13px 18px 10px;
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+  .cfg-scroll-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 12px 18px 10px;
+  }
+  .cfg-footer {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 10px 18px 13px;
+    border-top: 1.5px solid #decba8;
+    background: linear-gradient(180deg, rgba(249, 241, 223, 0.92) 0%, #efe2c6 100%);
+  }
+  .cfg-section {
+    background: linear-gradient(180deg, #faf3e3 0%, #f2e5cb 100%);
+    border: 1px solid #d4bc92;
+    border-radius: 11px;
+    padding: 10px 12px 6px;
+    margin-bottom: 10px;
+    box-shadow: inset 0 1px 0 rgba(255, 253, 246, 0.85), 0 1px 3px rgba(64, 42, 20, 0.07);
+  }
+  .cfg-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+    border-bottom: 1px dashed #d6bf97;
+  }
+  .cfg-section-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    font-weight: 800;
+    color: #3a2615;
+  }
+  .cfg-section-badge {
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba(176, 125, 39, 0.14);
+    border: 1px solid rgba(176, 125, 39, 0.35);
+    color: #7c5215;
+    white-space: nowrap;
+  }
+  .cfg-sub-box {
+    background: rgba(255, 252, 244, 0.65);
+    border: 1px solid #dcc7a0;
+    border-radius: 9px;
+    padding: 8px 10px 3px;
+    margin: 2px 0 6px;
+  }
+  .cfg-sub-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: #6b4b24;
+    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+  .cfg-hint-pill {
+    padding: 7px 9px;
+    border: 1px dashed #cbb288;
+    border-radius: 8px;
+    background: rgba(255, 252, 244, 0.72);
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--ink-sub);
+    display: flex;
+    align-items: center;
+    min-height: 33px;
+  }
+  .cfg-toggle-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: #3a2615;
+    cursor: pointer;
+    user-select: none;
+  }
+  .cfg-toggle-inline input { margin: 0; cursor: pointer; accent-color: #a97520; }
+  .cfg-voice-tag {
+    font-size: 10px;
+    font-weight: 700;
+    color: #8c5f17;
+    margin-left: 4px;
+  }
+  .cfg-hidden { display: none !important; }
   .cfg-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
   }
-  .cfg-field { display: flex; flex-direction: column; gap: 3px; margin-bottom: 7px; }
-  .cfg-field label { font-size: 12px; font-weight: 700; color: #3a2615; }
+  .cfg-field { display: flex; flex-direction: column; gap: 3px; margin-bottom: 6px; min-width: 0; }
+  .cfg-field label { font-size: 11.5px; font-weight: 700; color: #3a2615; display: flex; align-items: center; flex-wrap: wrap; gap: 2px; }
   .cfg-field input, .cfg-field select {
+    width: 100%;
+    min-width: 0;
     padding: 6px 9px;
     border: 1.5px solid #cbb288;
     border-radius: 8px;
@@ -2376,6 +2511,10 @@
       padding: 12px 14px;
       -webkit-overflow-scrolling: touch;
     }
+    #settingsModal .modal-box { max-height: 92dvh; padding: 0; }
+    #settingsModal .modal-head { padding: 10px 14px 8px; }
+    .cfg-scroll-body { padding: 10px 14px 8px; }
+    .cfg-footer { padding: 8px 14px 10px; }
     .reset-confirm-icon { width: 32px; height: 32px; margin-bottom: 5px; }
     .mobile-fs-title-ja { font-size: 14.5px; }
     .mobile-fs-title-zh { font-size: 13px; margin-bottom: 6px; }
@@ -2665,6 +2804,11 @@
       padding: 12px 14px;
       -webkit-overflow-scrolling: touch;
     }
+    #settingsModal .modal-box { max-height: 90dvh; padding: 0; }
+    #settingsModal .modal-head { padding: 11px 14px 9px; }
+    .cfg-scroll-body { padding: 10px 14px 8px; }
+    .cfg-footer { padding: 9px 14px 11px; gap: 6px; }
+    .cfg-footer .btn-sm { font-size: 11px; padding: 6px 8px; }
     .rules-grid, .codex-grid, .cfg-grid { grid-template-columns: minmax(0, 1fr); }
     .rules-footer {
       flex-direction: column;
@@ -3000,122 +3144,174 @@
   </div>
 </div>
 
-<!-- Vertex API 与语音设置弹窗 -->
+<!-- AI・音声設定弹窗（分离 LLM / ASR / TTS 入口） -->
 <div class="modal-backdrop" id="settingsModal">
   <div class="modal-box">
     <div class="modal-head">
-      <h2><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.74 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.05.3-.08.63-.08.94s.03.64.08.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.12.22.37.3.6.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.23.08.48 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg>Vertex API・音声設定<span class="zh-inline" lang="zh-CN">（接口与语音设置）</span></h2>
+      <h2><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58a.5.5 0 0 0 .12-.64l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.03 7.03 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.74 8.84a.5.5 0 0 0 .12.64l2.03 1.58c-.05.3-.08.63-.08.94s.03.64.08.94l-2.03 1.58a.5.5 0 0 0-.12.64l1.92 3.32c.12.22.37.3.6.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.23.08.48 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.64l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg>AI・音声設定<span class="zh-inline" lang="zh-CN">（LLM 与语音引擎设置）</span></h2>
       <button class="btn-sm" id="btnCloseSettings">✕</button>
     </div>
 
-    <div class="cfg-field">
-      <label>Vertex APIキー<span class="zh-inline" lang="zh-CN">（Vertex API 密钥，清空则使用本地兜底）</span></label>
-      <input type="password" id="apiKey" autocomplete="off" />
-    </div>
-
-    <div class="cfg-grid">
-      <div class="cfg-field">
-        <label>音声出力<span class="zh-inline" lang="zh-CN">（语音播报方式）</span></label>
-        <select id="ttsEngine">
-          <option value="vertex_tts">Vertex Gemini TTS（AI音声）</option>
-          <option value="chrome_tts">Chrome 標準音声（浏览器朗读）</option>
-        </select>
+    <div class="cfg-scroll-body">
+    <!-- 1. LLM 对话与规则解析入口（保持 Gemini） -->
+    <div class="cfg-section">
+      <div class="cfg-section-head">
+        <span class="cfg-section-title">
+          <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-4 12.75V18a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-3.25A7 7 0 0 0 12 2zm-2 19h4v1h-4v-1z"/></svg>
+          LLM 指令解析<span class="zh-inline" lang="zh-CN">（对话与战术大脑）</span>
+        </span>
+        <span class="cfg-section-badge">Vertex Gemini</span>
       </div>
-      <div class="cfg-field">
-        <label>LLM / ASR モデル<span class="zh-inline" lang="zh-CN">（指令与识别模型）</span></label>
-        <input type="text" id="llmModel" />
-      </div>
-    </div>
-
-    <div class="cfg-field">
-      <label>TTS モデル<span class="zh-inline" lang="zh-CN">（语音合成模型）</span></label>
-      <input type="text" id="ttsModel" />
-    </div>
-
-    <div class="cfg-grid">
-      <div class="cfg-field">
-        <label>音声入力<span class="zh-inline" lang="zh-CN">（语音识别方式）</span></label>
-        <select id="asrMode">
-          <option value="gemini_audio">Gemini 音声直伝（中/日语自动识别）</option>
-          <option value="chrome_asr_llm">Chrome ASR → Gemini</option>
-          <option value="chrome_local">オフライン（本地中/日语解析）</option>
-        </select>
-      </div>
-      <div class="cfg-field">
-        <label>音声認識言語<span class="zh-inline" lang="zh-CN">（浏览器识别语言）</span></label>
-        <select id="asrLang">
-          <option value="ja-JP">日本語（ja-JP）</option>
-          <option value="zh-CN">中文（zh-CN）</option>
-        </select>
+      <div class="cfg-grid">
+        <div class="cfg-field">
+          <label>Vertex APIキー<span class="zh-inline" lang="zh-CN">（Gemini 密钥，留空走本地解析）</span></label>
+          <input type="password" id="apiKey" autocomplete="off" />
+        </div>
+        <div class="cfg-field">
+          <label>LLM モデル<span class="zh-inline" lang="zh-CN">（Gemini 解析模型）</span></label>
+          <input type="text" id="llmModel" />
+        </div>
       </div>
     </div>
 
-    <div class="cfg-grid">
-      <div class="cfg-field">
-        <label>審判ボイス<span class="zh-inline" lang="zh-CN">（裁判音色）</span></label>
-        <select id="voiceReferee">
-          <option value="Zephyr">Zephyr</option>
-          <option value="Leda">Leda</option>
-          <option value="Kore" selected>Kore</option>
-          <option value="Aoede">Aoede</option>
-          <option value="Puck">Puck</option>
-          <option value="Charon">Charon</option>
-          <option value="Fenrir">Fenrir</option>
-        </select>
+    <!-- 2. ASR 语音识别入口（默认SenseTime Nia） -->
+    <div class="cfg-section">
+      <div class="cfg-section-head">
+        <span class="cfg-section-title">
+          <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg>
+          ASR 音声認識<span class="zh-inline" lang="zh-CN">（语音识别入口）</span>
+        </span>
+        <span class="cfg-section-badge" id="asrEngineBadge">SenseTime Nia</span>
       </div>
-      <div class="cfg-field">
-        <label>相手レンのボイス<span class="zh-inline" lang="zh-CN">（对手音色）</span></label>
-        <select id="voiceRival">
-          <option value="Zephyr">Zephyr</option>
-          <option value="Leda">Leda</option>
-          <option value="Kore">Kore</option>
-          <option value="Aoede">Aoede</option>
-          <option value="Puck">Puck</option>
-          <option value="Charon">Charon</option>
-          <option value="Fenrir">Fenrir</option>
-        </select>
+      <div class="cfg-grid">
+        <div class="cfg-field">
+          <label>音声認識エンジン<span class="zh-inline" lang="zh-CN">（ASR 识别引擎）</span></label>
+          <select id="asrMode">
+            <option value="nia_asr">SenseTime Nia 流式認識（中/日自动・默认）</option>
+            <option value="gemini_audio">Gemini 音声直伝（中/日自动）</option>
+            <option value="chrome_asr_llm">Chrome ASR → Gemini</option>
+            <option value="chrome_local">オフライン（本地中/日语解析）</option>
+          </select>
+        </div>
+        <div class="cfg-field" id="niaAsrLangWrap">
+          <label>Nia 認識言語<span class="zh-inline" lang="zh-CN">（识别语种）</span></label>
+          <select id="niaAsrLang">
+            <option value="">自動判別（中/日自动检测）</option>
+            <option value="ja">日本語優先（ja）</option>
+            <option value="zh">中文優先（zh）</option>
+          </select>
+        </div>
+        <div class="cfg-field cfg-hidden" id="chromeAsrLangWrap">
+          <label>ブラウザ認識言語<span class="zh-inline" lang="zh-CN">（Chrome 识别语言）</span></label>
+          <select id="asrLang">
+            <option value="ja-JP">日本語（ja-JP）</option>
+            <option value="zh-CN">中文（zh-CN）</option>
+          </select>
+        </div>
+        <div class="cfg-field cfg-hidden" id="geminiAsrHintWrap">
+          <label>言語設定<span class="zh-inline" lang="zh-CN">（识别说明）</span></label>
+          <div class="cfg-hint-pill">Gemini 音声直伝は中・日混在を自動認識します<span class="zh-inline" lang="zh-CN">（复用上方 Vertex 密钥）</span></div>
+        </div>
+      </div>
+
+      <!-- SenseTime Nia 认证凭证（ASR / TTS 任一使用 Nia 时显示） -->
+      <div class="cfg-sub-box" id="niaCredsBlock">
+        <div class="cfg-sub-label">
+          <span>SenseTime Nia 認証キー<span class="zh-inline" lang="zh-CN">（ASR・TTS 共用 AccessKey）</span></span>
+          <span style="font-size:10px;color:var(--ink-sub);white-space:nowrap;flex-shrink:0;">HS256 JWT</span>
+        </div>
+        <div class="cfg-grid">
+          <div class="cfg-field">
+            <label>AccessKey ID<span class="zh-inline" lang="zh-CN">（AK）</span></label>
+            <input type="password" id="niaAk" autocomplete="off" />
+          </div>
+          <div class="cfg-field">
+            <label>AccessKey Secret<span class="zh-inline" lang="zh-CN">（SK）</span></label>
+            <input type="password" id="niaSk" autocomplete="off" />
+          </div>
+        </div>
       </div>
     </div>
 
-    <div class="cfg-grid">
-      <div class="cfg-field">
-        <label>Chrome 日本語音声<span class="zh-inline" lang="zh-CN">（兜底发音人）</span></label>
-        <select id="chromeVoiceSelect">
-          <option value="">自動選択（自动选择日语发音人）</option>
-        </select>
+    <!-- 3. TTS 语音合成入口（切换模型时同一音色选择栏自动切换对应音色） -->
+    <div class="cfg-section">
+      <div class="cfg-section-head">
+        <span class="cfg-section-title">
+          <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+          TTS 音声合成<span class="zh-inline" lang="zh-CN">（语音播报入口）</span>
+        </span>
+        <label class="cfg-toggle-inline" for="chkAutoSpeak">
+          <input type="checkbox" id="chkAutoSpeak" checked />
+          <span>自動再生<span class="zh-inline" lang="zh-CN">（自动播报日语）</span></span>
+        </label>
       </div>
-      <div class="cfg-field">
-        <label>無応答リマインド<span class="zh-inline" lang="zh-CN">（久未响应提醒秒数）</span></label>
-        <input type="number" id="idlePromptSec" min="0" max="120" step="1" value="15" />
+      <div class="cfg-grid">
+        <div class="cfg-field">
+          <label>音声出力モデル<span class="zh-inline" lang="zh-CN">（TTS 语音模型）</span></label>
+          <select id="ttsEngine">
+            <option value="nia_tts">SenseTime Nia 音声合成（AI音声・默认）</option>
+            <option value="vertex_tts">Vertex Gemini TTS（AI音声）</option>
+            <option value="chrome_tts">Chrome 標準音声（浏览器朗读）</option>
+          </select>
+        </div>
+        <div class="cfg-field cfg-hidden" id="ttsModelField">
+          <label>Vertex TTS モデル<span class="zh-inline" lang="zh-CN">（合成模型名）</span></label>
+          <input type="text" id="ttsModel" />
+        </div>
+        <div class="cfg-field" id="ttsEngineHintField">
+          <label>モデル情報<span class="zh-inline" lang="zh-CN">（当前语音引擎）</span></label>
+          <div class="cfg-hint-pill" id="ttsEngineHintText">SenseTime Nia 24kHz · 音色自动联动</div>
+        </div>
+      </div>
+
+      <div class="cfg-grid">
+        <div class="cfg-field">
+          <label>審判ボイス<span class="zh-inline" lang="zh-CN">（裁判音色）</span><span class="cfg-voice-tag" id="voiceEngineTag"></span></label>
+          <select id="voiceReferee"></select>
+        </div>
+        <div class="cfg-field">
+          <label>相手レンのボイス<span class="zh-inline" lang="zh-CN">（对手音色）</span></label>
+          <select id="voiceRival"></select>
+        </div>
+      </div>
+
+      <div id="voiceEngineStatus" style="font-size:11px;color:var(--ink-sub);margin:2px 0 4px;"></div>
+    </div>
+
+    <!-- 4. 对局设置与外部数据热更新 -->
+    <div class="cfg-section" style="margin-bottom:0;">
+      <div class="cfg-section-head">
+        <span class="cfg-section-title">
+          <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg>
+          対局・データ設定<span class="zh-inline" lang="zh-CN">（对局参数与卡表）</span>
+        </span>
+      </div>
+      <div class="cfg-grid">
+        <div class="cfg-field">
+          <label>相手AI難易度<span class="zh-inline" lang="zh-CN">（对手难度）</span></label>
+          <select id="aiDifficulty">
+            <option value="normal">ふつう（普通）</option>
+            <option value="hard">むずかしい（困难）</option>
+          </select>
+        </div>
+        <div class="cfg-field">
+          <label>無応答リマインド<span class="zh-inline" lang="zh-CN">（久未响应提醒秒数）</span></label>
+          <input type="number" id="idlePromptSec" min="0" max="120" step="1" value="15" />
+        </div>
+      </div>
+      <!-- 外部 gamedata.json 拖放热更新入口 -->
+      <div class="dropzone" id="mdDropzone" style="margin-top:2px;margin-bottom:4px;">
+        外部 <strong>gamedata.json</strong> をドロップ、または
+        <label style="color:var(--water);text-decoration:underline;cursor:pointer;">
+          ファイル選択<span class="zh-inline" lang="zh-CN">（导入 .json）</span>
+          <input type="file" id="mdFileInput" accept=".json,.md,.txt" style="display:none;" />
+        </label>
+        <div id="mdStatusText" style="margin-top:4px;font-size:11px;"></div>
       </div>
     </div>
-
-    <div class="cfg-field">
-      <label>相手AI難易度<span class="zh-inline" lang="zh-CN">（对手难度）</span></label>
-      <select id="aiDifficulty">
-        <option value="normal">ふつう（普通）</option>
-        <option value="hard">むずかしい（困难）</option>
-      </select>
     </div>
 
-    <div id="voiceEngineStatus" style="font-size:11px;color:var(--ink-sub);margin:2px 0 6px;"></div>
-
-    <div style="display:flex;align-items:center;gap:8px;font-size:12px;margin:4px 0 8px;">
-      <input type="checkbox" id="chkAutoSpeak" checked />
-      <label for="chkAutoSpeak">日本語音声を自動再生<span class="zh-inline" lang="zh-CN">（自动播报日语语音，跳过中文）</span></label>
-    </div>
-
-    <!-- 外部 gamedata.json 拖放热更新入口 -->
-    <div class="dropzone" id="mdDropzone">
-      外部 <strong>gamedata.json</strong> をドロップ、または
-      <label style="color:var(--water);text-decoration:underline;cursor:pointer;">
-        ファイル選択<span class="zh-inline" lang="zh-CN">（导入 .json）</span>
-        <input type="file" id="mdFileInput" accept=".json,.md,.txt" style="display:none;" />
-      </label>
-      <div id="mdStatusText" style="margin-top:4px;font-size:11px;"></div>
-    </div>
-
-    <div style="display:flex;justify-content:space-between;gap:8px;margin-top:12px;flex-wrap:wrap;">
+    <div class="cfg-footer">
       <button class="btn-sm" id="btnResetDefaults"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>初期値に戻す<span class="zh-inline" lang="zh-CN">（恢复默认）</span></button>
       <div style="display:flex;gap:8px;">
         <button class="btn-sm" id="btnTestTts"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>音声テスト<span class="zh-inline" lang="zh-CN">（测试播报）</span></button>
