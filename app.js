@@ -836,6 +836,48 @@
         item: it,
         aliases: this.collectAliasesFor([it.name_ja, it.name_zh, ...(Array.isArray(it.aliases) ? it.aliases : [])])
       }));
+      this.buildTypoMatcher();
+    },
+
+    buildTypoMatcher() {
+      const builtinFixes = [
+        ["防御", ["防禦", "防魚", "棒魚", "方魚", "ぼうぎょ"]],
+        ["攻撃", ["公撃", "こうげき"]],
+        ["交代", ["後退", "光帯", "こうたい"]],
+        ["撤退", ["てったい"]],
+        ["回復", ["かいふく"]],
+        ["ミズガメ", ["水亀", "すいき"]],
+        ["ライジシ", ["雷獅", "らいし"]],
+        ["ヒノキツネ", ["炎狐", "えんこ"]],
+        ["カエンリュウex", ["火龍ex", "かりゅう"]],
+        ["タイカイザメex", ["滄海鯊", "たいかいざめ"]]
+      ];
+      const map = new Map();
+      const addPair = (variant, standard) => {
+        const v = String(variant || "").trim();
+        const s = String(standard || "").trim();
+        if (!v || !s) return;
+        const key = v.toLowerCase();
+        if (!map.has(key)) map.set(key, s);
+      };
+      // 先将所有标准词映射为自身，配合最长匹配单次扫描，防止「カエンリュウex / 炎龙ex」被短前缀重复替换成「exex」
+      for (const entry of this.asrCorrections) {
+        addPair(entry.standard, entry.standard);
+      }
+      for (const [std] of builtinFixes) {
+        addPair(std, std);
+      }
+      for (const entry of this.asrCorrections) {
+        for (const v of entry.variants) addPair(v, entry.standard);
+      }
+      for (const [std, vars] of builtinFixes) {
+        for (const v of vars) addPair(v, std);
+      }
+      const tokens = Array.from(map.keys()).sort((a, b) => b.length - a.length);
+      this._typoMap = map;
+      this._typoRegex = tokens.length
+        ? new RegExp(tokens.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"), "gi")
+        : null;
     },
 
     matchFromIndex(entries, rawText, minScore = 0.78) {
@@ -888,30 +930,11 @@
     },
 
     applyLocalTypoFix(text) {
-      let fixed = String(text || "");
-      const builtinFixes = [
-        ["防御", ["防禦", "防魚", "棒魚", "方魚", "ぼうぎょ"]],
-        ["攻撃", ["公撃", "こうげき"]],
-        ["交代", ["後退", "光帯", "こうたい"]],
-        ["撤退", ["てったい"]],
-        ["回復", ["かいふく"]],
-        ["ミズガメ", ["水亀", "すいき"]],
-        ["ライジシ", ["雷獅", "らいし"]],
-        ["ヒノキツネ", ["炎狐", "えんこ"]],
-        ["カエンリュウex", ["火龍ex", "かりゅう"]],
-        ["タイカイザメex", ["滄海鯊", "たいかいざめ"]]
-      ];
-      for (const [std, vars] of builtinFixes) {
-        for (const v of vars) {
-          if (v && fixed.includes(v)) fixed = fixed.split(v).join(std);
-        }
-      }
-      for (const entry of this.asrCorrections) {
-        for (const v of entry.variants) {
-          if (v && fixed.includes(v)) fixed = fixed.split(v).join(entry.standard);
-        }
-      }
-      return fixed;
+      const fixed = String(text || "");
+      if (!fixed) return fixed;
+      if (!this._typoRegex || !this._typoMap) this.buildTypoMatcher();
+      if (!this._typoRegex) return fixed;
+      return fixed.replace(this._typoRegex, (m) => this._typoMap.get(m.toLowerCase()) || m);
     },
 
     buildSystemPrompt() {
@@ -2463,13 +2486,14 @@
     },
 
     /** 混合解析：明确文本指令优先本地直出，复杂口语与音频直传交由 Vertex LLM 解析 */
-    async parse({ text = "", audioBase64 = null, audioMime = "audio/webm" }, boardSnapshot, conversationContext = null) {
+    async parse({ text = "", audioBase64 = null, audioMime = "audio/webm", fromVoice = false }, boardSnapshot, conversationContext = null) {
       const cfg = ConfigManager.data;
       const url = ConfigManager.buildRestUrl(cfg.llmModel);
+      const parseOpts = { isVoice: Boolean(fromVoice || audioBase64) };
 
       /* 文本/浏览器识别结果优先走本地高置信快通道，避免简单指令等待云端往返 */
       if (!audioBase64 && text) {
-        const fast = this.localParse(text, boardSnapshot, conversationContext);
+        const fast = this.localParse(text, boardSnapshot, conversationContext, parseOpts);
         if (fast.status === "execute" || fast.status === "confirm" || fast.status === "chat") {
           DebugLog.add("NLU", `本地快通道命中 (${fast.status})`, { text, actions: fast.actions });
           return fast;
@@ -2477,7 +2501,7 @@
       }
 
       if (!url || cfg.asrMode === "chrome_local") {
-        const localRes = this.localParse(text, boardSnapshot, conversationContext);
+        const localRes = this.localParse(text, boardSnapshot, conversationContext, parseOpts);
         DebugLog.add("NLU", `离线本地解析 (${localRes.status})`, { text, actions: localRes.actions });
         return localRes;
       }
@@ -2628,7 +2652,8 @@
     },
 
     /** 本地双语指令解析（结合模糊匹配、全场景口语覆盖与追问上下文） */
-    localParse(rawText, board, conversationContext = null) {
+    localParse(rawText, board, conversationContext = null, opts = null) {
+      const isVoice = Boolean(opts && opts.isVoice);
       const fixed = SpecEngine.applyLocalTypoFix(rawText || "").trim();
 
       if (/^(?:キャンセル|やめる|取り消|取消|算了)[。！!？?]?$/.test(fixed)) {
@@ -2684,7 +2709,7 @@
         }
         const matchedSkillEarly = SpecEngine.matchSkill(c);
         const matchedPlayerMon = SpecEngine.matchMonster(c, "player");
-        const isSummonClause = /(ベンチに出|ベンチに置|べんちに出|後ろに出|後ろに置|場に出|召喚|しょうかん|を出す|を出して|をだす|をだして|を置く|を置いて|备战区|下怪|放上场|放到场上|放到后排|派上后排|派上场|上场|出战|召唤)/.test(c)
+        const isSummonClause = /(ベンチに出|ベンチに置|ベンチに入|べんちに出|後ろに出|後ろに置|場に出|召喚|しょうかん|を出す|を出して|をだす|をだして|を置く|を置いて|备战区|放到?备战|放上备战|下怪|放上场|放到场上|放到后排|派上后排|派上场|上场|出战|召唤)/.test(c)
           && !matchedSkillEarly && !this.hasExplicitDefendIntent(c)
           && !/(狙撃|狙击|点杀|交代|こうたい|撤退|てったい|换人|换上|换下|撤下去|きずぐすり|回復|かいふく|伤药|回血|奶)/.test(c);
         const isShortMonDeploy = Boolean(matchedPlayerMon) && !matchedSkillEarly && !this.hasExplicitDefendIntent(c)
@@ -2725,7 +2750,7 @@
           actions.push({ type: "ATTACK", skill_name: null, target: this.resolveSlotFromText(c, "enemy", board) });
           continue;
         }
-        if (this.hasExplicitEndTurnIntent(c)) {
+        if (this.hasExplicitEndTurnIntent(c, isVoice)) {
           actions.push({ type: "END_TURN" });
         }
       }
@@ -2742,7 +2767,7 @@
 
       if (actions.length === 0 && conversationContext?.pending?.originalUtterance && !fixed.includes(conversationContext.pending.originalUtterance)) {
         const merged = `${conversationContext.pending.originalUtterance} ${fixed}`;
-        const retry = this.localParse(merged, board, null);
+        const retry = this.localParse(merged, board, null, opts);
         if (retry.actions && retry.actions.length > 0) return retry;
       }
 
@@ -2767,10 +2792,17 @@
       return core.length === 0;
     },
 
-    /** 严格判定结束回合意图：仅匹配明确的日/中结束回合短语，剔除易撞裁判台词的「あなたの番」及易误伤残音的单字「过/エンド」 */
-    hasExplicitEndTurnIntent(text) {
+    /** 严格判定结束回合意图：语音模式自动过滤裁判播报回声与2字环境残音，仅匹配明确结束回合短语 */
+    hasExplicitEndTurnIntent(text, isVoice = false) {
       const s = String(text || "").trim();
       if (!s) return false;
+      if (isVoice) {
+        // 拦截裁判自身播报的回声片段（如「ターン終了。相手レンの番です」「防御態勢に入りました…ターン終了です」）
+        if (/(相手の番|レンの番|相手レン|あなたの番|防御態勢に入り|被ダメージ|ダメージを与え|ターン終了[。、!！]\s*相手)/.test(s)) {
+          return false;
+        }
+        return /(ターンエンド|たーんえんど|ターン終了|ターン終わ|ターンおわり|ターンを終わ|ターンを渡|パスします|行动结束|结束回合|回合结束|跳过回合|直接跳过|跳过这回合|结束这回合|过回合|结束我的回合)/.test(s);
+      }
       if (/(ターンエンド|たーんえんど|ターン終了|ターン終わ|ターンおわり|ターンを終わ|ターンを渡|そっちの番|相手の番|レンの番|パスします|これで終わり|行动结束|结束回合|回合结束|跳过回合|直接跳过|跳过这回合|结束这回合|过回合|到你了|轮到你|换你了|我好了|结束我的回合)/.test(s)) {
         return true;
       }
@@ -3128,6 +3160,7 @@
       this.lastPlayerUtterance = "";
       TableUI.logEntries = [];
       $("gameOverModal").classList.remove("open");
+      TableUI.closeEndTurnConfirmModal();
       const startLine = SpecEngine.getRivalLine("start");
       TableUI.setRival(startLine.ja, startLine.zh);
       TableUI.appendLog("対戦準備：手札5枚（モンスター＋エネ保証）を引き、サイド3枚をセットしました。", "开局准备：各抽 5 张保底起手并盖放 3 张奖赏卡。");
@@ -3368,7 +3401,46 @@
 
     clearPending() {
       this.state.pending = null;
+      TableUI.closeEndTurnConfirmModal();
       TableUI.renderAll();
+    },
+
+    /** 检测当前回合尚未使用的关键操作（用于结束回合智能防误触提醒） */
+    getEndTurnOpportunities() {
+      const s = this.state;
+      if (!s || s.phase !== "battle" || s.currentPlayer !== "player" || s.gameOver) return [];
+      const list = [];
+      const act = s.player.active;
+      if (act) {
+        const def = SpecEngine.getMonster(act.id);
+        const usableSkills = def ? def.skills.filter((sk) => this.canPayCost(act.energies, sk.cost)) : [];
+        if (usableSkills.length > 0) {
+          list.push({
+            key: "attack",
+            ja: `バトル場の${def.name_ja}は「${usableSkills.map((k) => k.name_ja).join("／")}」で攻撃できます`,
+            zh: `战斗区的${def.name_zh}当前能量已足够发动「${usableSkills.map((k) => k.name_zh).join("／")}」攻击`
+          });
+        }
+      }
+      const hasHandEnergy = s.player.hand.some((id) => {
+        const it = SpecEngine.getItem(id);
+        return it && it.category === "energy";
+      });
+      if (!s.energyAttachedThisTurn && hasHandEnergy) {
+        list.push({
+          key: "energy",
+          ja: "このターンはまだエネルギーを貼っていません（手札にエネあり）",
+          zh: "本回合尚未贴能量（手牌中还有能量卡）"
+        });
+      }
+      if (act && act.lastDefendedTurn !== s.turn - 1) {
+        list.push({
+          key: "defend",
+          ja: "「防御態勢」を使えば次の被ダメージを -30 軽減できます",
+          zh: "本回合可免费进入「防御姿态」（下回合受击 -30）"
+        });
+      }
+      return list;
     },
 
     /** 顺序执行操作队列；若某一步触发追问，自动保存剩余连招以便确认后继续 */
@@ -3407,6 +3479,11 @@
       if (s.pending && s.pending.type === "promote_bench") {
         TableUI.setReferee(s.pending.promptJa, s.pending.promptZh);
         return;
+      }
+      if (s.pending && s.pending.type === "confirm_end_turn") {
+        this.clearPending();
+      } else {
+        TableUI.closeEndTurnConfirmModal();
       }
       GuideEngine.hide();
       this.clearIdleTimer();
@@ -3455,7 +3532,14 @@
         if (NLUEngine.isExplicitNewCommandOverride(payload.text, s.pending, this.getSnapshot())) {
           this.clearPending();
         } else {
-          const handled = await this.handlePendingReply(payload.text);
+          s.busy = true;
+          let handled = false;
+          try {
+            handled = await this.handlePendingReply(payload.text);
+          } finally {
+            s.busy = false;
+            TableUI.renderAll();
+          }
           if (handled) {
             this.resetIdleTimer(true);
             return;
@@ -3512,7 +3596,7 @@
 
         /* 程序逻辑主导（Local-First）：拿到语音转写文本后优先走本地确定性解析器，仅在本地无法识别长尾口语或云端解析出更完整合法连招时才采用云端动作，且 100% 由 BattleEngine 校验执行 */
         if (heardText && !NLUEngine.isMeaninglessTranscript(heardText)) {
-          const localFirst = NLUEngine.localParse(heardText, this.getSnapshot(), convCtx);
+          const localFirst = NLUEngine.localParse(heardText, this.getSnapshot(), convCtx, { isVoice: isVoiceInput });
           const validLocalExec = localFirst.status === "execute" && Array.isArray(localFirst.actions) && localFirst.actions.length > 0
             && !(localFirst.actions.length === 1 && localFirst.actions[0].type === "CANCEL" && !s.pending);
           const validLocalSpecial = localFirst.status === "confirm" || localFirst.status === "chat";
@@ -3520,7 +3604,7 @@
           if (validLocalExec) {
             const filteredCloudActions = cloudActions.filter((a) => {
               if (!a || !a.type) return false;
-              if (a.type === "END_TURN" && !NLUEngine.hasExplicitEndTurnIntent(heardText)) return false;
+              if (a.type === "END_TURN" && !NLUEngine.hasExplicitEndTurnIntent(heardText, isVoiceInput)) return false;
               if (a.type === "DEFEND" && !NLUEngine.hasExplicitDefendIntent(heardText)) return false;
               return true;
             });
@@ -3672,10 +3756,10 @@
         const explicitItem = SpecEngine.matchItem(rawUtter);
         const explicitMon = SpecEngine.matchMonster(rawUtter, "player");
         let safeQueue = [];
-        const hasSummonIntent = /(召喚|召唤|上场|出战|ベンチに出|ベンチに置|备战区|下怪|を出す|を出して|派上)/.test(rawUtter) && !/(よびだし笛|召唤笛)/.test(rawUtter);
+        const hasSummonIntent = /(召喚|召唤|上场|出战|ベンチに出|ベンチに置|备战区|放到?备战|下怪|を出す|を出して|派上)/.test(rawUtter) && !/(よびだし笛|召唤笛)/.test(rawUtter);
         for (const a of queue) {
           if (!a || !a.type) continue;
-          if (a.type === "END_TURN" && (!NLUEngine.hasExplicitEndTurnIntent(rawUtter) || hasSummonIntent || Boolean(explicitMon))) continue;
+          if (a.type === "END_TURN" && (!NLUEngine.hasExplicitEndTurnIntent(rawUtter, isVoiceInput) || hasSummonIntent || Boolean(explicitMon))) continue;
           if (a.type === "DEFEND" && !NLUEngine.hasExplicitDefendIntent(rawUtter)) continue;
           const actClause = NLUEngine.extractClauseForAction(rawUtter, a.type, a.card_id);
           const hasPronoun = /(?:它|他|她|这只|那只|刚才那只|それ|こいつ|そいつ|さっきの|そのまま)/.test(actClause);
@@ -3712,11 +3796,15 @@
           safeQueue = [];
         }
 
-        /* 若云端动作被护栏清空，尝试用本地解析器对已转写文本兜底解析 */
+        /* 若云端动作被护栏清空，尝试用本地解析器对已转写文本兜底解析（同样遵守语音 END_TURN 护栏） */
         if (safeQueue.length === 0 && rawUtter && !NLUEngine.isMeaninglessTranscript(rawUtter)) {
-          const localRetry = NLUEngine.localParse(rawUtter, this.getSnapshot(), convCtx);
+          const localRetry = NLUEngine.localParse(rawUtter, this.getSnapshot(), convCtx, { isVoice: isVoiceInput });
           if (localRetry.status === "execute" && Array.isArray(localRetry.actions) && localRetry.actions.length > 0) {
-            safeQueue = localRetry.actions;
+            safeQueue = localRetry.actions.filter((a) => {
+              if (!a || !a.type) return false;
+              if (a.type === "END_TURN" && isVoiceInput && (!NLUEngine.hasExplicitEndTurnIntent(rawUtter, true) || hasSummonIntent || Boolean(explicitMon))) return false;
+              return true;
+            });
           }
         }
 
@@ -3730,6 +3818,34 @@
           TableUI.appendLog(`聞き取り「${rawUtter}」→ 指示未確定`, `识别为「${rawUtter}」，未检测到明确操作，保持当前回合`);
           VoiceEngine.clearQueuedOnly(false);
           VoiceEngine.speak(fallback.ja, "referee", { priority: "high" });
+          return;
+        }
+
+        /* 语音触发单独 END_TURN 强制二次确认：杜绝环境音/误识别直接跳过整回合（支持语音回答はい/确认、点击弹窗或直接说出新操作覆盖） */
+        if (isVoiceInput && safeQueue.length === 1 && safeQueue[0].type === "END_TURN") {
+          const opps = this.getEndTurnOpportunities();
+          const ja = opps.length > 0
+            ? "まだ行える操作が残っています。このままターンを終了しますか？（「はい」で終了／「いいえ」で戻る）"
+            : "音声で「ターン終了」を検出しました。このままターンを終了しますか？（「はい」で終了／「いいえ」で戻る）";
+          const zh = opps.length > 0
+            ? "检测到语音「结束回合」，但本回合仍有可用操作未执行。确定结束吗？（说「确认」结束，说「取消」或直接下达新指令继续）"
+            : "检测到语音「结束回合」，为防止误触发请确认：说「确认」结束回合，说「取消」返回。";
+          TableUI.setReferee(ja, zh);
+          TableUI.appendLog(`音声確認：${ja}`, `语音确认：${zh}`);
+          this.setPending({
+            type: "confirm_end_turn",
+            promptJa: ja,
+            promptZh: zh,
+            originalUtterance: rawUtter,
+            context: { actionType: "END_TURN", opportunities: opps },
+            options: [
+              { label: "このまま終了（确认结束）", reply: "はい" },
+              { label: "戻る（返回操作）", reply: "いいえ" }
+            ]
+          });
+          TableUI.openEndTurnConfirmModal(opps, true);
+          VoiceEngine.clearQueuedOnly(false);
+          VoiceEngine.speak(ja, "referee", { priority: "high" });
           return;
         }
 
@@ -3749,7 +3865,7 @@
       const remaining = Array.isArray(p.remainingActions) ? p.remainingActions : [];
       const savedRival = p.customRival || null;
 
-      if (p.type !== "promote_bench" && p.type !== "choose_starter" && /(いいえ|キャンセル|やめる|やめて|不要|取消|算了|不认输|继续)/.test(fixed)) {
+      if (p.type !== "promote_bench" && p.type !== "choose_starter" && /(いいえ|キャンセル|やめる|やめて|不要|不用|别|不是|取消|算了|不认输|不结束|不对|还没|まだ|继续)/.test(fixed)) {
         this.clearPending();
         const ja = "操作をキャンセルしました。";
         const zh = "已取消该操作。";
@@ -3773,6 +3889,15 @@
         }
         if (handIdx !== -1) {
           return this.selectStartingMonster(handIdx);
+        }
+        return false;
+      }
+
+      if (p.type === "confirm_end_turn") {
+        if (!/([不别没]|まだ|ない)/.test(fixed) && /(はい|うん|そう|ターンエンド|ターン終了|終了|エンド|是的|确认|确定|对|好的|结束)/.test(fixed)) {
+          this.clearPending();
+          await this.executeAction({ type: "END_TURN" }, null);
+          return true;
         }
         return false;
       }
@@ -6202,6 +6327,39 @@
       $("actionPopover").classList.remove("open");
     },
 
+    openEndTurnConfirmModal(opps = [], fromVoice = false) {
+      const modal = $("endTurnConfirmModal");
+      if (!modal) return;
+      const subJa = $("endTurnConfirmSubJa");
+      const subZh = $("endTurnConfirmSubZh");
+      const listEl = $("endTurnHintsList");
+      const items = Array.isArray(opps) ? opps : [];
+      if (subJa) {
+        subJa.textContent = fromVoice
+          ? (items.length
+            ? "音声で「ターン終了」を検出しましたが、まだ行える操作が残っています。"
+            : "音声で「ターン終了」を検出しました。誤作動防止のためご確認ください。")
+          : "このターン、まだ実行できる操作が残っています。";
+      }
+      if (subZh) {
+        subZh.textContent = fromVoice
+          ? (items.length
+            ? "检测到语音「结束回合」，但本回合仍有可用操作（可直接说「确认」或「取消」）："
+            : "检测到语音「结束回合」，为防误触发请确认（可直接说「确认」或「取消」）。")
+          : "本回合仍有以下可用操作尚未执行：";
+      }
+      if (listEl) {
+        listEl.innerHTML = items.map((o) =>
+          `<li><div class="endturn-hint-ja">${escapeHtml(o.ja)}</div><div class="endturn-hint-zh" lang="zh-CN">${escapeHtml(o.zh)}</div></li>`
+        ).join("");
+      }
+      modal.classList.add("open");
+    },
+
+    closeEndTurnConfirmModal() {
+      $("endTurnConfirmModal")?.classList.remove("open");
+    },
+
     /** 触发指定技能点击（支持 enemy_any 狙击技能在对手有备战怪兽时点选任意目标） */
     triggerSkillClick(skName) {
       const s = BattleEngine.state;
@@ -6574,7 +6732,27 @@
     });
     $("btnGuideMode").addEventListener("click", () => GuideEngine.toggle());
     $("btnCloseGuide").addEventListener("click", () => GuideEngine.hide());
-    $("btnResetMatch").addEventListener("click", () => BattleEngine.reset(true));
+    const closeResetConfirm = () => $("resetConfirmModal")?.classList.remove("open");
+    $("btnResetMatch").addEventListener("click", () => {
+      if ($("resetConfirmModal")) {
+        $("resetConfirmModal").classList.add("open");
+      } else {
+        BattleEngine.reset(true);
+      }
+    });
+    $("btnCancelReset")?.addEventListener("click", closeResetConfirm);
+    $("btnConfirmReset")?.addEventListener("click", () => {
+      closeResetConfirm();
+      BattleEngine.reset(true);
+    });
+    $("resetConfirmModal")?.addEventListener("click", (e) => {
+      if (e.target === $("resetConfirmModal")) closeResetConfirm();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && $("resetConfirmModal")?.classList.contains("open")) {
+        closeResetConfirm();
+      }
+    });
     $("btnPlayAgain").addEventListener("click", () => BattleEngine.reset(true));
     $("playerTrashBox")?.addEventListener("click", () => TableUI.openPileModal("player_trash"));
     $("enemyTrashBox")?.addEventListener("click", () => TableUI.openPileModal("enemy_trash"));
@@ -6713,7 +6891,38 @@
 
     $("btnAiTip").addEventListener("click", () => TableUI.requestAiTip());
     $("btnDefend").addEventListener("click", () => BattleEngine.performDirectAction({ type: "DEFEND", target: "player_active" }));
-    $("btnEndTurn").addEventListener("click", () => BattleEngine.performDirectAction({ type: "END_TURN" }));
+    const cancelEndTurnConfirm = () => {
+      TableUI.closeEndTurnConfirmModal();
+      if (BattleEngine.state?.pending?.type === "confirm_end_turn") {
+        BattleEngine.clearPending();
+      }
+    };
+    $("btnEndTurn").addEventListener("click", () => {
+      const s = BattleEngine.state;
+      if (!s || s.busy || s.gameOver || s.phase !== "battle" || s.currentPlayer !== "player" || s.pending?.type === "promote_bench") {
+        BattleEngine.performDirectAction({ type: "END_TURN" });
+        return;
+      }
+      const opps = BattleEngine.getEndTurnOpportunities();
+      if (opps.length > 0 && $("endTurnConfirmModal")) {
+        TableUI.openEndTurnConfirmModal(opps, false);
+      } else {
+        BattleEngine.performDirectAction({ type: "END_TURN" });
+      }
+    });
+    $("btnCancelEndTurn")?.addEventListener("click", cancelEndTurnConfirm);
+    $("btnConfirmEndTurn")?.addEventListener("click", () => {
+      cancelEndTurnConfirm();
+      BattleEngine.performDirectAction({ type: "END_TURN" });
+    });
+    $("endTurnConfirmModal")?.addEventListener("click", (e) => {
+      if (e.target === $("endTurnConfirmModal")) cancelEndTurnConfirm();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && $("endTurnConfirmModal")?.classList.contains("open")) {
+        cancelEndTurnConfirm();
+      }
+    });
 
     $("mdFileInput").addEventListener("change", (e) => importMdFile(e.target.files[0]));
     const dz = $("mdDropzone");
@@ -6738,10 +6947,8 @@
     }
   }
 
-  /* ---------- 手机端识别、横屏全屏建议弹窗与全屏状态同步 ---------- */
+  /* ---------- 手机端识别与顶栏横屏全屏按钮状态同步 ---------- */
   const MobileViewportManager = {
-    SESSION_KEY: "kotodama_mobile_fs_prompted_v1",
-
     isMobile() {
       const ua = (typeof navigator !== "undefined" && navigator.userAgent) ? navigator.userAgent : "";
       const sw = window.screen?.width || 0;
@@ -6762,10 +6969,6 @@
       return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
     },
 
-    isLandscape() {
-      return (window.innerWidth || 0) > (window.innerHeight || 0);
-    },
-
     syncUi() {
       const mobile = this.isMobile();
       document.body?.classList.toggle("is-mobile", mobile);
@@ -6782,13 +6985,7 @@
         : `${enterSvg}全画面<span class="zh-inline" lang="zh-CN">（全屏）</span>`;
     },
 
-    closeModal() {
-      $("mobileFsModal")?.classList.remove("open");
-      try { sessionStorage.setItem(this.SESSION_KEY, "1"); } catch (_) {}
-    },
-
     async enterLandscapeFullscreen() {
-      this.closeModal();
       const root = document.documentElement;
       let fsOk = false;
       try {
@@ -6833,23 +7030,10 @@
     init() {
       this.syncUi();
       $("btnFullscreen")?.addEventListener("click", () => this.toggleFullscreen());
-      $("btnEnterMobileFs")?.addEventListener("click", () => this.enterLandscapeFullscreen());
-      $("btnDismissMobileFs")?.addEventListener("click", () => this.closeModal());
-      $("mobileFsModal")?.addEventListener("click", (e) => {
-        if (e.target === $("mobileFsModal")) this.closeModal();
-      });
       document.addEventListener("fullscreenchange", () => this.syncUi());
       document.addEventListener("webkitfullscreenchange", () => this.syncUi());
       window.addEventListener("resize", () => this.syncUi());
       window.addEventListener("orientationchange", () => this.syncUi());
-
-      if (this.isMobile() && !(this.isFullscreen() && this.isLandscape())) {
-        let alreadyPrompted = false;
-        try { alreadyPrompted = sessionStorage.getItem(this.SESSION_KEY) === "1"; } catch (_) {}
-        if (!alreadyPrompted) {
-          $("mobileFsModal")?.classList.add("open");
-        }
-      }
     }
   };
 

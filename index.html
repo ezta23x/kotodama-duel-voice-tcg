@@ -1834,6 +1834,17 @@
     border-color: #7d5312;
     box-shadow: 0 3px 9px rgba(140, 95, 23, 0.34), inset 0 1px 0 rgba(255, 248, 224, 0.44);
   }
+  .btn-sm.danger {
+    background: linear-gradient(180deg, #c85245 0%, #a53a2f 100%);
+    border-color: #8c2f26;
+    color: #fffdf8;
+    box-shadow: 0 2px 7px rgba(165, 58, 47, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  }
+  .btn-sm.danger:hover:not(:disabled) {
+    background: linear-gradient(180deg, #d45b4e 0%, #b34236 100%);
+    border-color: #7c271f;
+    box-shadow: 0 3px 9px rgba(165, 58, 47, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  }
 
   /* 实时战术建议区 */
   .live-tip-box {
@@ -2172,15 +2183,61 @@
   #btnFullscreen { display: none; }
   body.is-mobile #btnFullscreen { display: inline-flex; }
 
-  #mobileFsModal { z-index: 220; }
-  #mobileFsModal .modal-box { max-width: 440px; text-align: center; }
-  .mobile-fs-icon {
-    width: 46px;
-    height: 46px;
-    margin: 0 auto 10px;
-    fill: #7d5932;
+  #resetConfirmModal,
+  #endTurnConfirmModal { z-index: 210; }
+  #resetConfirmModal .modal-box,
+  #endTurnConfirmModal .modal-box { max-width: 420px; text-align: center; }
+  .reset-confirm-icon {
+    width: 42px;
+    height: 42px;
+    margin: 0 auto 8px;
+    fill: #9a6822;
     display: block;
   }
+  .endturn-hints-list {
+    margin: 10px 0 0;
+    padding: 9px 12px;
+    list-style: none;
+    text-align: left;
+    background: linear-gradient(180deg, #f6edd9 0%, #efe2c6 100%);
+    border: 1px solid #cfb88e;
+    border-radius: 10px;
+    box-shadow: inset 0 1px 3px rgba(84, 56, 24, 0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .endturn-hints-list:empty { display: none; }
+  .endturn-hints-list li {
+    position: relative;
+    padding-left: 14px;
+    line-height: 1.45;
+  }
+  .endturn-hints-list li::before {
+    content: "•";
+    position: absolute;
+    left: 2px;
+    top: 0;
+    color: #9a6822;
+    font-weight: 800;
+  }
+  .endturn-hint-ja { font-size: 11.5px; font-weight: 700; color: var(--ink); }
+  .endturn-hint-zh { font-size: 11px; color: var(--ink-sub); margin-top: 1px; }
+  .reset-confirm-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px dashed #d7c39f;
+  }
+  .reset-confirm-actions .btn-sm {
+    padding: 8px 16px;
+    font-size: 12.5px;
+    min-width: 124px;
+    white-space: nowrap;
+  }
+
   .mobile-fs-title-ja {
     font-family: var(--font-display-ja);
     font-size: 16px;
@@ -2209,13 +2266,6 @@
     margin: 0 0 14px;
     text-align: left;
   }
-  .mobile-fs-actions {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-  .mobile-fs-actions .btn-sm { padding: 8px 14px; font-size: 12px; }
 
   @media (max-width: 1180px) {
     .topbar { flex-wrap: wrap; padding: 5px 10px; gap: 6px; }
@@ -2326,6 +2376,14 @@
       padding: 12px 14px;
       -webkit-overflow-scrolling: touch;
     }
+    .reset-confirm-icon { width: 32px; height: 32px; margin-bottom: 5px; }
+    .mobile-fs-title-ja { font-size: 14.5px; }
+    .mobile-fs-title-zh { font-size: 13px; margin-bottom: 6px; }
+    .mobile-fs-desc-ja,
+    .mobile-fs-desc-zh { font-size: 11px; line-height: 1.45; }
+    .endturn-hints-list { margin-top: 7px; padding: 7px 10px; gap: 4px; }
+    .reset-confirm-actions { margin-top: 10px; padding-top: 9px; }
+    .reset-confirm-actions .btn-sm { padding: 6px 12px; font-size: 12px; min-width: 112px; }
     .rules-grid { gap: 8px; }
     .rules-list { font-size: 11.5px; line-height: 1.5; }
   }
@@ -2635,6 +2693,29 @@
       width: 100%;
       min-height: 42px;
       font-size: 13.5px;
+    }
+    .reset-confirm-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 8px;
+    }
+    .reset-confirm-actions .btn-sm {
+      min-width: 0;
+      width: 100%;
+      min-height: 40px;
+      padding: 7px 6px;
+      font-size: 11.5px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      white-space: normal;
+      text-align: center;
+      line-height: 1.25;
+    }
+    .reset-confirm-actions .btn-sm .zh-inline {
+      font-size: 10.5px;
+      white-space: nowrap;
     }
   }
   /* 5 柱实时声波条与实时斩杀/威胁 HUD 样式 */
@@ -3067,17 +3148,33 @@
   </div>
 </div>
 
-<!-- 手机端访问建议：横屏全屏体验弹窗（非强制，可随时关闭继续） -->
-<div class="modal-backdrop" id="mobileFsModal" role="dialog" aria-modal="true" aria-labelledby="mobileFsTitleJa">
+<!-- 再戦（重开）二次确认弹窗 -->
+<div class="modal-backdrop" id="resetConfirmModal" role="dialog" aria-modal="true" aria-labelledby="resetConfirmTitleJa">
   <div class="modal-box">
-    <svg class="mobile-fs-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h1.5C23.44 4.84 18.29 0 12 0l-.66.03 3.81 3.81 1.33-1.32zm-6.25-.77c-.59-.59-1.54-.59-2.12 0L1.75 8.11c-.59.59-.59 1.54 0 2.12l12.02 12.02c.59.59 1.54.59 2.12 0l6.36-6.36c.59-.59.59-1.54 0-2.12L10.23 1.75zm4.6 19.44L2.81 9.17l6.36-6.36 12.02 12.02-6.36 6.36zm-7.31.29C4.25 19.94 1.91 16.76 1.55 13H.05C.56 19.16 5.71 24 12 24l.66-.03-3.81-3.81-1.33 1.32z"/></svg>
-    <h2 class="mobile-fs-title-ja" id="mobileFsTitleJa">横画面・全画面モードのおすすめ</h2>
-    <div class="mobile-fs-title-zh" lang="zh-CN">建议切换横屏全屏游玩</div>
-    <p class="mobile-fs-desc-ja">スマートフォンからのアクセスを検出しました。横画面＋全画面表示にすると、PC版と同じ見やすさでカード・技・対局ログを快適に操作できます。</p>
-    <p class="mobile-fs-desc-zh" lang="zh-CN">检测到手机端访问。进入横屏全屏后，可保持与 PC 端一致的双栏牌桌布局与清晰可读性，操作手牌与语音指令更顺手（iOS Safari 如未自动全屏，横向旋转手机即可）。</p>
-    <div class="mobile-fs-actions">
-      <button type="button" class="btn-sm primary" id="btnEnterMobileFs"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>横画面・全画面にする<span class="zh-inline" lang="zh-CN">（进入横屏全屏）</span></button>
-      <button type="button" class="btn-sm" id="btnDismissMobileFs">このまま続ける<span class="zh-inline" lang="zh-CN">（暂不切换）</span></button>
+    <svg class="reset-confirm-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+    <h2 class="mobile-fs-title-ja" id="resetConfirmTitleJa">対局をやり直しますか？</h2>
+    <div class="mobile-fs-title-zh" lang="zh-CN">确定要重新开始本局对战吗？</div>
+    <p class="mobile-fs-desc-ja" style="text-align:center;">現在の盤面と手札はリセットされ、新しい対局が始まります。</p>
+    <p class="mobile-fs-desc-zh" lang="zh-CN" style="text-align:center;margin-bottom:0;">当前场上的怪兽、手牌与对局进度将被清空，并重新发牌开始新对局。</p>
+    <div class="reset-confirm-actions">
+      <button type="button" class="btn-sm" id="btnCancelReset">キャンセル<span class="zh-inline" lang="zh-CN">（取消）</span></button>
+      <button type="button" class="btn-sm danger" id="btnConfirmReset">再戦する<span class="zh-inline" lang="zh-CN">（确认重开）</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ターン終了（结束回合）智能防误触二次确认弹窗 -->
+<div class="modal-backdrop" id="endTurnConfirmModal" role="dialog" aria-modal="true" aria-labelledby="endTurnConfirmTitleJa">
+  <div class="modal-box">
+    <svg class="reset-confirm-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18l8.5-6L6 6v12zm10-12v12h2V6h-2z"/></svg>
+    <h2 class="mobile-fs-title-ja" id="endTurnConfirmTitleJa">ターンを終了しますか？</h2>
+    <div class="mobile-fs-title-zh" lang="zh-CN">确定要结束本回合吗？</div>
+    <p class="mobile-fs-desc-ja" id="endTurnConfirmSubJa" style="text-align:center;">このターン、まだ実行できる操作が残っています。</p>
+    <p class="mobile-fs-desc-zh" id="endTurnConfirmSubZh" lang="zh-CN" style="text-align:center;margin-bottom:0;">本回合仍有以下可用操作尚未执行：</p>
+    <ul class="endturn-hints-list" id="endTurnHintsList"></ul>
+    <div class="reset-confirm-actions">
+      <button type="button" class="btn-sm" id="btnCancelEndTurn">戻る<span class="zh-inline" lang="zh-CN">（返回操作）</span></button>
+      <button type="button" class="btn-sm primary" id="btnConfirmEndTurn">このまま終了<span class="zh-inline" lang="zh-CN">（确认结束）</span></button>
     </div>
   </div>
 </div>
