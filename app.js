@@ -6676,8 +6676,8 @@
       this.clearIdleTimer();
       s.currentPlayer = "enemy";
       TableUI.renderAll();
-      TableUI.showTurnBanner("🔥 相手レンのターン", "对手莲的回合", true);
-      if (!(await this.matchDelay(750, seq))) return;
+      TableUI.showTurnBanner("レンのターン", "对手莲的回合", true);
+      if (!(await this.matchDelay(1250, seq))) return;
       await this.runEnemyTurn(seq);
     },
 
@@ -7735,7 +7735,7 @@
         } else {
           TableUI.setReferee(ja, zh);
         }
-        TableUI.showTurnBanner(`⚔️ ターン ${s.turn}：あなたの番`, `第 ${s.turn} 回合：你的回合`, false);
+        TableUI.showTurnBanner(`ターン ${s.turn}：あなたの番`, `第 ${s.turn} 回合：你的回合`, false);
       } finally {
         if (seq === this.matchSeq && BattleEngine.state === s) {
           if (!s.gameOver && s.currentPlayer === "enemy") {
@@ -7877,7 +7877,7 @@
       this._prizeToastTimer = setTimeout(() => el.classList.remove("show"), 2800);
     },
 
-    /** 牌桌中央轻提示回合切换横幅 */
+    /** 牌桌中央轻提示回合切换横幅（约 1.95s 从容停留 + 0.32s 平滑淡出，不阻塞点击操作） */
     showTurnBanner(ja, zh, isEnemy = false) {
       const el = $("turnBanner");
       if (!el) return;
@@ -7886,7 +7886,7 @@
       el.innerHTML = `<div class="tb-ja">${escapeHtml(ja)}</div><div class="tb-zh" lang="zh-CN">${escapeHtml(zh)}</div>`;
       void el.offsetWidth;
       el.classList.add("show");
-      this._bannerTimer = setTimeout(() => el.classList.remove("show"), 1150);
+      this._bannerTimer = setTimeout(() => el.classList.remove("show"), 1950);
     },
 
     /** 顶部轻提示弹窗（用于设置保存成功等即时反馈） */
