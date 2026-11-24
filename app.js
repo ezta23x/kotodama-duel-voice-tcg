@@ -5037,8 +5037,162 @@
     }
   ];
 
+  /* 共享双语 NLU 词表与正则片段表（收口 localParse / 护栏 / 拆句 / 杂音拦截共用词条，避免双份漂移） */
+  const NLU_PATTERNS = (() => {
+    const alt = (parts, flags = "") => new RegExp(parts.join("|"), flags);
+    const JA_TE_VERBS = [
+      "出して", "だして", "置いて", "おいて", "入れて", "いれて", "つけて", "付けて", "貼って", "はって",
+      "使って", "つかって", "飲んで", "のんで", "引いて", "ひいて", "回収して", "回復して", "かいふくして",
+      "交代して", "入れ替えて", "引きずり出して", "呼び出して", "呼んで", "よんで", "攻撃して", "防御して", "ぼうぎょして"
+    ];
+    const ZH_COMBO_PREV = [
+      "放到?(?:备战区?|ベンチ)|放后排|放上场|下怪|上场",
+      "(?:(?:贴|充|上|加|附着?)[个张点]?(?:(?:火|炎|水|雷)?(?:能量?|エネルギー|エネ))|贴能|充能|(?:火|炎|水|雷)能)",
+      "(?:(?:给|用|使|吃|喝|嗑)?(?:伤药|きずぐすり)(?:回血|补血|加血|治疗)?|回血|补血|加血)",
+      "(?:(?:用|使|吹)?(?:召唤笛|呼叫笛|よびだし笛)(?:(?:把|拖|拉|让|叫|逼)(?:对手|对方|对面)?[^，。！？,.!?]{0,10}" +
+        "(?:换(?:到|成)?(?:怪物|怪兽|精灵|怪|人|卡|前排)?|拉上[来场]?|拖上[来场]?|拽上[来场]?|出来|上来|出战))?|" +
+        "拖(?:对手|对面|对方)换(?:怪物|怪兽|精灵|怪|人)|强制换人)",
+      "(?:(?:用|使)?(?:补给包|補給バッグ|力量徽章|パワーバッジ|能量回收|エネ回収)|抽两?张?牌?|加攻|增伤)",
+      "撤退|换人"
+    ];
+    const ZH_COMBO_NEXT = [
+      "给[^，。！？,.!?回补治]{1,4}(?:贴|充|上|加|用|吃|喝|吹|放|换)",
+      "把[^，。！？,.!?]{1,5}(?:贴|放|派|换|拉|拖)|用|使|吃|喝|吹|贴|充",
+      "上[个张点]?(?:药|伤药|きずぐすり|火|炎(?!狐|龙)|水(?!龟)|雷(?!狮|鸟)|电|能|エネルギー|エネ|场)",
+      "加(?:一个?|一?张|一?点|[个张点])?(?:能|火|水|雷|电|攻|血)|补|抽|摸|派|放|发动",
+      "召唤笛|呼叫笛|よびだし笛|伤药|きずぐすり|补给包|補給バッグ|力量徽章|パワーバッジ|能量回收|エネ回収",
+      "(?:炎|水|雷)?エネルギー|(?:火|炎|水|雷|电)能量?|战斗(?!区)|攻击|进攻|开打|开战",
+      "防御(?!区)|防守|守住|撤退|结束回合"
+    ];
+    const CLAUSE_DELIM_PARTS = [
+      "\\|SPLIT\\||してから|てから|そのあと|その後|それから|そして|あとで|次に",
+      "然后|接着|之后|随后|并且|而且|顺便|接下来|另外|同时",
+      "最后(?=(?:用|使|贴|上|放|出|派|打|攻|防|守|换|撤|抽|回|吹|战|发动))|再用",
+      "再(?=[贴上用放出派打攻防守换撤抽回拉吹给把让去开战])|、|，|,|。|！|!"
+    ];
+    const POTION_CORE_PARTS = [
+      "きずぐすり|傷薬|伤药|上药|回血|补血|加血|治疗",
+      "回復|かいふく|ヒール|ポーション|体力|喝药|吃药|嗑药|用个?药"
+    ];
+    const POTION_EXTRA_PARTS = [
+      "体力回復|HP回復|加点血|奶一口|奶一下",
+      "吃瓶?药|喝[口瓶]?药|贴伤药|飲む|飲んで|のむ|のんで"
+    ];
+    const ENERGY_EXPLICIT_PARTS = [
+      "エネルギー|えねるぎー|エネ|えね|能量|贴能|充能",
+      "火能|水能|雷能|炎能|电能|闪电能量|雷电能量|火焰能量|火系能量|水系能量|雷系能量|电系能量"
+    ];
+    const ENERGY_ATTACH_EXTRA_PARTS = [
+      "(?:加|上|贴|充)(?:一个?|一?张|一?点|一?颗|[个张点颗])?(?:电|闪电|红|蓝|黄|火|炎(?!狐|龙)|水(?!龟)|雷(?!狮|鸟))的?(?:能|能量)?",
+      "给.{0,6}(?:贴|充|加|上)(?:能|火|水|雷|电)|贴[个张]?(?:炎|火|水|雷|电)",
+      "貼って|はって|付けて|つけて|贴上|给它贴"
+    ];
+    const FLUTE_EXPLICIT_PARTS = [
+      "よびだし笛|呼び出し笛|ふえ|引っ張り|引きずり出|強制交代|前に引き",
+      "召唤笛|呼叫笛|笛子|吹笛|吹口?哨|哨子|强拉|强迫.{0,4}换|强行.{0,4}换",
+      "拖.{0,4}(?:对手|对方|对面|敌方|后排)|拉.{0,4}(?:对手|对方|对面)|拽.{0,4}(?:上来|出来)",
+      "逼.{0,3}(?:对手|对面|对方)换|(?:对手|对面|对方).{0,4}换(?:怪物?|怪兽|精灵|人|卡)",
+      "把(?:对手|对面|对方).{0,8}(?:拉|拖|拽|换)"
+    ];
+    const RECYCLE_CLAUSE_PARTS = [
+      "エネ回収|エネルギー回収|かいしゅう",
+      "(?:トラッシュ|捨て札)(?:から|の).{0,10}(?:エネ|エネルギー)|(?:エネ|エネルギー).{0,8}(?:戻して|戻す|回収)",
+      "能量回收|回收.{0,6}(?:能|能量|エネ|エネルギー)",
+      "(?:弃牌区|墓地).{0,10}(?:拿回|取回|捡回|捞回|收回|回收)|(?:弃牌区|墓地).{0,10}(?:能量?|火能|水能|雷能|炎能|电能|エネ|エネルギー)",
+      "(?:拿回|取回|捡回|捞回|捞).{0,8}(?:能|能量|火能|水能|雷能|电|エネ|エネルギー)"
+    ];
+    const RETREAT_LOCAL_PARTS = [
+      "交代|こうたい|交換|こうかん|入れ替|いれかえ|下げて|さげて|逃げて|にげる|撤退|てったい|チェンジ|スイッチ|バトン",
+      "ベンチに戻|前と交代|先発と交代|バトル場と(?:交代|交換)",
+      "换人|换上|换下|退回|下场|撤下去|拉回后排|拉回来|拉上来|拉上场|拉出来|切回|切换",
+      "交换|互换|对换|替换|调换|换位|换个位置|换一换|换过来|换上去|换下来|顶上来",
+      "(?:和|跟|与).{0,8}换|把.{0,8}换(?:到|上|下|成|为|出)|换.{0,6}(?:上|下|成|为|出)"
+    ];
+    const SUMMON_CLAUSE_PARTS = [
+      "ベンチに出|ベンチに置|ベンチに入|べんちに出|後ろに出|後ろに置|場に出|召喚|しょうかん|を出す|を出して|をだす|をだして|を置く|を置いて",
+      "(?:放到?|放上|移到?|排到?|下到?|派到?|出到?|送[到进]|扔[到进]|上到?|置[于到])备战区?",
+      "下怪|放上场|放到场上|放到后排|派上后排|派上场|上场|出战|召唤|^(?:出して|置いて|放下去|放上去)$"
+    ];
+    const SUMMON_EXCLUSION_PARTS = [
+      "狙撃|狙击|点杀|交代|こうたい|交換|こうかん|入れ替|いれかえ|撤退|てったい|チェンジ|スイッチ",
+      "换人|换上|换下|交换|互换|对换|替换|调换|换位|切换|切回|撤下去",
+      "きずぐすり|回復|かいふく|伤药|上药|回血|奶|对手|对面|对方|相手|拖|强拉|吹笛"
+    ];
+    const SHORT_MON_EXCLUSION_PARTS = [
+      "攻撃|こうげき|攻击|战斗|技|招|能量|エネ|きずぐすり|回復|かいふく|伤药|上药|奶",
+      "交代|こうたい|交換|こうかん|入れ替|いれかえ|撤退|てったい|チェンジ|スイッチ|换|交换|互换|替换|调换|切换|撤下去|拉回"
+    ];
+    const BENCH_HAND_SWAP_PARTS = [
+      "交换|互换|对换|替换|调换|换卡|换一下|换一换|换个|换成|换回|换到|换掉|换走",
+      "交換|こうかん|入れ替|いれかえ|交代|こうたい|チェンジ|スイッチ",
+      "(?:和|跟|与).{0,10}换|把.{0,10}换(?:成|为|回|到|掉|一下|一换|个)|(?:手牌|手里|手中|手札|手元).{0,6}换|换.{0,6}(?:手牌|手里|手中|手札|手元)"
+    ];
+    const FILLER_PARTS = [
+      "[嗯呃额啊哦喔噢唔哎唉诶欸哈哼呵嘻嘿嗨咳啧呸切喂呀哟呦咦哇呜嗷嘎呐呢吧啦嘛嘘嘶呼吁噗嗤哧呲滋哒嗒啪咔嚓擦刷嘭砰咚叮当嘀滴]+",
+      "嗯哼|哎呀|哎哟|啊呀|啊哟|しー+|すー+|ふー+|はー+|へー+|ほー+",
+      "ちっ|ぷっ|かっ|ぱっ|あっ|いっ|うっ|えっ|おっ|あー+|いー+|うー+|えー+|おー+|んー+",
+      "うん+|うーん|んと|えっと|えーっと|ええと|えーと|あの+|あのね|まあ|ふーん|はあ|うわ"
+    ];
+    const ATTACK_CORE_PARTS = [
+      "攻撃|こうげき|アタック|殴|なぐる|なぐって|撃って|撃つ|うって|うつ|叩く|叩いて|たたいて|狙撃|ベンチを狙|仕掛け|突撃|ぶっ飛ば|倒せ",
+      "技|わざ|スキル|大招|必殺技|必杀技|攻击|进攻|战斗(?!区)|去战斗|进战斗|进入战斗|开始战斗|直接战斗|战斗吧|开战",
+      "出招|技能|狙击|点杀|平a|平A|普攻|出击|上吧|直接打|动手|开火",
+      "打一下|打他|打它|打她|打对面|打对手|打前排|打后排|打怪|打死|秒了|秒掉|干掉|击倒|开打|打过去|一击|放招|用招|用技能打"
+    ];
+    const VOICE_ITEM_GUARD_PARTS = [
+      "きずぐすり|回復|かいふく|ヒール|ポーション|体力|傷薬|伤药|上药|吃药|喝药|嗑药|用个?药|贴伤药|回血|补血|治|加血|奶|飲|のむ",
+      "笛|ふえ|呼叫笛|哨|呼び出|引っ張り|強制交代|拉|拖|吹|换怪",
+      "補給|ほきゅう|ドロー|引|ひく|抽|摸|过牌|补牌",
+      "バッジ|ばっじ|パワー|バフ|アップ|力量|加攻|加伤害|增伤|強化|强化",
+      "回収|かいしゅう|回収|回收|拿回|取回|捞|捡|戻|もど|道具|グッズ|サポート|支援|使|つかう|つかって|用"
+    ];
+    return {
+      punctuationStrip: /[\s　「」『』（）()【】\[\]、，。.,！!？?・\-ー…~～]/g,
+      enemySide: /(?:对手|对面|对方|敌方|相手)/,
+      activeZone: /(?:主战|战斗区|战斗场|前排|出战位|首发位|バトル場|先発)/,
+      benchZone: /(?:备战|后排|替补|ベンチ|べんち|控え|ひかえ|後ろ)/,
+      handZone: /(?:手牌|手里|手中|手札|手元)/,
+      trashZone: /(?:弃牌区|墓地|トラッシュ|捨て札|能量回收|エネ回収)/,
+      pronounRef: /(?:它|他|她|这只|那只|刚才那只|それ|こいつ|そいつ|さっきの|そのまま)/,
+      jaTeSplit: new RegExp(`(${JA_TE_VERBS.join("|")})(?=[\\u3040-\\u30ff\\u4e00-\\u9fffA-Za-z0-9]{2,})`, "g"),
+      zhComboSplit: new RegExp(`(${ZH_COMBO_PREV.join("|")})(?=(?:然后|接着|之后|随后|最后|并且|而且|顺便|并|再|去)?(?:${ZH_COMBO_NEXT.join("|")}))`, "g"),
+      clauseDelimiters: new RegExp(`(?:${CLAUSE_DELIM_PARTS.join("|")})`),
+      weakChat: /(やばい|負けそう|きつい|ピンチ|要输了|完蛋|好难打|打不过)/,
+      surrenderCore: /(降参|投了|リタイア|ギブアップ|逃走|もう無理|认输|投降|不打了|我投了|不玩了)/,
+      surrenderNegated: /(?:[不别没](?:要|想|会)?(?:降参|投了|投降|认输|逃走)|(?:降参|投了|リタイア)(?:しない|したくない|しないよ|じゃない|ではない|しないぞ|はしない|しません))/,
+      recycleClause: new RegExp(`(${RECYCLE_CLAUSE_PARTS.join("|")})`),
+      potionCore: alt(POTION_CORE_PARTS),
+      potionClause: alt([...POTION_CORE_PARTS, ...POTION_EXTRA_PARTS]),
+      bagClause: /(補給バッグ|ほきゅう|ドロー|2枚引|カードを引|补给包|抽牌|抽两张|抽2张|摸两张|摸2张|摸牌|过牌|补牌)/,
+      powerClause: /(パワーバッジ|ぱわーばっじ|攻撃力アップ|火力アップ|バフ|力量徽章|加攻|加20攻|加伤害|增伤|強化|强化)/,
+      energyExplicit: alt(ENERGY_EXPLICIT_PARTS),
+      energyAttachClause: alt([...ENERGY_EXPLICIT_PARTS, ...ENERGY_ATTACH_EXTRA_PARTS]),
+      fluteExplicit: alt(FLUTE_EXPLICIT_PARTS),
+      flutePullUp: /(?:拉上来|拉出来|拉上场)/,
+      retreatLocal: alt(RETREAT_LOCAL_PARTS),
+      retreatPromote: /(上场|出战|主战|战斗|前排|上来|顶上|登场|バトル場|前[にへ]|出陣|先発|交代|交換|こうかん|入れ替)/,
+      summonClause: alt(SUMMON_CLAUSE_PARTS),
+      summonExclusions: alt(SUMMON_EXCLUSION_PARTS),
+      shortMonExclusions: alt(SHORT_MON_EXCLUSION_PARTS),
+      benchHandReturn: /(?:换回|退回|放回|收回|拿回|移回|打回).{0,4}(?:手牌|手里|手中)|(?:手札|手元)に(?:戻|もど|返|かえ)/,
+      benchHandSwap: new RegExp(`(?:${BENCH_HAND_SWAP_PARTS.join("|")})`),
+      fillerInterjections: new RegExp(`^(?:${FILLER_PARTS.join("|")})$`, "i"),
+      attackCore: alt(ATTACK_CORE_PARTS),
+      voiceGuardSummon: /(召喚|召唤|上场|出战|ベンチに出|ベンチに置|备战区|放到?备战|下怪|を出す|を出して|派上)/,
+      voiceGuardAttack: /(打|撃|うって|撃って|殴|なぐ|やれ|いけ|行け|使って|つかって|発動|はつどう|技|わざ|ワザ|倒せ|たおせ)/,
+      voiceGuardEnergy: /(エネルギー|えねるぎー|エネ|えね|能量|贴|充能|上能|上火|上水|上雷|加|电|闪电|雷电|红|蓝|黄|给|炎|火|ほのお|水|みず|雷|かみなり|でんき|貼|張|付|つけ|はる|はっ|あげ|渡|チャージ|装)/,
+      voiceGuardBench: /(ベンチ|べんち|後ろ|控え|ひかえ|場に出|召喚|しょうかん|出|だす|だし|置|おく|おい|並|ならべ|呼|よぶ|セット|备战|下怪|上场|出战|后排|放|派|上|召唤)/,
+      voiceGuardBenchToRetreat: /(交换|互换|对换|替换|调换|换|交代|交換|こうかん|入れ替|いれかえ|撤退|チェンジ|スイッチ|上场|出战|主战|前排|战斗区|バトル場|前[にへ]|出陣|顶上|上来)/,
+      voiceGuardItem: alt(VOICE_ITEM_GUARD_PARTS),
+      voiceGuardRetreat: /(交代|こうたい|交換|こうかん|入れ替|いれかえ|下|さげ|さが|逃げ|にげる|にげ|撤退|てったい|チェン|スイッチ|バトン|戻|もど|引|ひく|换|退|切|下场|撤下去|拉回|拉上|拉出|顶上)/,
+      voiceGuardRetreatPromote: /(上场|出战|主战|前排|战斗区|バトル場|前[にへ]|出陣)/
+    };
+  })();
+
   const NLUEngine = {
     lastClarifyIdx: -1,
+    _validSingleCharCache: null,
+    _entityScrubCache: null,
 
     /** 轮换抽取一条不与上次重复的礼貌追问兜底提示语 */
     pickClarifyPhrase() {
@@ -5299,17 +5453,11 @@
       let s = String(fixedText || "").trim();
       if (!s) return [];
       /* 1. 日语动作动词 て形无标点连读边界（如 〜をベンチに出して〜に炎エネをつけて〜で攻撃） */
-      s = s.replace(
-        /(出して|だして|置いて|おいて|入れて|いれて|つけて|付けて|貼って|はって|使って|つかって|飲んで|のんで|引いて|ひいて|回収して|回復して|かいふくして|交代して|入れ替えて|引きずり出して|呼び出して|呼んで|よんで|攻撃して|防御して|ぼうぎょして)(?=[\u3040-\u30ff\u4e00-\u9fffA-Za-z0-9]{2,})/g,
-        "$1|SPLIT|"
-      );
+      s = s.replace(NLU_PATTERNS.jaTeSplit, "$1|SPLIT|");
       /* 2. 中文无标点连读边界（兼容 applyLocalTypoFix 归一化词，保留“用伤药给炎狐回血”“用召唤笛拖对手换怪物”等动宾完整性） */
-      s = s.replace(
-        /(放到?(?:备战区?|ベンチ)|放后排|放上场|下怪|上场|(?:(?:贴|充|上|加|附着?)[个张点]?(?:(?:火|炎|水|雷)?(?:能量?|エネルギー|エネ))|贴能|充能|(?:火|炎|水|雷)能)|(?:(?:给|用|使|吃|喝|嗑)?(?:伤药|きずぐすり)(?:回血|补血|加血|治疗)?|回血|补血|加血)|(?:(?:用|使|吹)?(?:召唤笛|呼叫笛|よびだし笛)(?:(?:把|拖|拉|让|叫|逼)(?:对手|对方|对面)?[^，。！？,.!?]{0,10}(?:换(?:到|成)?(?:怪物|怪兽|精灵|怪|人|卡|前排)?|拉上[来场]?|拖上[来场]?|拽上[来场]?|出来|上来|出战))?|拖(?:对手|对面|对方)换(?:怪物|怪兽|精灵|怪|人)|强制换人)|(?:(?:用|使)?(?:补给包|補給バッグ|力量徽章|パワーバッジ|能量回收|エネ回収)|抽两?张?牌?|加攻|增伤)|撤退|换人)(?=(?:然后|接着|之后|随后|最后|并且|而且|顺便|并|再|去)?(?:给[^，。！？,.!?回补治]{1,4}(?:贴|充|上|加|用|吃|喝|吹|放|换)|把[^，。！？,.!?]{1,5}(?:贴|放|派|换|拉|拖)|用|使|吃|喝|吹|贴|充|上[个张点]?(?:药|伤药|きずぐすり|火|炎(?!狐|龙)|水(?!龟)|雷(?!狮|鸟)|电|能|エネルギー|エネ|场)|加(?:一个?|一?张|一?点|[个张点])?(?:能|火|水|雷|电|攻|血)|补|抽|摸|派|放|发动|召唤笛|呼叫笛|よびだし笛|伤药|きずぐすり|补给包|補給バッグ|力量徽章|パワーバッジ|能量回收|エネ回収|(?:炎|水|雷)?エネルギー|(?:火|炎|水|雷|电)能量?|战斗(?!区)|攻击|进攻|开打|开战|防御(?!区)|防守|守住|撤退|结束回合))/g,
-        "$1|SPLIT|"
-      );
+      s = s.replace(NLU_PATTERNS.zhComboSplit, "$1|SPLIT|");
       return s
-        .split(/(?:\|SPLIT\||してから|てから|そのあと|その後|それから|そして|あとで|次に|然后|接着|之后|随后|并且|而且|顺便|接下来|另外|同时|最后(?=(?:用|使|贴|上|放|出|派|打|攻|防|守|换|撤|抽|回|吹|战|发动))|再用|再(?=[贴上用放出派打攻防守换撤抽回拉吹给把让去开战])|、|，|,|。|！|!)/)
+        .split(NLU_PATTERNS.clauseDelimiters)
         .map((seg) => seg.trim())
         .filter(Boolean);
     },
@@ -5339,6 +5487,53 @@
       return false;
     },
 
+    /**
+     * 基于 SpecEngine 当前卡池动态构建并缓存怪兽名、常见口语别名与技能名剥离正则，
+     * 避免解析能量属性时被怪兽/技能自带属性字误导，热导入新卡池后自动重建。
+     */
+    getEntityScrubRegex() {
+      const monsters = Array.isArray(SpecEngine.monsters) ? SpecEngine.monsters : [];
+      const key = `${SpecEngine.sourceLabel || ""}|${monsters.length}`;
+      if (this._entityScrubCache && this._entityScrubCache.key === key) {
+        return this._entityScrubCache.regex;
+      }
+      const tokens = new Set(["火龙ex", "火龙", "火狐狸", "火狐", "小水龟", "乌龟", "海龟", "电狮", "喷火龙", "泡泡鱼", "大鲨鱼"]);
+      for (const m of monsters) {
+        if (m.name_ja) tokens.add(m.name_ja);
+        if (m.name_zh) tokens.add(m.name_zh);
+        if (Array.isArray(m.aliases)) {
+          for (const al of m.aliases) {
+            if (al && String(al).trim().length >= 2) tokens.add(String(al).trim());
+          }
+        }
+        if (Array.isArray(m.skills)) {
+          for (const sk of m.skills) {
+            if (sk.name_ja) tokens.add(sk.name_ja);
+            if (sk.name_zh) tokens.add(sk.name_zh);
+            if (Array.isArray(sk.aliases)) {
+              for (const al of sk.aliases) {
+                if (al && String(al).trim().length >= 2) tokens.add(String(al).trim());
+              }
+            }
+          }
+        }
+      }
+      const patterns = Array.from(tokens)
+        .filter(Boolean)
+        .sort((a, b) => b.length - a.length)
+        .map((tok) => {
+          const exMatch = tok.match(/^(.*?)\s*ex$/i);
+          if (exMatch && exMatch[1]) {
+            const stem = exMatch[1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            return `${stem}(?:\\s*ex)?`;
+          }
+          return tok.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        });
+      const regex = patterns.length > 0 ? new RegExp(patterns.join("|"), "gi") : /(?!)/g;
+      this._entityScrubCache = { key, regex };
+      return regex;
+    },
+
     /** 从玩家口语或ASR文本中提取明确指定的能量卡ID（剥离怪兽名与技能名后再判断属性/颜色/谐音，防止“给水龟加火能量”被水龟元素误导） */
     resolveEnergyCardFromText(rawText) {
       const fixed = SpecEngine.applyLocalTypoFix(rawText || "").trim();
@@ -5346,9 +5541,7 @@
       if (/炎エネルギー/.test(fixed)) return "energy_fire";
       if (/水エネルギー/.test(fixed)) return "energy_water";
       if (/雷エネルギー/.test(fixed)) return "energy_thunder";
-      const scrubbed = fixed
-        .replace(/(?:カエンリュウ|タイカイザメ)(?:\s*ex)?|ヒノキツネ|ミズガメ|ライジシ|マグマ犬|アワウオ|エレキ鳥|炎龙(?:\s*ex)?|火龙(?:\s*ex)?|沧海鲨(?:\s*ex)?|炎狐|火狐狸?|水龟|小水龟|乌龟|海龟|雷狮|电狮|喷火龙|熔岩犬|泡沫鱼|泡泡鱼|电光鸟|大鲨鱼/gi, " ")
-        .replace(/メテオ炎|かえん弾|みず撃ち|こうら壁|でんき玉|フレア爪|ひのこ|サンダー|火花|炎弹|水击|甲壳壁|电球|落雷|烈焰爪|陨星炎/gi, " ");
+      const scrubbed = fixed.replace(this.getEntityScrubRegex(), " ");
       if (/(?:雷|电|闪电|电气|雷电|黄|かみなり|でんき|電気|きいろ|サンダー|イエロー|\bthunder\b|\belectric\b|\byellow\b|(?:类|累|来|店)(?=(?:的|系)?能))/i.test(scrubbed)) {
         return "energy_thunder";
       }
@@ -5375,7 +5568,7 @@
       if (this.isQuestionOrStatusQuery(fixed)) {
         return { transcript: fixed, status: "clarify", actions: [], reply_ja: "", reply_zh: "", rival_ja: "", rival_zh: "" };
       }
-      if (/(やばい|負けそう|きつい|ピンチ|要输了|完蛋|好难打|打不过)/.test(fixed) && !/(降参|投了|リタイア|ギブアップ|逃走|もう無理|认输|投降|不打了|我投了|不玩了)/.test(fixed)) {
+      if (NLU_PATTERNS.weakChat.test(fixed) && !NLU_PATTERNS.surrenderCore.test(fixed)) {
         const r = SpecEngine.getRivalLine("chat_weak");
         return {
           transcript: fixed, status: "chat", actions: [],
@@ -5384,8 +5577,8 @@
           rival_ja: r.ja, rival_zh: r.zh
         };
       }
-      const negatedSurrender = /(?:[不别没](?:要|想|会)?(?:降参|投了|投降|认输|逃走)|(?:降参|投了|リタイア)(?:しない|したくない|しないよ|じゃない|ではない|しないぞ|はしない|しません))/.test(fixed);
-      if (!negatedSurrender && /(降参|投了|リタイア|ギブアップ|逃走|もう無理|认输|投降|不打了|我投了|不玩了)/.test(fixed)) {
+      const negatedSurrender = NLU_PATTERNS.surrenderNegated.test(fixed);
+      if (!negatedSurrender && NLU_PATTERNS.surrenderCore.test(fixed)) {
         return {
           transcript: fixed, status: "confirm", actions: [{ type: "SURRENDER" }],
           reply_ja: "バトルから逃走（降参）しますか？「はい」と答えると敗北になります。",
@@ -5420,22 +5613,22 @@
       let benchHandSwapRejected = false;
       const isFillerClause = (seg) => {
         if (this.isFillerUtterance(seg)) return true;
-        const core = String(seg || "").replace(/[\s　「」『』（）()【】\[\]、，。.,！!？?・\-ー…~～]/g, "");
+        const core = String(seg || "").replace(NLU_PATTERNS.punctuationStrip, "");
         return /^(?:好的|可以|行|一下|はい|うん)$/.test(core);
       };
       for (let ci = 0; ci < clauses.length; ci++) {
         const c = clauses[ci];
         const fuzzyItem = SpecEngine.matchItem(c);
 
-        if (/(エネ回収|エネルギー回収|かいしゅう|(?:トラッシュ|捨て札)(?:から|の).{0,10}(?:エネ|エネルギー)|(?:エネ|エネルギー).{0,8}(?:戻して|戻す|回収)|能量回收|回收.{0,6}(?:能|能量|エネ|エネルギー)|(?:弃牌区|墓地).{0,10}(?:拿回|取回|捡回|捞回|收回|回收)|(?:弃牌区|墓地).{0,10}(?:能量?|火能|水能|雷能|炎能|电能|エネ|エネルギー)|(?:拿回|取回|捡回|捞回|捞).{0,8}(?:能|能量|火能|水能|雷能|电|エネ|エネルギー))/.test(c) || (fuzzyItem && fuzzyItem.id === "item_recycle")) {
+        if (NLU_PATTERNS.recycleClause.test(c) || (fuzzyItem && fuzzyItem.id === "item_recycle")) {
           const handCnt = liveHand.filter((id) => id === "item_recycle").length;
           const repeat = parsePluralCount(c, handCnt || 1);
           for (let r = 0; r < repeat; r++) actions.push({ type: "USE_ITEM", card_id: "item_recycle", target: null, _clause: c, _clauseIdx: ci });
           continue;
         }
-        const hasPotionOrHealWord = /(きずぐすり|傷薬|伤药|上药|回血|补血|加血|治疗|回復|かいふく|ヒール|ポーション|体力|喝药|吃药|嗑药|用个?药)/.test(c);
-        const hasExplicitEnergySignal = /(エネルギー|えねるぎー|エネ|えね|能量|贴能|充能|火能|水能|雷能|炎能|电能|闪电能量|雷电能量|火焰能量|火系能量|水系能量|雷系能量|电系能量)/.test(c) || (fuzzyItem && fuzzyItem.category === "energy");
-        if ((!hasPotionOrHealWord || hasExplicitEnergySignal) && (/(エネルギー|えねるぎー|エネ|えね|能量|贴能|充能|火能|水能|雷能|炎能|电能|闪电能量|雷电能量|火焰能量|火系能量|水系能量|雷系能量|电系能量|充能|(?:加|上|贴|充)(?:一个?|一?张|一?点|一?颗|[个张点颗])?(?:电|闪电|红|蓝|黄|火|炎(?!狐|龙)|水(?!龟)|雷(?!狮|鸟))的?(?:能|能量)?|给.{0,6}(?:贴|充|加|上)(?:能|火|水|雷|电)|贴[个张]?(?:炎|火|水|雷|电)|貼って|はって|付けて|つけて|贴上|给它贴)/.test(c) || (fuzzyItem && fuzzyItem.category === "energy"))) {
+        const hasPotionOrHealWord = NLU_PATTERNS.potionCore.test(c);
+        const hasExplicitEnergySignal = NLU_PATTERNS.energyExplicit.test(c) || (fuzzyItem && fuzzyItem.category === "energy");
+        if ((!hasPotionOrHealWord || hasExplicitEnergySignal) && (NLU_PATTERNS.energyAttachClause.test(c) || (fuzzyItem && fuzzyItem.category === "energy"))) {
           const cardId = this.resolveEnergyCardFromText(c) || (fuzzyItem && fuzzyItem.category === "energy" ? fuzzyItem.id : null);
           const target = this.resolveSlotFromText(c, "player", board);
           actions.push({ type: "ATTACH_ENERGY", card_id: cardId, target, _clause: c, _clauseIdx: ci });
@@ -5444,10 +5637,10 @@
         /* 按提及怪兽阵营区分「召唤笛（拉对手备战）」与「撤退换人（把己方备战拉上主战）」，避免互抢 */
         const flutePlayerMon = SpecEngine.matchMonster(c, "player");
         const fluteEnemyMon = SpecEngine.matchMonster(c, "opponent");
-        const explicitFluteSignal = /(よびだし笛|呼び出し笛|ふえ|引っ張り|引きずり出|強制交代|前に引き|召唤笛|呼叫笛|笛子|吹笛|吹口?哨|哨子|强拉|强迫.{0,4}换|强行.{0,4}换|拖.{0,4}(?:对手|对方|对面|敌方|后排)|拉.{0,4}(?:对手|对方|对面)|拽.{0,4}(?:上来|出来)|逼.{0,3}(?:对手|对面|对方)换|(?:对手|对面|对方).{0,4}换(?:怪物?|怪兽|精灵|人|卡)|把(?:对手|对面|对方).{0,8}(?:拉|拖|拽|换))/.test(c);
-        const pullUpFluteSignal = /(?:拉上来|拉出来|拉上场)/.test(c)
+        const explicitFluteSignal = NLU_PATTERNS.fluteExplicit.test(c);
+        const pullUpFluteSignal = NLU_PATTERNS.flutePullUp.test(c)
           && !flutePlayerMon
-          && (Boolean(fluteEnemyMon) || /(?:对手|对面|对方|敌方|相手)/.test(c));
+          && (Boolean(fluteEnemyMon) || NLU_PATTERNS.enemySide.test(c));
         if (explicitFluteSignal || pullUpFluteSignal || (fuzzyItem && fuzzyItem.id === "item_flute")) {
           actions.push({ type: "USE_ITEM", card_id: "item_flute", target: this.resolveSlotFromText(c, "enemy", board, { benchOnly: true }), _clause: c, _clauseIdx: ci });
           continue;
@@ -5460,8 +5653,7 @@
           continue;
         }
         /* 先判定己方撤退/主战与备战交换（中/日双语），防止“把备战区的炎龙ex和主战交换 / ベンチの炎龍exとバトル場を交換”被误判为从手牌下怪（PLAY_BENCH） */
-        if (/(交代|こうたい|交換|こうかん|入れ替|いれかえ|下げて|さげて|逃げて|にげる|撤退|てったい|チェンジ|スイッチ|バトン|ベンチに戻|前と交代|先発と交代|バトル場と(?:交代|交換)|换人|换上|换下|退回|下场|撤下去|拉回后排|拉回来|拉上来|拉上场|拉出来|切回|切换|交换|互换|对换|替换|调换|换位|换个位置|换一换|换过来|换上去|换下来|顶上来|(?:和|跟|与).{0,8}换|把.{0,8}换(?:到|上|下|成|为|出)|换.{0,6}(?:上|下|成|为|出))/.test(c)
-          && !/(?:对手|对面|对方|敌方|相手)/.test(c)) {
+        if (NLU_PATTERNS.retreatLocal.test(c) && !NLU_PATTERNS.enemySide.test(c)) {
           const target = this.resolveSlotFromText(c, "player", board, { benchOnly: true });
           actions.push({ type: "RETREAT", target, _clause: c, _clauseIdx: ci });
           continue;
@@ -5469,17 +5661,17 @@
         const matchedSkillEarly = SpecEngine.matchSkill(c) || this.resolveColloquialSkillFromClause(c, board);
         const allMatchedPlayerMons = SpecEngine.matchAllMonsters(c, "player");
         const matchedPlayerMon = allMatchedPlayerMons[0] || SpecEngine.matchMonster(c, "player");
-        const isSummonClause = /(ベンチに出|ベンチに置|ベンチに入|べんちに出|後ろに出|後ろに置|場に出|召喚|しょうかん|を出す|を出して|をだす|をだして|を置く|を置いて|(?:放到?|放上|移到?|排到?|下到?|派到?|出到?|送[到进]|扔[到进]|上到?|置[于到])备战区?|下怪|放上场|放到场上|放到后排|派上后排|派上场|上场|出战|召唤|^(?:出して|置いて|放下去|放上去)$)/.test(c)
+        const isSummonClause = NLU_PATTERNS.summonClause.test(c)
           && !matchedSkillEarly && !this.hasExplicitDefendIntent(c)
-          && !/(狙撃|狙击|点杀|交代|こうたい|交換|こうかん|入れ替|いれかえ|撤退|てったい|チェンジ|スイッチ|换人|换上|换下|交换|互换|对换|替换|调换|换位|切换|切回|撤下去|きずぐすり|回復|かいふく|伤药|上药|回血|奶|对手|对面|对方|相手|拖|强拉|吹笛)/.test(c);
+          && !NLU_PATTERNS.summonExclusions.test(c);
         const isShortMonDeploy = Boolean(matchedPlayerMon) && !matchedSkillEarly && !this.hasExplicitDefendIntent(c)
           && /(出|放|派|上|下|置)/.test(c)
-          && !/(攻撃|こうげき|攻击|战斗|技|招|能量|エネ|きずぐすり|回復|かいふく|伤药|上药|奶|交代|こうたい|交換|こうかん|入れ替|いれかえ|撤退|てったい|チェンジ|スイッチ|换|交换|互换|替换|调换|切换|撤下去|拉回)/.test(c);
+          && !NLU_PATTERNS.shortMonExclusions.test(c);
         if (isSummonClause || isShortMonDeploy) {
           /* 盘面感知纠偏（中/日双语）：若玩家只点名 1 只怪兽且它不在手牌中、却已在己方备战区，说“让炎龙ex上场 / カエンリュウexをバトル場に出して”意图是换它上主战（RETREAT） */
           if (matchedPlayerMon && allMatchedPlayerMons.length === 1 && !handMonIds.includes(matchedPlayerMon.id)) {
             const benchSlot = this.resolveSlotFromText(c, "player", board, { benchOnly: true });
-            if (benchSlot && /(上场|出战|主战|战斗|前排|上来|顶上|登场|バトル場|前[にへ]|出陣|先発|交代|交換|こうかん|入れ替)/.test(c)) {
+            if (benchSlot && NLU_PATTERNS.retreatPromote.test(c)) {
               actions.push({ type: "RETREAT", target: benchSlot, _clause: c, _clauseIdx: ci });
               continue;
             }
@@ -5517,18 +5709,18 @@
           }
           continue;
         }
-        if (/(きずぐすり|回復|かいふく|ヒール|ポーション|体力回復|HP回復|伤药|上药|回血|补血|治疗|加血|加点血|奶一口|奶一下|吃药|喝药|嗑药|用个?药|吃瓶?药|喝[口瓶]?药|贴伤药|飲む|飲んで|のむ|のんで)/.test(c) || (fuzzyItem && fuzzyItem.id === "item_potion")) {
+        if (NLU_PATTERNS.potionClause.test(c) || (fuzzyItem && fuzzyItem.id === "item_potion")) {
           const handCnt = liveHand.filter((id) => id === "item_potion").length;
           const repeat = parsePluralCount(c, handCnt || 1);
           const target = this.resolveSlotFromText(c, "player", board);
           for (let r = 0; r < repeat; r++) actions.push({ type: "USE_ITEM", card_id: "item_potion", target, _clause: c, _clauseIdx: ci });
           continue;
         }
-        if (/(補給バッグ|ほきゅう|ドロー|2枚引|カードを引|补给包|抽牌|抽两张|抽2张|摸两张|摸2张|摸牌|过牌|补牌)/.test(c) || (fuzzyItem && fuzzyItem.id === "item_bag")) {
+        if (NLU_PATTERNS.bagClause.test(c) || (fuzzyItem && fuzzyItem.id === "item_bag")) {
           actions.push({ type: "USE_ITEM", card_id: "item_bag", target: null, _clause: c });
           continue;
         }
-        if (/(パワーバッジ|ぱわーばっじ|攻撃力アップ|火力アップ|バフ|力量徽章|加攻|加20攻|加伤害|增伤|強化|强化)/.test(c) || (fuzzyItem && fuzzyItem.id === "item_power")) {
+        if (NLU_PATTERNS.powerClause.test(c) || (fuzzyItem && fuzzyItem.id === "item_power")) {
           const handCnt = liveHand.filter((id) => id === "item_power").length;
           const repeat = parsePluralCount(c, handCnt || 1);
           for (let r = 0; r < repeat; r++) actions.push({ type: "USE_ITEM", card_id: "item_power", target: null, _clause: c });
@@ -5686,25 +5878,61 @@
       const raw = String(text || "").trim();
       if (!raw) return true;
       if (/^[（(\[【]?(音声|無音|雑音|silence|noise|inaudible|music|blank_audio)[）)\]】]?$/i.test(raw)) return true;
-      const core = raw.replace(/[\s　「」『』（）()【】\[\]、，。.,！!？?・\-ー…~～]/g, "");
+      const core = raw.replace(NLU_PATTERNS.punctuationStrip, "");
       return core.length === 0;
     },
 
     /**
+     * 基于通用游戏单字与 SpecEngine 当前卡池的怪兽/道具中文汉字，动态构建并缓存合法单字白名单（热导入新卡池后自动更新）。
+     */
+    getValidSingleGameChars() {
+      const monsters = Array.isArray(SpecEngine.monsters) ? SpecEngine.monsters : [];
+      const items = Array.isArray(SpecEngine.items) ? SpecEngine.items : [];
+      const key = `${SpecEngine.sourceLabel || ""}|${monsters.length}|${items.length}`;
+      if (this._validSingleCharCache && this._validSingleCharCache.key === key) {
+        return this._validSingleCharCache.set;
+      }
+      const BASE_CMD_CHARS = "打攻防守换撤退奶抽摸贴放出上下用吃喝拉拖吹过停消火炎水冰雷电红蓝黄赤青前后左中右是对好行要不要否别没1234一二三四１２３４狗袋";
+      const set = new Set(BASE_CMD_CHARS);
+      const addCjkChars = (str) => {
+        for (const ch of String(str || "")) {
+          if (/[\u4e00-\u9fff]/.test(ch)) set.add(ch);
+        }
+      };
+      for (const m of monsters) {
+        addCjkChars(m.name_zh);
+        if (Array.isArray(m.aliases)) {
+          for (const al of m.aliases) {
+            if (/^[\u4e00-\u9fff]{1,6}$/.test(al)) addCjkChars(al);
+          }
+        }
+      }
+      for (const it of items) {
+        if (it.category === "energy") continue;
+        addCjkChars(it.name_zh);
+        if (Array.isArray(it.aliases)) {
+          for (const al of it.aliases) {
+            if (/^[\u4e00-\u9fff]{1,6}$/.test(al)) addCjkChars(al);
+          }
+        }
+      }
+      this._validSingleCharCache = { key, set };
+      return set;
+    },
+
+    /**
      * 判断语音转写是否为无意义语气词、叹词或呼吸/麦克风杂音（如“嗯”“嘘”“嘶”“し”“hhh”等），
-     * 避免触发“AI解析中”和云端调用，同时通过有效单字白名单保护绝不误杀“防/火/左/1”等合法单字指令。
+     * 避免触发“AI解析中”和云端调用，同时通过动态卡池+通用单字白名单保护绝不误杀“防/火/左/1”等合法单字指令。
      */
     isFillerUtterance(text) {
       const raw = String(text || "").trim();
       if (!raw) return true;
-      const core = raw.replace(/[\s　「」『』（）()【】\[\]、，。.,！!？?・\-ー…~～]/g, "");
+      const core = raw.replace(NLU_PATTERNS.punctuationStrip, "");
       if (!core) return true;
-      if (/^(?:[嗯呃额啊哦喔噢唔哎唉诶欸哈哼呵嘻嘿嗨咳啧呸切喂呀哟呦咦哇呜嗷嘎呐呢吧啦嘛嘘嘶呼吁噗嗤哧呲滋哒嗒啪咔嚓擦刷嘭砰咚叮当嘀滴]+|嗯哼|哎呀|哎哟|啊呀|啊哟|しー+|すー+|ふー+|はー+|へー+|ほー+|ちっ|ぷっ|かっ|ぱっ|あっ|いっ|うっ|えっ|おっ|あー+|いー+|うー+|えー+|おー+|んー+|うん+|うーん|んと|えっと|えーっと|ええと|えーと|あの+|あのね|まあ|ふーん|はあ|うわ)$/i.test(core)) {
-        return true;
-      }
-      const VALID_SINGLE_GAME_CHAR = /^[打攻防守换撤退奶抽摸贴放出上下用吃喝拉拖吹过停消火炎水冰雷电红蓝黄赤青前后左中右是对好行要不要否别没1234一二三四１２３４狐龟狮龙鲨犬狗鱼鸟药笛包袋]$/;
-      if (core.length === 1 && !VALID_SINGLE_GAME_CHAR.test(core)) return true;
-      if (/^(.)\1{1,3}$/.test(core) && !VALID_SINGLE_GAME_CHAR.test(core[0])) return true;
+      if (NLU_PATTERNS.fillerInterjections.test(core)) return true;
+      const validChars = this.getValidSingleGameChars();
+      if (core.length === 1 && !validChars.has(core)) return true;
+      if (/^(.)\1{1,3}$/.test(core) && !validChars.has(core[0])) return true;
       return false;
     },
 
@@ -5714,22 +5942,19 @@
     isBenchHandSwapAttempt(text, board, handOverride = null) {
       const s = String(text || "").trim();
       if (!s) return false;
-      if (/(?:对手|对面|对方|敌方|相手)/.test(s)) return false;
-      if (/(?:弃牌区|墓地|トラッシュ|捨て札|能量回收|エネ回収)/.test(s)) return false;
-      if (/(?:主战|战斗区|战斗场|前排|出战位|首发位|バトル場|先発)/.test(s)) return false;
+      if (NLU_PATTERNS.enemySide.test(s)) return false;
+      if (NLU_PATTERNS.trashZone.test(s)) return false;
+      if (NLU_PATTERNS.activeZone.test(s)) return false;
 
-      const hasReturnToHand = (/(?:换回|退回|放回|收回|拿回|移回|打回).{0,4}(?:手牌|手里|手中)|(?:手札|手元)に(?:戻|もど|返|かえ)/.test(s))
-        && !/(?:能量|火能|水能|雷能|炎能|电能|エネルギー|エネ)/.test(s);
+      const hasReturnToHand = NLU_PATTERNS.benchHandReturn.test(s) && !NLU_PATTERNS.energyExplicit.test(s);
       if (hasReturnToHand) return true;
-
-      const hasSwapWord = /(?:交换|互换|对换|替换|调换|换卡|换一下|换一换|换个|换成|换回|换到|换掉|换走|交換|こうかん|入れ替|いれかえ|交代|こうたい|チェンジ|スイッチ|(?:和|跟|与).{0,10}换|把.{0,10}换(?:成|为|回|到|掉|一下|一换|个)|(?:手牌|手里|手中|手札|手元).{0,6}换|换.{0,6}(?:手牌|手里|手中|手札|手元))/.test(s);
-      if (!hasSwapWord) return false;
+      if (!NLU_PATTERNS.benchHandSwap.test(s)) return false;
 
       const liveHand = Array.isArray(handOverride) ? handOverride : (Array.isArray(board?.player?.hand) ? board.player.hand : []);
       const activeId = board?.player?.active?.id || null;
       const benchIds = new Set((Array.isArray(board?.player?.bench) ? board.player.bench : []).filter(Boolean).map((u) => u.id));
-      const hasHandWord = /(?:手牌|手里|手中|手札|手元)/.test(s);
-      const hasBenchWord = /(?:备战|后排|替补|ベンチ|べんち|控え|ひかえ|後ろ)/.test(s);
+      const hasHandWord = NLU_PATTERNS.handZone.test(s);
+      const hasBenchWord = NLU_PATTERNS.benchZone.test(s);
       const matchedMons = SpecEngine.matchAllMonsters(s, "player");
       const namesActiveMon = Boolean(activeId && matchedMons.some((m) => m.id === activeId));
       const namesBenchMon = matchedMons.some((m) => benchIds.has(m.id));
@@ -5790,7 +6015,7 @@
       const cleaned = String(text || "")
         .replace(/(?:下回合|下一回合|下次|等会|等一下|一会儿|待会|明天|次のターン|あとで|後で)再?[^、，。]*/g, "")
         .replace(/(?:[己敌双]方)?战斗区|打算|打开|打不开|打不过|不打|别打|不要打|没打|打断|打字/g, "");
-      return /(攻撃|こうげき|アタック|殴|なぐる|なぐって|撃って|撃つ|うって|うつ|叩く|叩いて|たたいて|狙撃|ベンチを狙|仕掛け|突撃|ぶっ飛ば|倒せ|技|わざ|スキル|大招|必殺技|必杀技|攻击|进攻|战斗(?!区)|去战斗|进战斗|进入战斗|开始战斗|直接战斗|战斗吧|开战|出招|技能|狙击|点杀|平a|平A|普攻|出击|上吧|直接打|动手|开火|打一下|打他|打它|打她|打对面|打对手|打前排|打后排|打怪|打死|秒了|秒掉|干掉|击倒|开打|打过去|一击|放招|用招|用技能打)/.test(cleaned);
+      return NLU_PATTERNS.attackCore.test(cleaned);
     },
 
     /** 判断玩家在追问状态下的新发言是否属于明确的取消改口或全新动作指令（而非对当前追问的回答） */
@@ -7218,7 +7443,7 @@
         const explicitMon = SpecEngine.matchMonster(rawUtter, "player");
         let safeQueue = [];
         let blockedBenchHandSwap = false;
-        const hasSummonIntent = /(召喚|召唤|上场|出战|ベンチに出|ベンチに置|备战区|放到?备战|下怪|を出す|を出して|派上)/.test(rawUtter) && !/(よびだし笛|召唤笛)/.test(rawUtter);
+        const hasSummonIntent = NLU_PATTERNS.voiceGuardSummon.test(rawUtter) && !/(よびだし笛|召唤笛)/.test(rawUtter);
         for (const a of queue) {
           if (!a || !a.type) continue;
           const actClause = (typeof a._clause === "string" && a._clause.trim())
@@ -7230,11 +7455,11 @@
             || ((hasSummonIntent || Boolean(explicitMon)) && !NLUEngine.hasExplicitEndTurnIntent(actClause || rawUtter, true))
           )) continue;
           if (a.type === "DEFEND" && !NLUEngine.hasExplicitDefendIntent(rawUtter)) continue;
-          const hasPronoun = /(?:它|他|她|这只|那只|刚才那只|それ|こいつ|そいつ|さっきの|そのまま)/.test(actClause);
+          const hasPronoun = NLU_PATTERNS.pronounRef.test(actClause);
           const keepComboTarget = queue.length > 1 && hasPronoun && Boolean(a.target);
           if (a.type === "ATTACK") {
             const actColloquialSkill = NLUEngine.resolveColloquialSkillFromClause(actClause || rawUtter, snapNow);
-            if (!explicitSkill && !actColloquialSkill && !NLUEngine.hasExplicitAttackIntent(rawUtter) && !/(打|撃|うって|撃って|殴|なぐ|やれ|いけ|行け|使って|つかって|発動|はつどう|技|わざ|ワザ|倒せ|たおせ)/.test(rawUtter)) continue;
+            if (!explicitSkill && !actColloquialSkill && !NLUEngine.hasExplicitAttackIntent(rawUtter) && !NLU_PATTERNS.voiceGuardAttack.test(rawUtter)) continue;
             if (!explicitSkill) {
               if (actColloquialSkill) a.skill_name = a.skill_name || actColloquialSkill.name_ja;
               else a.skill_name = null;
@@ -7245,7 +7470,7 @@
             else if (a.target && !keepComboTarget) a.target = null;
           }
           if (a.type === "ATTACH_ENERGY") {
-            if (isVoiceInput && !/(エネルギー|えねるぎー|エネ|えね|能量|贴|充能|上能|上火|上水|上雷|加|电|闪电|雷电|红|蓝|黄|给|炎|火|ほのお|水|みず|雷|かみなり|でんき|貼|張|付|つけ|はる|はっ|あげ|渡|チャージ|装)/.test(rawUtter) && !(explicitItem && explicitItem.category === "energy")) continue;
+            if (isVoiceInput && !NLU_PATTERNS.voiceGuardEnergy.test(rawUtter) && !(explicitItem && explicitItem.category === "energy")) continue;
             const resolvedOnSnap = NLUEngine.resolveSlotFromText(actClause, "player", snapNow)
               || (queue.length === 1 ? NLUEngine.resolveSlotFromText(rawUtter, "player", snapNow) : null);
             const hasPlayBenchBefore = queue.some((prev, pIdx) => pIdx < queue.indexOf(a) && prev && prev.type === "PLAY_BENCH");
@@ -7262,7 +7487,7 @@
             else a.card_id = null;
           }
           if (a.type === "PLAY_BENCH") {
-            if (isVoiceInput && !/(ベンチ|べんち|後ろ|控え|ひかえ|場に出|召喚|しょうかん|出|だす|だし|置|おく|おい|並|ならべ|呼|よぶ|セット|备战|下怪|上场|出战|后排|放|派|上|召唤)/.test(rawUtter) && !explicitMon) continue;
+            if (isVoiceInput && !NLU_PATTERNS.voiceGuardBench.test(rawUtter) && !explicitMon) continue;
             if (!a._plural) {
               const clauseMons = SpecEngine.matchAllMonsters(actClause, "player");
               const matchedId = clauseMons.some((m) => m.id === a.card_id) ? a.card_id : (clauseMons[0]?.id || null);
@@ -7275,14 +7500,14 @@
                 continue;
               }
               const benchIdx = s.player.bench.findIndex((u) => u && u.id === a.card_id);
-              if (benchIdx !== -1 && /(交换|互换|对换|替换|调换|换|交代|交換|こうかん|入れ替|いれかえ|撤退|チェンジ|スイッチ|上场|出战|主战|前排|战斗区|バトル場|前[にへ]|出陣|顶上|上来)/.test(rawUtter)) {
+              if (benchIdx !== -1 && NLU_PATTERNS.voiceGuardBenchToRetreat.test(rawUtter)) {
                 safeQueue.push({ type: "RETREAT", target: `player_bench_${benchIdx}`, _clause: actClause || rawUtter });
                 continue;
               }
             }
           }
           if (a.type === "USE_ITEM") {
-            if (isVoiceInput && !/(きずぐすり|回復|かいふく|ヒール|ポーション|体力|傷薬|伤药|上药|吃药|喝药|嗑药|用个?药|贴伤药|回血|补血|治|加血|奶|飲|のむ|笛|ふえ|呼叫笛|哨|呼び出|引っ張り|強制交代|拉|拖|吹|换怪|補給|ほきゅう|ドロー|引|ひく|抽|摸|过牌|补牌|バッジ|ばっじ|パワー|バフ|アップ|力量|加攻|加伤害|增伤|強化|强化|回収|かいしゅう|回収|回收|拿回|取回|捞|捡|戻|もど|道具|グッズ|サポート|支援|使|つかう|つかって|用)/.test(rawUtter) && !explicitItem) continue;
+            if (isVoiceInput && !NLU_PATTERNS.voiceGuardItem.test(rawUtter) && !explicitItem) continue;
             if (a.card_id === "item_potion") {
               const pTarget = NLUEngine.resolveSlotFromText(actClause, "player", snapNow)
                 || (queue.length === 1 ? NLUEngine.resolveSlotFromText(rawUtter, "player", snapNow) : null);
@@ -7303,8 +7528,8 @@
             }
             const rSlot = NLUEngine.resolveSlotFromText(actClause, "player", snapNow, { benchOnly: true })
               || (queue.length === 1 ? NLUEngine.resolveSlotFromText(rawUtter, "player", snapNow, { benchOnly: true }) : null);
-            const hasRetreatWord = /(交代|こうたい|交換|こうかん|入れ替|いれかえ|下|さげ|さが|逃げ|にげる|にげ|撤退|てったい|チェン|スイッチ|バトン|戻|もど|引|ひく|换|退|切|下场|撤下去|拉回|拉上|拉出|顶上)/.test(rawUtter)
-              || (Boolean(rSlot) && /(上场|出战|主战|前排|战斗区|バトル場|前[にへ]|出陣)/.test(rawUtter));
+            const hasRetreatWord = NLU_PATTERNS.voiceGuardRetreat.test(rawUtter)
+              || (Boolean(rSlot) && NLU_PATTERNS.voiceGuardRetreatPromote.test(rawUtter));
             if (isVoiceInput && !hasRetreatWord) continue;
             a.target = rSlot || null;
           }
@@ -7322,7 +7547,10 @@
             safeQueue = localRetry.actions.filter((a) => {
               if (!a || !a.type) return false;
               const ec = (typeof a._clause === "string" && a._clause.trim()) ? a._clause : rawUtter;
-              if (a.type === "END_TURN" && isVoiceInput && (!NLUEngine.hasExplicitEndTurnIntent(ec, true) || ((hasSummonIntent || Boolean(explicitMon)) && !NLUEngine.hasExplicitEndTurnIntent(ec, true)))) return false;
+              if (a.type === "END_TURN" && isVoiceInput) {
+                const explicitEnd = NLUEngine.hasExplicitEndTurnIntent(ec, true);
+                if (!explicitEnd || ((hasSummonIntent || Boolean(explicitMon)) && !explicitEnd)) return false;
+              }
               return true;
             });
           }
