@@ -453,6 +453,30 @@
       }
     },
 
+    /** 将桌面/横屏模式下的引导浮动卡片最左侧与牌库按钮最左侧精确对齐（竖屏内联模式下自动恢复默认全宽） */
+    alignToDeckBox() {
+      const box = $("guideFloat");
+      if (!box) return;
+      if (getComputedStyle(box).position !== "absolute") {
+        box.style.left = "";
+        box.style.right = "";
+        box.style.width = "";
+        return;
+      }
+      const playmat = box.closest(".playmat");
+      const deckBox = $("playerDeckBox") || $("enemyDeckBox");
+      if (!playmat || !deckBox) return;
+      const pmRect = playmat.getBoundingClientRect();
+      const dkRect = deckBox.getBoundingClientRect();
+      if (pmRect.width <= 0 || dkRect.width <= 0) return;
+      const pmBorderLeft = parseFloat(getComputedStyle(playmat).borderLeftWidth) || 0;
+      const leftPx = Math.max(8, Math.round(dkRect.left - pmRect.left - pmBorderLeft));
+      const availRight = Math.floor(playmat.clientWidth - leftPx - 10);
+      box.style.left = `${leftPx}px`;
+      box.style.right = "auto";
+      box.style.width = `${Math.max(160, Math.min(280, availRight))}px`;
+    },
+
     /** 渲染并展示指定教学引导卡片，必要时同步播报可随时打断的低优引导语音 */
     _showCard(msg, speakVoice, key = "") {
       const box = $("guideFloat");
@@ -461,6 +485,7 @@
         if ($("guideTag")) $("guideTag").innerHTML = `${SVG_ICONS.guideChip}${formatBilingualLabelHtml(msg.tag)}`;
         if ($("guideJa")) $("guideJa").textContent = msg.ja;
         if ($("guideZh")) $("guideZh").textContent = msg.zh;
+        this.alignToDeckBox();
         void box.offsetWidth;
         box.classList.add("show");
       }
@@ -470,12 +495,13 @@
       }
     },
 
-    /** 语言切换时同步刷新当前可见引导浮窗的标题标签 */
+    /** 语言切换时同步刷新当前可见引导浮窗的标题标签与位置对齐 */
     syncVisibleCard() {
       const msg = this.lastGuideKey ? this.MESSAGES[this.lastGuideKey] : null;
       if (msg && $("guideTag")) {
         $("guideTag").innerHTML = `${SVG_ICONS.guideChip}${formatBilingualLabelHtml(msg.tag)}`;
       }
+      this.alignToDeckBox();
     },
 
     /** 触发指定步骤的首次非阻塞引导（旧引导完成撤回动画后再弹出新引导） */
@@ -10255,6 +10281,7 @@
       const s = BattleEngine.state;
       const selected = s.selectedHandIndex === idx;
       const playable = this.isHandCardPlayable(cardId);
+      const showUnplayable = s.phase === "battle" && s.currentPlayer === "player" && !s.pending && !playable && !selected;
       const mon = SpecEngine.getMonster(cardId);
       if (mon) {
         const isSetup = s.phase === "setup";
@@ -10266,7 +10293,7 @@
           ? ` title="${escapeHtml(t("クリックまたは名前を言って先発に出す", "点击或说出名字作为首发上场"))}"`
           : ` title="${escapeHtml(t("クリックまたは音声でベンチに出せます", "可直接点击或语音放入备战区"))}"`;
         return `
-          <div class="card ${escapeHtml(mon.element)} ${mon.is_ex ? "is-ex" : ""} hand-card ${selected ? "selected" : ""} ${isSetup ? "setup-pick" : (playable ? "playable" : "")}" data-hand-idx="${idx}" draggable="true"${monTitle}>
+          <div class="card ${escapeHtml(mon.element)} ${mon.is_ex ? "is-ex" : ""} hand-card ${selected ? "selected" : ""} ${isSetup ? "setup-pick" : (playable ? "playable" : "")} ${showUnplayable ? "unplayable" : ""}" data-hand-idx="${idx}" draggable="true"${monTitle}>
             <div class="card-head">
               <div class="card-head-left">
                 ${CARD_ART[mon.id] ? `<span class="card-art">${CARD_ART[mon.id]}</span>` : `<span class="pip ${escapeHtml(mon.element)} filled">${SVG_ICONS[mon.element] || SVG_ICONS.any}</span>`}
@@ -10314,7 +10341,7 @@
         ? `<span class="energy-watermark ${escapeHtml(cls)}" aria-hidden="true">${SVG_ICONS[it.element]}</span>`
         : "";
       return `
-        <div class="card ${escapeHtml(cls)} hand-card util-card ${isEnergy ? "energy-card" : ""} ${selected ? "selected" : ""} ${playable ? "playable" : ""} ${supUsed ? "supporter-used" : ""}" data-hand-idx="${idx}" draggable="true">
+        <div class="card ${escapeHtml(cls)} hand-card util-card ${isEnergy ? "energy-card" : ""} ${selected ? "selected" : ""} ${playable ? "playable" : ""} ${showUnplayable && !supUsed ? "unplayable" : ""} ${supUsed ? "supporter-used" : ""}" data-hand-idx="${idx}" draggable="true">
           <div class="card-head">
             <div class="card-head-left">
               ${CARD_ART[it.id] ? `<span class="card-art">${CARD_ART[it.id]}</span>` : ""}
@@ -11982,8 +12009,14 @@
       $("btnFullscreen")?.addEventListener("click", () => this.toggleFullscreen());
       document.addEventListener("fullscreenchange", () => this.syncUi());
       document.addEventListener("webkitfullscreenchange", () => this.syncUi());
-      window.addEventListener("resize", () => this.syncUi());
-      window.addEventListener("orientationchange", () => this.syncUi());
+      window.addEventListener("resize", () => {
+        this.syncUi();
+        requestAnimationFrame(() => GuideEngine.alignToDeckBox());
+      });
+      window.addEventListener("orientationchange", () => {
+        this.syncUi();
+        requestAnimationFrame(() => GuideEngine.alignToDeckBox());
+      });
     }
   };
 

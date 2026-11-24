@@ -3245,8 +3245,8 @@
     --fs-splash: 24px; /* 仅用于启动黑金遮罩主标题 */
     /* 严格 5 档 0.5px 梯度核心字号体系（18 / 14 / 12.5 / 11.5 / 10.5） */
     --fs-xl: 18px;     /* 顶栏品牌标题、主弹窗/确认弹窗标题、回合横幅 */
-    --fs-lg: 14px;     /* 气泡对话、规则正文、语音主按钮/输入框、牌库数字、奖赏浮层 */
-    --fs-md: 12.5px;   /* 卡牌标题、技能名与伤害、常用按钮、对局日志、战术建议、面板标题 */
+    --fs-lg: 14px;     /* 规则正文、语音主按钮/输入框、牌库数字、奖赏浮层 */
+    --fs-md: 12.5px;   /* 气泡对话、卡牌标题、技能名与伤害、常用按钮、对局日志、战术建议、面板标题 */
     --fs-sm: 11.5px;   /* HP 徽章、道具/能量描述、次数牌、区域标签、状态胶囊 */
     --fs-xs: 10.5px;   /* 卡槽角标、能量圆片、技能特效徽章、ex/弱点/防御微标 */
 
@@ -3348,7 +3348,7 @@
     gap: 7px;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 6px 5px 8px 13px;
+    padding: 6px 8px 8px 10px;
     scrollbar-gutter: stable;
   }
   .hand-card:hover {
@@ -3709,7 +3709,7 @@
   .bubble-role { font-size: var(--fs-sm); margin-bottom: 2px; }
   .bubble-ja,
   .bubble-zh {
-    font-size: var(--fs-lg);
+    font-size: var(--fs-md);
     font-weight: 700;
     color: var(--ink);
     line-height: 1.44;
@@ -3719,7 +3719,7 @@
   }
   .pending-ja,
   .pending-zh {
-    font-size: var(--fs-lg);
+    font-size: var(--fs-md);
     font-weight: 700;
     color: #543714;
     line-height: 1.42;
@@ -4662,47 +4662,53 @@
   .card .skill-line { background: rgba(108, 86, 56, 0.085); }
   .card .hp-badge { background: #faf7f0; }
 
-  /* 右侧手牌区交互层级：可选/可用手牌同步向左微突，开局可首发怪兽卡明确绿色边框与呼吸光环（优先级高于属性/ex 边框） */
+  /* 右侧手牌区交互层级：静置手牌严格左右对齐零错位；不可用卡柔和降透明度，悬停与点选平滑微移，开局可首发怪兽卡绿框+呼吸光环 */
   .card.hand-card {
-    transform: translateX(2px);
-    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+    transform: none;
+    transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease, opacity 0.16s ease;
+  }
+  .card.hand-card.unplayable {
+    opacity: 0.72;
+  }
+  .card.hand-card.unplayable:hover {
+    opacity: 0.94;
   }
   .card.hand-card:hover {
-    transform: translateX(-2px) scale(1.01);
+    transform: translateX(-4px) scale(1.01);
     z-index: 12;
   }
   .card.hand-card.playable {
-    transform: translateX(-6px);
+    transform: none;
   }
   .card.hand-card.playable:hover {
-    transform: translateX(-9px) scale(1.01);
+    transform: translateX(-4px) scale(1.01);
     z-index: 12;
   }
   .card.hand-card.setup-pick {
-    transform: translateX(-7px);
+    transform: none;
     border: 2.5px solid #48b87a;
     border-top: 4px solid #3ca46b;
     box-shadow: 0 0 0 2px rgba(72, 184, 122, 0.38), 0 6px 16px rgba(24, 16, 8, 0.28), inset 0 1px 0 rgba(255, 253, 248, 0.78);
     animation: setupPulse 1.8s infinite;
   }
   .card.hand-card.setup-pick:hover {
-    transform: translateX(-10px) scale(1.01);
+    transform: translateX(-4px) scale(1.01);
     z-index: 14;
   }
   .card.hand-card.selected {
-    transform: translateX(-10px);
+    transform: translateX(-7px);
     border-color: #48b87a;
     box-shadow: 0 0 0 2.5px rgba(72, 184, 122, 0.56), 0 8px 18px rgba(24, 16, 8, 0.32);
     z-index: 13;
   }
   @media (max-width: 820px) and (orientation: portrait) {
     .card.hand-card { transform: none; }
-    .card.hand-card:hover { transform: translateY(-6px) scale(1.02); }
-    .card.hand-card.playable { transform: translateY(-5px); }
-    .card.hand-card.playable:hover { transform: translateY(-8px) scale(1.02); }
-    .card.hand-card.setup-pick { transform: translateY(-6px); }
-    .card.hand-card.setup-pick:hover { transform: translateY(-9px) scale(1.03); }
-    .card.hand-card.selected { transform: translateY(-9px); }
+    .card.hand-card:hover { transform: translateY(-5px) scale(1.02); }
+    .card.hand-card.playable { transform: none; }
+    .card.hand-card.playable:hover { transform: translateY(-5px) scale(1.02); }
+    .card.hand-card.setup-pick { transform: none; }
+    .card.hand-card.setup-pick:hover { transform: translateY(-5px) scale(1.02); }
+    .card.hand-card.selected { transform: translateY(-7px); }
     #btnLiveCall {
       grid-column: auto;
       width: auto;
