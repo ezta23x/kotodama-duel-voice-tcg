@@ -3238,14 +3238,16 @@
     --fs-sm: 11.5px;   /* HP 徽章、道具/能量描述、次数牌、区域标签、状态胶囊 */
     --fs-xs: 10.5px;   /* 卡槽角标、能量圆片、技能特效徽章、ex/弱点/防御微标 */
 
-    /* 全盘面 100% 统一卡牌尺寸（敌我主战、敌我备战、左侧纵向每张手牌完全等宽等高） */
-    --card-w: clamp(208px, 16vw, 236px);
+    /* 全盘面 100% 统一卡牌尺寸（敌我主战、敌我备战、右侧纵向每张手牌完全等宽等高） */
+    --card-w: clamp(208px, 15.8vw, 232px);
     --card-h: 114px;
     --slot-pad-top: 16px;
     --slot-pad-x: 4px;
     --slot-pad-b: 4px;
     --slot-w: calc(var(--card-w) + (var(--slot-pad-x) * 2) + 2px);
     --slot-h: calc(var(--card-h) + var(--slot-pad-top) + var(--slot-pad-b) + 2px);
+    /* 左右双侧栏统一等宽：预留边框 + 内边距 + 滚动条槽 + 悬停微移，彻底杜绝手牌横向裁切 */
+    --side-w: calc(var(--card-w) + 46px);
   }
 
   .boot-splash-title { font-size: var(--fs-splash); }
@@ -3260,17 +3262,25 @@
   .lang-pill { font-size: var(--fs-sm); min-width: 72px; }
   .lang-switch.light .lang-pill { font-size: var(--fs-md); }
 
-  /* 桌面端/横屏三栏对称舞台：[左侧语音/日志栏] | [中间 4 行零重叠牌桌] | [右侧纵向手牌栏] */
+  /* 桌面端/横屏三栏绝对对称舞台：[左侧语音/日志栏 --side-w] | [中间 4 行零重叠牌桌] | [右侧纵向手牌栏 --side-w] */
   .arena-grid {
-    grid-template-columns: clamp(288px, 21.5vw, 336px) minmax(0, 1fr) calc(var(--card-w) + 26px);
+    grid-template-columns: var(--side-w) minmax(0, 1fr) var(--side-w);
     gap: clamp(7px, 0.7vw, 10px);
   }
   .side-panel { order: 1; }
   .playmat { order: 2; }
   .hand-rail { order: 3; }
-  .debug-log-drawer { transform: translateX(-104%); }
+  .debug-log-drawer {
+    left: 0;
+    right: 0;
+    width: 100%;
+    transform: translateX(-104%);
+  }
+  .debug-log-drawer.open {
+    transform: translateX(0);
+  }
 
-  /* 右侧纵向手牌独立羊皮纸栏（与左侧语音日志栏视觉对称，底部固定防御与结束回合按钮） */
+  /* 右侧纵向手牌独立羊皮纸栏（与左侧语音日志栏 100% 等宽对称，底部固定防御与结束回合按钮） */
   .hand-rail {
     height: 100%;
     min-height: 0;
@@ -3278,7 +3288,7 @@
     border: 2px solid #9c7946;
     border-radius: 14px;
     box-shadow: 0 10px 26px rgba(34, 20, 9, 0.3), inset 0 0 0 2px rgba(255, 250, 238, 0.55);
-    padding: 9px 10px;
+    padding: 9px 8px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -3326,22 +3336,22 @@
     gap: 7px;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 4px 2px 6px;
+    padding: 4px 6px 6px;
     scrollbar-gutter: stable;
   }
   .hand-card:hover {
-    transform: translateX(-4px) scale(1.015);
+    transform: translateX(-3px) scale(1.01);
     z-index: 12;
   }
   .hand-card.selected {
-    transform: translateX(-5px);
+    transform: translateX(-4px);
     box-shadow: 0 0 0 2px var(--ok), 0 6px 14px rgba(64, 42, 20, 0.24);
   }
   .hand-card.setup-pick {
     transform: none;
   }
   .hand-card.setup-pick:hover {
-    transform: translateX(-4px) scale(1.015);
+    transform: translateX(-3px) scale(1.01);
   }
   .hand-actions {
     flex: 0 0 auto;
@@ -3821,16 +3831,17 @@
     }
   }
 
-  /* ---------- 中等宽度桌面屏（<= 1280px）保持三栏统一卡宽，备战区平滑横滑 ---------- */
+  /* ---------- 中等宽度桌面屏（<= 1280px）保持左右侧栏等宽对称与完整手牌 ---------- */
   @media (min-width: 821px) and (max-width: 1280px) {
     :root {
       --card-w: 204px;
       --card-h: 112px;
+      --side-w: calc(var(--card-w) + 42px);
     }
     .topbar { flex-wrap: wrap; padding: 5px 10px; gap: 5px; }
     .top-actions { flex-wrap: wrap; gap: 4px; }
     .top-btn { padding: 3.5px 8px; }
-    .arena-grid { grid-template-columns: clamp(260px, 23vw, 298px) minmax(0, 1fr) calc(var(--card-w) + 22px); gap: 6px; }
+    .arena-grid { grid-template-columns: var(--side-w) minmax(0, 1fr) var(--side-w); gap: 6px; }
     .bench-row { justify-content: flex-start; overflow-x: auto; padding-bottom: 2px; }
     .active-band > .pile-col { flex-direction: column; gap: 4px; }
   }
@@ -3862,7 +3873,7 @@
     .bubble { padding: 6px 9px; }
   }
 
-  /* ---------- 手机/小屏横屏：保持三栏紧凑对称与统一卡面 ---------- */
+  /* ---------- 手机/小屏横屏：保持左右等宽对称、手牌不裁切且 Log 从左侧同宽弹出 ---------- */
   @media (max-height: 620px) and (orientation: landscape), (max-width: 960px) and (orientation: landscape) {
     :root {
       --fs-xl: 15px;
@@ -3873,6 +3884,7 @@
       --card-w: 196px;
       --card-h: 104px;
       --slot-pad-top: 15px;
+      --side-w: calc(var(--card-w) + 38px);
     }
     .topbar { padding: 4px 8px; gap: 6px; }
     .brand-logo-svg { width: 22px; height: 22px; }
@@ -3880,12 +3892,19 @@
     .top-btn { min-height: 26px; padding: 3px 8px; }
     .lang-pill { padding: 2px 7px; min-width: 0; }
     .lang-badge-svg { width: 15px; height: 15px; }
-    .arena-grid { grid-template-columns: clamp(232px, 27vw, 276px) minmax(0, 1fr) calc(var(--card-w) + 18px); }
-    .hand-rail { padding: 6px 7px; }
+    .arena-grid { grid-template-columns: var(--side-w) minmax(0, 1fr) var(--side-w); }
+    .hand-rail { padding: 6px 6px; }
     .playmat { justify-content: flex-start; }
     .bench-row { justify-content: flex-start; overflow-x: auto; }
     .active-band > .pile-col { flex-direction: column; gap: 4px; }
     .side-panel { padding: 6px 8px; gap: 5px; }
+    .debug-log-drawer {
+      left: max(6px, env(safe-area-inset-left));
+      right: auto;
+      width: var(--side-w);
+      transform: translateX(-106%);
+    }
+    .debug-log-drawer.open { transform: translateX(0); }
     .bubble { padding: 5px 8px; }
     .voice-hud { bottom: 12px; padding: 5px 12px; }
   }
