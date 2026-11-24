@@ -4004,15 +4004,14 @@
                   lang: this.getEffectiveNiaAsrLang(),
                   onPartial: (txt, isFinal) => {
                     const cleanTxt = String(txt || "").trim();
-                    if (cleanTxt) {
-                      if (normAsrKey(cleanTxt) !== normAsrKey(this.vadLastAsrText)) {
-                        this.vadLastAsrChangeAt = Date.now();
-                      }
-                      this.vadLastAsrText = cleanTxt;
+                    if (!cleanTxt || this.shouldIgnoreVoiceFragment(cleanTxt, false)) return;
+                    if (normAsrKey(cleanTxt) !== normAsrKey(this.vadLastAsrText)) {
+                      this.vadLastAsrChangeAt = Date.now();
                     }
-                    if (isFinal && cleanTxt) this.vadGotFinal = true;
-                    if (cleanTxt && $("cmdInput")) $("cmdInput").value = cleanTxt;
-                    if (cleanTxt) TableUI.showVoiceHud("listening", cleanTxt);
+                    this.vadLastAsrText = cleanTxt;
+                    if (isFinal) this.vadGotFinal = true;
+                    if ($("cmdInput")) $("cmdInput").value = cleanTxt;
+                    TableUI.showVoiceHud("listening", cleanTxt);
                   }
                 });
                 const sr = ctx.sampleRate || 48000;
@@ -4239,6 +4238,16 @@
       }
     },
 
+    /** 判断语音识别碎片是否应静默忽略（空文本、非确认待定态下的纯语气词，或扬声器自回声） */
+    shouldIgnoreVoiceFragment(text, checkEcho = true) {
+      const cleaned = this.stripSpokenEcho(String(text || "").trim());
+      if (!cleaned || NLUEngine.isMeaninglessTranscript(cleaned)) return true;
+      const isConfirmPending = typeof BattleEngine !== "undefined" && Boolean(BattleEngine.isConfirmPending && BattleEngine.isConfirmPending());
+      if (!isConfirmPending && NLUEngine.isFillerUtterance(cleaned)) return true;
+      if (checkEcho && this.isLikelySelfEcho(cleaned)) return true;
+      return false;
+    },
+
     /** 离线/浏览器语音识别兜底：严格等待 TTS 与音效播完后再收音 */
     spawnContinuousRec() {
       if (!this.callActive || this.callMode !== "chrome_asr" || this.recRunning || this.recStarting || this.isSpeaking) return;
@@ -4277,24 +4286,26 @@
           else interim += ev.results[i][0].transcript;
         }
         if (interim) {
-          clearTimeout(this.chromeUtterTimer);
           const preview = (this.chromeUtterBuf ? `${this.chromeUtterBuf} ${interim}` : interim).trim();
-          this.chromeLastInterim = preview;
-          if ($("cmdInput")) $("cmdInput").value = preview;
-          TableUI.showVoiceHud("listening", preview);
-          /* 移动端部分浏览器持续吐出 interim 却延迟或不吐 isFinal：停顿 1.35s 后兜底自动提交 */
-          this.chromeUtterTimer = setTimeout(() => {
-            const merged = (this.chromeUtterBuf || this.chromeLastInterim || "").trim();
-            this.chromeUtterBuf = "";
-            this.chromeLastInterim = "";
-            if (!merged || !this.callActive || BattleEngine.state?.busy || this.isSpeaking) return;
-            if ($("cmdInput")) $("cmdInput").value = merged;
-            DebugLog.add("ASR", "Chrome 持续识别结果（停顿兜底）", merged);
-            if (this.callCallback) this.callCallback({ text: merged, fromVoice: true });
-          }, 1350);
+          if (this.chromeUtterBuf || !this.shouldIgnoreVoiceFragment(preview)) {
+            clearTimeout(this.chromeUtterTimer);
+            this.chromeLastInterim = preview;
+            if ($("cmdInput")) $("cmdInput").value = preview;
+            TableUI.showVoiceHud("listening", preview);
+            /* 移动端部分浏览器持续吐出 interim 却延迟或不吐 isFinal：停顿 1.35s 后兜底自动提交 */
+            this.chromeUtterTimer = setTimeout(() => {
+              const merged = (this.chromeUtterBuf || this.chromeLastInterim || "").trim();
+              this.chromeUtterBuf = "";
+              this.chromeLastInterim = "";
+              if (!merged || this.shouldIgnoreVoiceFragment(merged) || !this.callActive || BattleEngine.state?.busy || this.isSpeaking) return;
+              if ($("cmdInput")) $("cmdInput").value = merged;
+              DebugLog.add("ASR", "Chrome 持续识别结果（停顿兜底）", merged);
+              if (this.callCallback) this.callCallback({ text: merged, fromVoice: true });
+            }, 1350);
+          }
         }
         const clean = finalText.trim();
-        if (clean) {
+        if (clean && !this.shouldIgnoreVoiceFragment(clean)) {
           this.chromeLastInterim = "";
           this.chromeUtterBuf = (this.chromeUtterBuf ? `${this.chromeUtterBuf} ${clean}` : clean).trim();
           if ($("cmdInput")) $("cmdInput").value = this.chromeUtterBuf;
@@ -4304,7 +4315,7 @@
             const merged = this.chromeUtterBuf.trim();
             this.chromeUtterBuf = "";
             this.chromeLastInterim = "";
-            if (!merged || !this.callActive || BattleEngine.state?.busy || this.isSpeaking) return;
+            if (!merged || this.shouldIgnoreVoiceFragment(merged) || !this.callActive || BattleEngine.state?.busy || this.isSpeaking) return;
             if ($("cmdInput")) $("cmdInput").value = merged;
             DebugLog.add("ASR", "Chrome 持续识别结果", merged);
             if (this.callCallback) this.callCallback({ text: merged, fromVoice: true });
@@ -4335,15 +4346,17 @@
       rec.onend = () => {
         this.recStarting = false;
         this.recRunning = false;
-        /* 移动端 Safari/Chrome 常在单句结束后自动关闭会话而不吐 isFinal：立刻回收未提交文本派发 */
+        /* 移动端 Safari/Chrome 常在单句结束后自动关闭会话而不吐 isFinal：立刻回收未提交文本派发（跳过纯语气词/空白） */
         const pendingChrome = (this.chromeUtterBuf || this.chromeLastInterim || "").trim();
         if (pendingChrome && this.callActive && this.callMode === "chrome_asr" && !BattleEngine.state?.busy && !this.isSpeaking) {
           clearTimeout(this.chromeUtterTimer);
           this.chromeUtterBuf = "";
           this.chromeLastInterim = "";
-          if ($("cmdInput")) $("cmdInput").value = pendingChrome;
-          DebugLog.add("ASR", "Chrome 识别会话结束自动派发", pendingChrome);
-          if (this.callCallback) this.callCallback({ text: pendingChrome, fromVoice: true });
+          if (!this.shouldIgnoreVoiceFragment(pendingChrome)) {
+            if ($("cmdInput")) $("cmdInput").value = pendingChrome;
+            DebugLog.add("ASR", "Chrome 识别会话结束自动派发", pendingChrome);
+            if (this.callCallback) this.callCallback({ text: pendingChrome, fromVoice: true });
+          }
         }
         if (!this.callActive || this.callMode !== "chrome_asr" || this.isSpeaking) return;
         clearTimeout(this.recRestartTimer);
@@ -5360,7 +5373,8 @@
           rival_ja: r.ja, rival_zh: r.zh
         };
       }
-      if (/(降参|投了|リタイア|ギブアップ|逃走|もう無理|认输|投降|不打了|我投了|不玩了)/.test(fixed)) {
+      const negatedSurrender = /(?:[不别没](?:要|想|会)?(?:降参|投了|投降|认输|逃走)|(?:降参|投了|リタイア)(?:しない|したくない|しないよ|じゃない|ではない|しないぞ|はしない|しません))/.test(fixed);
+      if (!negatedSurrender && /(降参|投了|リタイア|ギブアップ|逃走|もう無理|认输|投降|不打了|我投了|不玩了)/.test(fixed)) {
         return {
           transcript: fixed, status: "confirm", actions: [{ type: "SURRENDER" }],
           reply_ja: "バトルから逃走（降参）しますか？「はい」と答えると敗北になります。",
@@ -5400,24 +5414,33 @@
         const c = clauses[ci];
         const fuzzyItem = SpecEngine.matchItem(c);
 
-        if (/(エネ回収|エネルギー回収|かいしゅう|トラッシュからエネ|捨て札からエネ|能量回收|回收能量|从弃牌区拿能量|捡回能量|捞能量|拿回能量)/.test(c) || (fuzzyItem && fuzzyItem.id === "item_recycle")) {
+        if (/(エネ回収|エネルギー回収|かいしゅう|(?:トラッシュ|捨て札)(?:から|の).{0,10}(?:エネ|エネルギー)|(?:エネ|エネルギー).{0,8}(?:戻して|戻す|回収)|能量回收|回收.{0,6}(?:能|能量|エネ|エネルギー)|(?:弃牌区|墓地).{0,10}(?:拿回|取回|捡回|捞回|收回|回收)|(?:弃牌区|墓地).{0,10}(?:能量?|火能|水能|雷能|炎能|电能|エネ|エネルギー)|(?:拿回|取回|捡回|捞回|捞).{0,8}(?:能|能量|火能|水能|雷能|电|エネ|エネルギー))/.test(c) || (fuzzyItem && fuzzyItem.id === "item_recycle")) {
           const handCnt = liveHand.filter((id) => id === "item_recycle").length;
           const repeat = parsePluralCount(c, handCnt || 1);
           for (let r = 0; r < repeat; r++) actions.push({ type: "USE_ITEM", card_id: "item_recycle", target: null, _clause: c, _clauseIdx: ci });
           continue;
         }
-        if (/(エネルギー|えねるぎー|エネ|えね|能量|贴能|火能|水能|雷能|炎能|电能|闪电能量|雷电能量|火焰能量|火系能量|水系能量|雷系能量|电系能量|充能|(?:加|上|贴|充)(?:一个?|一?张|一?点|一?颗|[个张点颗])?(?:电|闪电|红|蓝|黄|火|炎(?!狐|龙)|水(?!龟)|雷(?!狮|鸟))的?(?:能|能量)?|给.{0,6}(?:贴|充|加|上)(?:能|火|水|雷|电)|贴[个张]?(?:炎|火|水|雷|电)|貼って|はって|付けて|つけて|贴上|给它贴)/.test(c) || (fuzzyItem && fuzzyItem.category === "energy")) {
+        const hasPotionOrHealWord = /(きずぐすり|傷薬|伤药|上药|回血|补血|加血|治疗|回復|かいふく|ヒール|ポーション|体力|喝药|吃药|嗑药|用个?药)/.test(c);
+        const hasExplicitEnergySignal = /(エネルギー|えねるぎー|エネ|えね|能量|贴能|充能|火能|水能|雷能|炎能|电能|闪电能量|雷电能量|火焰能量|火系能量|水系能量|雷系能量|电系能量)/.test(c) || (fuzzyItem && fuzzyItem.category === "energy");
+        if ((!hasPotionOrHealWord || hasExplicitEnergySignal) && (/(エネルギー|えねるぎー|エネ|えね|能量|贴能|充能|火能|水能|雷能|炎能|电能|闪电能量|雷电能量|火焰能量|火系能量|水系能量|雷系能量|电系能量|充能|(?:加|上|贴|充)(?:一个?|一?张|一?点|一?颗|[个张点颗])?(?:电|闪电|红|蓝|黄|火|炎(?!狐|龙)|水(?!龟)|雷(?!狮|鸟))的?(?:能|能量)?|给.{0,6}(?:贴|充|加|上)(?:能|火|水|雷|电)|贴[个张]?(?:炎|火|水|雷|电)|貼って|はって|付けて|つけて|贴上|给它贴)/.test(c) || (fuzzyItem && fuzzyItem.category === "energy"))) {
           const cardId = this.resolveEnergyCardFromText(c) || (fuzzyItem && fuzzyItem.category === "energy" ? fuzzyItem.id : null);
           const target = this.resolveSlotFromText(c, "player", board);
           actions.push({ type: "ATTACH_ENERGY", card_id: cardId, target, _clause: c, _clauseIdx: ci });
           continue;
         }
-        if (/(よびだし笛|呼び出し笛|ふえ|引っ張り|引きずり出|強制交代|前に引き|召唤笛|呼叫笛|笛子|吹笛|吹口?哨|哨子|强拉|强迫.{0,4}换|强行.{0,4}换|拖.{0,4}(?:对手|对方|对面|敌方|后排)|拉.{0,4}(?:对手|对方|对面)|拉上来|拉出来|拉上场|拽.{0,4}(?:上来|出来)|逼.{0,3}(?:对手|对面|对方)换|(?:对手|对面|对方).{0,4}换(?:怪物?|怪兽|精灵|人|卡)|把(?:对手|对面|对方).{0,8}(?:拉|拖|拽|换))/.test(c) || (fuzzyItem && fuzzyItem.id === "item_flute")) {
+        /* 按提及怪兽阵营区分「召唤笛（拉对手备战）」与「撤退换人（把己方备战拉上主战）」，避免互抢 */
+        const flutePlayerMon = SpecEngine.matchMonster(c, "player");
+        const fluteEnemyMon = SpecEngine.matchMonster(c, "opponent");
+        const explicitFluteSignal = /(よびだし笛|呼び出し笛|ふえ|引っ張り|引きずり出|強制交代|前に引き|召唤笛|呼叫笛|笛子|吹笛|吹口?哨|哨子|强拉|强迫.{0,4}换|强行.{0,4}换|拖.{0,4}(?:对手|对方|对面|敌方|后排)|拉.{0,4}(?:对手|对方|对面)|拽.{0,4}(?:上来|出来)|逼.{0,3}(?:对手|对面|对方)换|(?:对手|对面|对方).{0,4}换(?:怪物?|怪兽|精灵|人|卡)|把(?:对手|对面|对方).{0,8}(?:拉|拖|拽|换))/.test(c);
+        const pullUpFluteSignal = /(?:拉上来|拉出来|拉上场)/.test(c)
+          && !flutePlayerMon
+          && (Boolean(fluteEnemyMon) || /(?:对手|对面|对方|敌方|相手)/.test(c));
+        if (explicitFluteSignal || pullUpFluteSignal || (fuzzyItem && fuzzyItem.id === "item_flute")) {
           actions.push({ type: "USE_ITEM", card_id: "item_flute", target: this.resolveSlotFromText(c, "enemy", board, { benchOnly: true }), _clause: c, _clauseIdx: ci });
           continue;
         }
         /* 先判定己方撤退/主战与备战交换（中/日双语），防止“把备战区的炎龙ex和主战交换 / ベンチの炎龍exとバトル場を交換”被误判为从手牌下怪（PLAY_BENCH） */
-        if (/(交代|こうたい|交換|こうかん|入れ替|いれかえ|下げて|さげて|逃げて|にげる|撤退|てったい|チェンジ|スイッチ|バトン|ベンチに戻|前と交代|先発と交代|バトル場と(?:交代|交換)|换人|换上|换下|退回|下场|撤下去|拉回后排|拉回来|切回|切换|交换|互换|对换|替换|调换|换位|换个位置|换一换|换过来|换上去|换下来|顶上来|(?:和|跟|与).{0,8}换|把.{0,8}换(?:到|上|下|成|为|出)|换.{0,6}(?:上|下|成|为|出))/.test(c)
+        if (/(交代|こうたい|交換|こうかん|入れ替|いれかえ|下げて|さげて|逃げて|にげる|撤退|てったい|チェンジ|スイッチ|バトン|ベンチに戻|前と交代|先発と交代|バトル場と(?:交代|交換)|换人|换上|换下|退回|下场|撤下去|拉回后排|拉回来|拉上来|拉上场|拉出来|切回|切换|交换|互换|对换|替换|调换|换位|换个位置|换一换|换过来|换上去|换下来|顶上来|(?:和|跟|与).{0,8}换|把.{0,8}换(?:到|上|下|成|为|出)|换.{0,6}(?:上|下|成|为|出))/.test(c)
           && !/(?:对手|对面|对方|敌方|相手)/.test(c)) {
           const target = this.resolveSlotFromText(c, "player", board, { benchOnly: true });
           actions.push({ type: "RETREAT", target, _clause: c, _clauseIdx: ci });
@@ -6099,6 +6122,11 @@
         const idx = s.player.hand.indexOf(fallbackCardId);
         if (idx !== -1) return idx;
       }
+      /* 未点名具体怪兽时，若原话属于提问/咨询或提前下达战斗动作（贴能量、攻击、防御、道具、技能、规则询问等），绝不按属性字/数字误选首发 */
+      if (NLUEngine.isQuestionOrStatusQuery(fixed)
+        || /(エネルギー|えねるぎー|エネ|えね|能量|贴能|充能|攻击|攻撃|防御|ぼうぎょ|撤退|交代|伤药|きずぐすり|补给|補給|回收|回収|力量徽章|パワーバッジ|召唤笛|よびだし笛|结束回合|ターンエンド|技能|ワザ|规则|ルール|弱点|克制|伤害|ダメージ|啥情况|什么情况|推荐|建议|怎么玩|どう|何すれば|おすすめ)/i.test(fixed)) {
+        return -1;
+      }
       const monIndices = s.player.hand
         .map((id, idx) => (SpecEngine.getMonster(id) ? idx : -1))
         .filter((idx) => idx !== -1);
@@ -6742,6 +6770,10 @@
       this.clearIdleTimer();
       this.idleNudgeCount = 0;
       this.lastPlayerUtterance = "";
+      if (act && act.type !== "INSPECT" && VoiceEngine.isSpeaking && VoiceEngine.currentSpeakItem?.priority !== "critical") {
+        VoiceEngine.fadeOutAndStopPlayback(70);
+        VoiceEngine.lastSpeakEndAt = 0;
+      }
       s.busy = true;
       try {
         await this.executeAction(act);
@@ -7109,8 +7141,12 @@
           const hasPronoun = /(?:它|他|她|这只|那只|刚才那只|それ|こいつ|そいつ|さっきの|そのまま)/.test(actClause);
           const keepComboTarget = queue.length > 1 && hasPronoun && Boolean(a.target);
           if (a.type === "ATTACK") {
-            if (!explicitSkill && !NLUEngine.hasExplicitAttackIntent(rawUtter) && !/(打|撃|うって|撃って|殴|なぐ|やれ|いけ|行け|使って|つかって|発動|はつどう|技|わざ|ワザ|倒せ|たおせ)/.test(rawUtter)) continue;
-            if (!explicitSkill) a.skill_name = null;
+            const actColloquialSkill = NLUEngine.resolveColloquialSkillFromClause(actClause || rawUtter, snapNow);
+            if (!explicitSkill && !actColloquialSkill && !NLUEngine.hasExplicitAttackIntent(rawUtter) && !/(打|撃|うって|撃って|殴|なぐ|やれ|いけ|行け|使って|つかって|発動|はつどう|技|わざ|ワザ|倒せ|たおせ)/.test(rawUtter)) continue;
+            if (!explicitSkill) {
+              if (actColloquialSkill) a.skill_name = a.skill_name || actColloquialSkill.name_ja;
+              else a.skill_name = null;
+            }
             const atkTarget = NLUEngine.resolveSlotFromText(actClause, "enemy", snapNow)
               || (queue.length === 1 ? NLUEngine.resolveSlotFromText(rawUtter, "enemy", snapNow) : null);
             if (atkTarget) a.target = atkTarget;
@@ -7150,7 +7186,7 @@
             }
           }
           if (a.type === "USE_ITEM") {
-            if (isVoiceInput && !/(きずぐすり|回復|かいふく|ヒール|ポーション|体力|傷薬|伤药|上药|吃药|喝药|嗑药|用个?药|贴伤药|回血|补血|治|加血|奶|飲|のむ|笛|ふえ|呼叫笛|哨|呼び出|引っ張り|強制交代|拉|拖|吹|换怪|補給|ほきゅう|ドロー|引|ひく|抽|摸|过牌|补牌|バッジ|ばっじ|パワー|バフ|アップ|力量|加攻|加伤害|增伤|強化|强化|回収|かいしゅう|回収|回收|捞|捡|戻|もど|道具|グッズ|サポート|支援|使|つかう|つかって|用)/.test(rawUtter) && !explicitItem) continue;
+            if (isVoiceInput && !/(きずぐすり|回復|かいふく|ヒール|ポーション|体力|傷薬|伤药|上药|吃药|喝药|嗑药|用个?药|贴伤药|回血|补血|治|加血|奶|飲|のむ|笛|ふえ|呼叫笛|哨|呼び出|引っ張り|強制交代|拉|拖|吹|换怪|補給|ほきゅう|ドロー|引|ひく|抽|摸|过牌|补牌|バッジ|ばっじ|パワー|バフ|アップ|力量|加攻|加伤害|增伤|強化|强化|回収|かいしゅう|回収|回收|拿回|取回|捞|捡|戻|もど|道具|グッズ|サポート|支援|使|つかう|つかって|用)/.test(rawUtter) && !explicitItem) continue;
             if (a.card_id === "item_potion") {
               const pTarget = NLUEngine.resolveSlotFromText(actClause, "player", snapNow)
                 || (queue.length === 1 ? NLUEngine.resolveSlotFromText(rawUtter, "player", snapNow) : null);
@@ -7167,7 +7203,7 @@
           if (a.type === "RETREAT") {
             const rSlot = NLUEngine.resolveSlotFromText(actClause, "player", snapNow, { benchOnly: true })
               || (queue.length === 1 ? NLUEngine.resolveSlotFromText(rawUtter, "player", snapNow, { benchOnly: true }) : null);
-            const hasRetreatWord = /(交代|こうたい|交換|こうかん|入れ替|いれかえ|下|さげ|さが|逃げ|にげる|にげ|撤退|てったい|チェン|スイッチ|バトン|戻|もど|引|ひく|换|退|切|下场|撤下去|拉回|顶上)/.test(rawUtter)
+            const hasRetreatWord = /(交代|こうたい|交換|こうかん|入れ替|いれかえ|下|さげ|さが|逃げ|にげる|にげ|撤退|てったい|チェン|スイッチ|バトン|戻|もど|引|ひく|换|退|切|下场|撤下去|拉回|拉上|拉出|顶上)/.test(rawUtter)
               || (Boolean(rSlot) && /(上场|出战|主战|前排|战斗区|バトル場|前[にへ]|出陣)/.test(rawUtter));
             if (isVoiceInput && !hasRetreatWord) continue;
             a.target = rSlot || null;
@@ -7251,6 +7287,17 @@
       }
     },
 
+    /** 按序数回答（1/第一/2/第二/1番目/2番目等）从当前追问候选项精确映射槽位，避免空备战槽位错位 */
+    resolveOrdinalOptionSlot(fixed, options) {
+      if (!Array.isArray(options) || options.length === 0) return null;
+      let optIdx = -1;
+      if (/(1|１|1番目|１番目|最初|ひとつ|第一)/.test(fixed)) optIdx = 0;
+      else if (/(2|２|2番目|２番目|ふたつ|第二)/.test(fixed)) optIdx = 1;
+      else if (/(3|３|3番目|３番目|みっつ|第三)/.test(fixed)) optIdx = 2;
+      else if (/(4|４|4番目|４番目|よっつ|第四)/.test(fixed)) optIdx = 3;
+      return optIdx >= 0 ? (options[optIdx]?.slot || null) : null;
+    },
+
     /** 在处于追问/选择待定态（confirm/choose_skill/choose_card/choose_target/promote_bench）时解析并续接执行玩家回复 */
     async handlePendingReply(rawText) {
       const p = this.state.pending;
@@ -7259,7 +7306,7 @@
       const remaining = Array.isArray(p.remainingActions) ? p.remainingActions : [];
       const savedRival = p.customRival || null;
 
-      if (p.type !== "promote_bench" && p.type !== "choose_starter" && /(いいえ|キャンセル|やめる|やめて|不要|不用|别|不是|取消|算了|不认输|不结束|不对|还没|まだ|继续)/.test(fixed)) {
+      if (p.type !== "promote_bench" && p.type !== "choose_starter" && /(いいえ|キャンセル|やめる|やめて|やめとく|不要|不用|别|不是|取消|算了|不认输|不降参|不想降参|不投|不结束|降参しない|投了しない|しない|不对|还没|まだ|继续)/.test(fixed)) {
         this.clearPending();
         const ja = "操作をキャンセルしました。";
         const zh = "已取消该操作。";
@@ -7297,7 +7344,7 @@
       }
 
       if (p.type === "confirm_surrender") {
-        if (/(はい|うん|降参|投了|リタイア|そう|是的|确认|确定|认输|投降)/.test(fixed)) {
+        if (!/([不别没]|まだ|ない)/.test(fixed) && /(はい|うん|降参|投了|リタイア|そう|是的|确认|确定|认输|投降)/.test(fixed)) {
           this.clearPending();
           const r = SpecEngine.getRivalLine("surrender");
           TableUI.setRival(r.ja, r.zh);
@@ -7319,7 +7366,7 @@
         }
         if (!picked && p.context.usable.length === 1 && /(はい|うん|お願い|それで|攻撃|好的|是的|确认|攻击|用这个)/.test(fixed)) picked = p.context.usable[0];
         if (!picked && /(1|１|上|最初|ひとつ|第一)/.test(fixed)) picked = p.context.usable[0];
-        if (!picked && /(2|２|下|ふたつ|第二)/.test(fixed)) picked = p.context.usable[1];
+        if (!picked && /(2|２|下|ふたつ|第二|大招|必杀技|必殺技|终极技|大技)/.test(fixed)) picked = p.context.usable[1] || p.context.usable[0];
         if (picked) {
           this.clearPending();
           this.state.busy = true;
@@ -7375,7 +7422,11 @@
       }
 
       if (p.type === "choose_target") {
-        const slot = NLUEngine.resolveSlotFromText(fixed, p.context.side, this.getSnapshot());
+        const isBenchOnly = p.context?.action?.type === "RETREAT" || p.context?.action?.card_id === "item_flute";
+        let slot = NLUEngine.resolveSlotFromText(fixed, p.context.side, this.getSnapshot(), { benchOnly: isBenchOnly });
+        if (!slot || !this.getSlotUnit(slot)) {
+          slot = this.resolveOrdinalOptionSlot(fixed, p.options);
+        }
         if (slot && this.getSlotUnit(slot)) {
           const nextAct = { ...p.context.action, target: slot };
           this.clearPending();
@@ -7392,7 +7443,11 @@
       }
 
       if (p.type === "promote_bench") {
-        const slot = NLUEngine.resolveSlotFromText(fixed, "player", this.getSnapshot());
+        let slot = NLUEngine.resolveSlotFromText(fixed, "player", this.getSnapshot(), { benchOnly: true });
+        if (!slot) {
+          const benchFallback = this.getBenchEntries("player").map((e) => ({ slot: e.slot }));
+          slot = this.resolveOrdinalOptionSlot(fixed, p.options || benchFallback);
+        }
         const m = /^player_bench_([0-2])$/.exec(slot || "");
         if (m && this.state.player.bench[Number(m[1])]) {
           this.clearPending();
@@ -7405,7 +7460,7 @@
       return false;
     },
 
-    /** 非阻塞双语播报：错峰预取对手语音防双 WS 争抢，并保存完整双语文本支持语言切换实时重播 */
+    /** 非阻塞双语播报：支持字幕/口播分离（speakJa/speakZh）与静默更新对手气泡（silentRival），降低高频操作口播滞后感 */
     announceAndReact(ja, zh, rivalEvent, customRival = null, opts = {}) {
       const priority = opts.priority || "normal";
       const lang = getTtsLang();
@@ -7415,7 +7470,8 @@
       const rJa = (customRival && customRival.ja) || (rivalEvent ? SpecEngine.getRivalLine(rivalEvent).ja : "");
       const rZh = (customRival && customRival.zh) || (rivalEvent ? SpecEngine.getRivalLine(rivalEvent).zh : "");
       const spokenRival = lang === "zh" ? (rZh || rJa) : (rJa || rZh);
-      if (priority !== "low") VoiceEngine.clearQueuedOnly(true, !spokenRival);
+      const speakRivalAllowed = Boolean(spokenRival && !opts.silentRival);
+      if (priority !== "low") VoiceEngine.clearQueuedOnly(true, !speakRivalAllowed);
       TableUI.setReferee(ja, zh);
       TableUI.appendLog(ja, zh);
       this.pushHistory("referee", ja);
@@ -7423,12 +7479,12 @@
       if (rJa || rZh) {
         TableUI.setRival(rJa, rZh);
       }
-      if (priority === "high" && spokenReferee && spokenRival && !opts.interruptible) {
+      if (priority === "high" && spokenReferee && speakRivalAllowed && !opts.interruptible) {
         /* 仅保留 700ms 启动防爆音窗口，之后允许玩家随时开口灵敏打断 */
         VoiceEngine.bargeInGuardUntil = Math.max(VoiceEngine.bargeInGuardUntil || 0, Date.now() + 700);
       }
       if (spokenReferee) VoiceEngine.speak({ ja: refJa, zh: refZh }, "referee", { priority, interruptible: Boolean(opts.interruptible), lang });
-      if (spokenRival) {
+      if (speakRivalAllowed) {
         const rivalPriority = priority === "high" ? "high" : "normal";
         const firstRivalChunk = VoiceEngine.splitIntoClauses(spokenRival, lang)[0] || spokenRival;
         VoiceEngine.speak({ ja: rJa, zh: rZh }, "rival", { priority: rivalPriority, interruptible: Boolean(opts.interruptible), lang, deferPrefetch: true });
@@ -7615,7 +7671,12 @@
             `已为${tDef.name_zh}附着${itemDef.name_zh}。${unlockZh}`,
             "attach_energy",
             customRival,
-            { priority: newlyUnlocked.length ? "normal" : "low" }
+            {
+              priority: newlyUnlocked.length ? "normal" : "low",
+              speakJa: newlyUnlocked.length ? `${tDef.name_ja}に${itemDef.name_ja}！${newlyUnlocked[0].name_ja}解放！` : `${tDef.name_ja}に${itemDef.name_ja}！`,
+              speakZh: newlyUnlocked.length ? `${tDef.name_zh}贴${itemDef.name_zh}！解锁${newlyUnlocked[0].name_zh}！` : `${tDef.name_zh}贴${itemDef.name_zh}！`,
+              silentRival: newlyUnlocked.length === 0
+            }
           );
           if (newlyUnlocked.length) GuideEngine.trigger("first_skill_ready", false);
           return true;
@@ -7697,7 +7758,12 @@
             `已将${def.name_zh}放入备战区（${POS_ZH[emptyIdx]}）。${def.is_ex ? "（被击倒送 2 张奖赏卡）" : ""}`,
             def.is_ex ? "play_ex" : "play_bench",
             customRival,
-            { priority: def.is_ex ? "normal" : "low" }
+            {
+              priority: def.is_ex ? "normal" : "low",
+              speakJa: `${def.name_ja}、ベンチへ！`,
+              speakZh: `${def.name_zh}放入备战区！`,
+              silentRival: !def.is_ex
+            }
           );
           GuideEngine.trigger(def.is_ex ? "first_ex_card" : "first_bench_play", false);
           return true;
@@ -7767,7 +7833,12 @@
               `きずぐすり使用！${tDef.name_ja}のHPを${healed}回復しました。`,
               `使用伤药！${tDef.name_zh}回复了 ${healed} HP。`,
               "heal",
-              customRival
+              customRival,
+              {
+                speakJa: `${tDef.name_ja}のHP${healed}回復！`,
+                speakZh: `${tDef.name_zh}回复${healed}点血！`,
+                silentRival: true
+              }
             );
             return true;
           }
@@ -7846,7 +7917,12 @@
               `補給バッグで山札を${drawn.length}枚引きました。`,
               `使用补给包，抽了 ${drawn.length} 张牌。`,
               "draw",
-              customRival
+              customRival,
+              {
+                speakJa: `補給バッグで${drawn.length}枚ドロー！`,
+                speakZh: `补给包抽 ${drawn.length} 张！`,
+                silentRival: true
+              }
             );
             return true;
           }
@@ -7893,7 +7969,8 @@
                 `エネ回収！トラッシュから${rDef ? rDef.name_ja : "エネルギー"}を手札に戻しました。`,
                 `使用能量回收！从弃牌区取回了${rDef ? rDef.name_zh : "1 张能量"}。`,
                 "recycle",
-                customRival
+                customRival,
+                { speakJa: "エネ回収！", speakZh: "能量回收！", silentRival: true }
               );
               return true;
             }
@@ -7919,7 +7996,8 @@
               `エネ回収！山札から${rDef ? rDef.name_ja : "エネルギー"}を手札に加えました。`,
               `使用能量回收！从牌库检索了${rDef ? rDef.name_zh : "1 张能量"}加入手牌。`,
               "recycle",
-              customRival
+              customRival,
+              { speakJa: "エネ探索！", speakZh: "检索能量！", silentRival: true }
             );
             return true;
           }
@@ -8001,7 +8079,8 @@
             `エネを${retreatCost}枚捨て、${picked.def.name_ja}と交代しました。`,
             `弃置 ${retreatCost} 点能量，换${picked.def.name_zh}进入战斗区。`,
             "retreat",
-            customRival
+            customRival,
+            { speakJa: `${picked.def.name_ja}に交代！`, speakZh: `换${picked.def.name_zh}上场！` }
           );
           return true;
         }
@@ -8028,7 +8107,8 @@
             "防御態勢に入りました（次の被ダメージ-30）。ターン終了です。",
             "进入防御姿态（下回合受击 -30），回合结束。",
             "defend",
-            customRival
+            customRival,
+            { speakJa: "防御態勢！ターン終了。", speakZh: "进入防御姿态，回合结束。" }
           );
           if (!(await this.matchDelay(650, seq))) return false;
           await this.finishPlayerTurn(seq);
@@ -8037,7 +8117,13 @@
 
         case "END_TURN": {
           const seq = this.matchSeq;
-          await this.announceAndReact("ターン終了。相手レンの番です。", "回合结束，轮到对手莲。", "end_turn", customRival);
+          await this.announceAndReact(
+            "ターン終了。相手レンの番です。",
+            "回合结束，轮到对手莲。",
+            "end_turn",
+            customRival,
+            { speakJa: "ターン終了！相手レンの番。", speakZh: "回合结束，对手莲的回合。" }
+          );
           if (!(await this.matchDelay(600, seq))) return false;
           await this.finishPlayerTurn(seq);
           return false;
