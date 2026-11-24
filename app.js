@@ -2221,7 +2221,9 @@
         ws: null,
         abort: null,
         t0: Date.now(),
+        tOpen: 0,
         tFirstAudio: 0,
+        tDone: 0,
         promise: null
       };
       this.niaStreams.set(cacheKey, stream);
@@ -2272,6 +2274,7 @@
             const finishOk = () => {
               if (settled || stream.aborted) return;
               settled = true;
+              stream.tDone = Date.now() - stream.t0;
               clearTimers();
               try { if (stream.ws && stream.ws.readyState < 2) stream.ws.close(); } catch (_) {}
               if (stream.totalBytes < 4) return reject(new Error("Nia TTS empty audio"));
@@ -2305,6 +2308,7 @@
                 try { if (ws.readyState < 2) ws.close(); } catch (_) {}
                 return;
               }
+              stream.tOpen = Date.now() - stream.t0;
               try {
                 /* 按角色注入差异化韵律参数：裁判清脆利落，对手「莲」更有热血挑衅张力 */
                 const personaProsody = role === "rival"
@@ -2665,6 +2669,7 @@
         let startedPlayback = false;
         let scheduledCount = 0;
         let endedCount = 0;
+        let underrunCount = 0;
         let streamDone = false;
         let loggedFirst = false;
         let guardTimer = null;
@@ -2719,10 +2724,10 @@
           }, Math.max(4500, remainMs + 3000));
         };
 
-        /* 按语种深度防抖缓冲：日语流式模型包间抖动显著大于中文，首播攒够 600ms (28800B)/批处理 300ms (14400B) 且欠载恢复补足 220ms 安全垫，彻底消除连环卡顿 */
-        const INITIAL_PREBUF_BYTES = lang === "ja" ? 28800 : 8640;
-        const BATCH_FLUSH_BYTES = lang === "ja" ? 14400 : 5760;
-        const LEAD_IN_SEC = lang === "ja" ? 0.18 : 0.12;
+        /* 按语种分级防抖缓冲：日语流式首播调整为 350ms (16800B)/批处理 180ms (8640B)/前导 100ms 兼顾首声速度与防抖，欠载恢复保留 220ms 安全垫 */
+        const INITIAL_PREBUF_BYTES = lang === "ja" ? 16800 : 8640;
+        const BATCH_FLUSH_BYTES = lang === "ja" ? 8640 : 5760;
+        const LEAD_IN_SEC = lang === "ja" ? 0.10 : 0.12;
         const UNDERRUN_PAD_SEC = lang === "ja" ? 0.22 : 0.08;
         let pendingChunks = [];
         let pendingBytesLen = 0;
@@ -2731,6 +2736,9 @@
           if (settled) return;
           if (token !== this.speakToken) { cancelPlayback(); return; }
           if (streamDone && pendingBytesLen === 0 && endedCount >= scheduledCount) {
+            if (startedPlayback && underrunCount > 0) {
+              DebugLog.add("TTS", `SenseTime Nia 播放完成 (${role}/${voiceId}, 全句 ${s.tDone || (Date.now() - t0)}ms / 欠载 ${underrunCount}次)`, text);
+            }
             finishOk();
           }
         };
@@ -2774,11 +2782,12 @@
             if (!loggedFirst) {
               loggedFirst = true;
               const ttfa = Date.now() - t0;
-              DebugLog.add("TTS", `SenseTime Nia 流式 TTS (${role}/${voiceId}, 首声 ${ttfa}ms)`, text);
+              DebugLog.add("TTS", `SenseTime Nia 流式 TTS (${role}/${voiceId}, 建连 ${s.tOpen || 0}ms / 首包 ${s.tFirstAudio || 0}ms / 首声 ${ttfa}ms)`, text);
             }
           } else if (nextPlayTime < now + 0.025) {
             nextPlayTime = now + UNDERRUN_PAD_SEC;
             didUnderrun = true;
+            underrunCount += 1;
           }
 
           /* 首包或欠载重同步时加 5ms 平滑淡入，尾端加 2ms 微淡出防止切片爆音 */
