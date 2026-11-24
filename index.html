@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -2887,7 +2887,14 @@
      ========================================================================= */
   html, body, .app-shell, .table-shell, .playmat, .hand-cards, .bench-row, .modal-backdrop, .modal-box {
     overscroll-behavior-x: none;
+  }
+  .modal-backdrop, .modal-box {
     overscroll-behavior-y: none;
+  }
+  @media (min-width: 821px) {
+    html, body, .app-shell, .table-shell, .playmat {
+      overscroll-behavior-y: none;
+    }
   }
 
   /* 首帧防闪屏：数据与规则弹窗渲染完成前隐藏底层牌桌与弹窗，仅展示黑金纹章预遮罩 */
@@ -3926,7 +3933,27 @@
       --slot-w: calc(var(--card-w) + 10px);
       --slot-h: calc(var(--card-h) + 20px);
     }
-    html, body { height: auto; min-height: 100dvh; overflow-y: auto; overflow-x: hidden; }
+    html {
+      height: auto;
+      min-height: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: auto;
+    }
+    body {
+      height: auto;
+      min-height: 100dvh;
+      overflow: visible;
+      display: block;
+      overscroll-behavior-y: auto;
+      touch-action: pan-y pinch-zoom;
+    }
+    .table-shell {
+      height: auto;
+      min-height: 0;
+      overflow: visible;
+    }
     .app-shell {
       height: auto;
       min-height: 100dvh;
@@ -4118,6 +4145,9 @@
       display: flex;
       justify-content: flex-start;
       overflow-x: auto;
+      overflow-y: hidden;
+      overscroll-behavior-y: auto;
+      touch-action: pan-x pan-y;
       gap: 7px;
       padding-bottom: 3px;
       -webkit-overflow-scrolling: touch;
@@ -4175,8 +4205,10 @@
       flex-direction: row;
       align-items: stretch;
       overflow-x: auto;
-      overflow-y: visible;
-      padding: 11px 6px 6px;
+      overflow-y: hidden;
+      overscroll-behavior-y: auto;
+      touch-action: pan-x pan-y;
+      padding: 12px 6px 6px;
       gap: 8px;
       -webkit-overflow-scrolling: touch;
     }
@@ -5007,7 +5039,7 @@
   }
 </style>
 </head>
-<body data-lang="ja">
+<body data-lang="zh">
 <!-- 首帧防闪屏黑金预遮罩（含手绘矢量 SVG 言灵纹章 Logo） -->
 <div class="boot-splash" id="bootSplash" aria-hidden="true">
   <svg class="boot-splash-emblem" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
@@ -5093,16 +5125,16 @@
       <span class="turn-pill" id="turnBadge">ターン 1：あなたの番</span>
     </div>
     <div class="top-actions">
-      <!-- 顶栏 SVG 语言切换胶囊 -->
-      <div class="lang-switch" id="topbarLangSwitch" role="group" aria-label="Language">
-        <button type="button" class="lang-pill active" data-set-lang="ja" title="日本語に切替">
+      <!-- 顶栏 SVG 语言切换胶囊（仅切换界面语言，不影响 ASR/TTS 语种） -->
+      <div class="lang-switch" id="topbarLangSwitch" role="group" aria-label="UI Language">
+        <button type="button" class="lang-pill" data-set-lang="ja" title="表示言語を日本語に切替">
           <svg class="lang-badge-svg" viewBox="0 0 24 24" aria-hidden="true">
             <rect x="1.5" y="2.5" width="21" height="19" rx="5" fill="rgba(255,244,214,0.16)" stroke="currentColor" stroke-width="1.5"/>
             <text x="12" y="15.8" text-anchor="middle" font-size="11.5" font-weight="800" fill="currentColor" font-family="Noto Sans JP, sans-serif">あ</text>
           </svg>
           <span>日本語</span>
         </button>
-        <button type="button" class="lang-pill" data-set-lang="zh" title="切换为中文">
+        <button type="button" class="lang-pill active" data-set-lang="zh" title="仅切换中文界面">
           <svg class="lang-badge-svg" viewBox="0 0 24 24" aria-hidden="true">
             <rect x="1.5" y="2.5" width="21" height="19" rx="5" fill="rgba(255,244,214,0.16)" stroke="currentColor" stroke-width="1.5"/>
             <text x="12" y="15.8" text-anchor="middle" font-size="11.5" font-weight="800" fill="currentColor" font-family="Noto Sans SC, sans-serif">文</text>
@@ -5389,15 +5421,15 @@
         <h2><span class="lang-ja">言霊デュエル・ルール説明</span><span class="lang-zh">言灵对决・规则说明</span></h2>
       </div>
       <div class="rules-head-right">
-        <div class="lang-switch light" id="rulesLangSwitch" role="group" aria-label="Language">
-          <button type="button" class="lang-pill active" data-set-lang="ja">
+        <div class="lang-switch light" id="rulesLangSwitch" role="group" aria-label="UI Language">
+          <button type="button" class="lang-pill" data-set-lang="ja">
             <svg class="lang-badge-svg" viewBox="0 0 24 24" aria-hidden="true">
               <rect x="1.5" y="2.5" width="21" height="19" rx="5" fill="rgba(160,114,40,0.12)" stroke="currentColor" stroke-width="1.5"/>
               <text x="12" y="15.8" text-anchor="middle" font-size="11.5" font-weight="800" fill="currentColor" font-family="Noto Sans JP, sans-serif">あ</text>
             </svg>
             <span>日本語</span>
           </button>
-          <button type="button" class="lang-pill" data-set-lang="zh">
+          <button type="button" class="lang-pill active" data-set-lang="zh">
             <svg class="lang-badge-svg" viewBox="0 0 24 24" aria-hidden="true">
               <rect x="1.5" y="2.5" width="21" height="19" rx="5" fill="rgba(160,114,40,0.12)" stroke="currentColor" stroke-width="1.5"/>
               <text x="12" y="15.8" text-anchor="middle" font-size="11.5" font-weight="800" fill="currentColor" font-family="Noto Sans SC, sans-serif">文</text>
@@ -5453,22 +5485,23 @@
     </div>
 
     <div class="cfg-scroll-body">
-    <!-- 0. 界面与语音语言同步开关 -->
+    <!-- 0. 界面显示语言独立开关（仅切换界面文字，不改 ASR / TTS 语种） -->
     <div class="cfg-section">
       <div class="cfg-section-head" style="margin-bottom:4px;border-bottom:none;padding-bottom:2px;">
         <span class="cfg-section-title">
           <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
-          <span class="lang-ja">表示・音声言語</span><span class="lang-zh">显示・语音语言</span>
+          <span class="lang-ja">表示言語</span><span class="lang-zh">界面语言</span>
+          <span style="font-size:11px;font-weight:500;color:var(--ink-sub);margin-left:4px;"><span class="lang-ja">（画面のみ・ASR/TTSは下で独立設定）</span><span class="lang-zh">（仅改界面文字・ASR/TTS 在下方独立设置）</span></span>
         </span>
-        <div class="lang-switch light" id="settingsLangSwitch" role="group" aria-label="Language">
-          <button type="button" class="lang-pill active" data-set-lang="ja">
+        <div class="lang-switch light" id="settingsLangSwitch" role="group" aria-label="UI Language">
+          <button type="button" class="lang-pill" data-set-lang="ja">
             <svg class="lang-badge-svg" viewBox="0 0 24 24" aria-hidden="true">
               <rect x="1.5" y="2.5" width="21" height="19" rx="5" fill="rgba(160,114,40,0.12)" stroke="currentColor" stroke-width="1.5"/>
               <text x="12" y="15.8" text-anchor="middle" font-size="11.5" font-weight="800" fill="currentColor" font-family="Noto Sans JP, sans-serif">あ</text>
             </svg>
             <span>日本語</span>
           </button>
-          <button type="button" class="lang-pill" data-set-lang="zh">
+          <button type="button" class="lang-pill active" data-set-lang="zh">
             <svg class="lang-badge-svg" viewBox="0 0 24 24" aria-hidden="true">
               <rect x="1.5" y="2.5" width="21" height="19" rx="5" fill="rgba(160,114,40,0.12)" stroke="currentColor" stroke-width="1.5"/>
               <text x="12" y="15.8" text-anchor="middle" font-size="11.5" font-weight="800" fill="currentColor" font-family="Noto Sans SC, sans-serif">文</text>
@@ -5557,7 +5590,7 @@
       </div>
     </div>
 
-    <!-- 3. TTS 语音合成入口（切换模型或界面语言时音色自动联动） -->
+    <!-- 3. TTS 语音合成入口（支持独立选择播报语种，与界面语言和 ASR 自由组合） -->
     <div class="cfg-section">
       <div class="cfg-section-head">
         <span class="cfg-section-title">
@@ -5578,13 +5611,22 @@
             <option value="chrome_tts">Chrome TTS</option>
           </select>
         </div>
-        <div class="cfg-field cfg-hidden" id="ttsModelField">
+        <div class="cfg-field">
+          <label><span class="lang-ja">読み上げ言語（TTS）</span><span class="lang-zh">语音播报语种（TTS）</span></label>
+          <select id="ttsLang">
+            <option value="ja">日本語 (JAPANESE)</option>
+            <option value="zh">中文 (ZH_CN)</option>
+          </select>
+        </div>
+      </div>
+      <div class="cfg-grid cfg-hidden" id="ttsModelRow">
+        <div class="cfg-field" id="ttsModelField">
           <label><span class="lang-ja">Vertex TTS モデル</span><span class="lang-zh">Vertex TTS 模型</span></label>
           <input type="text" id="ttsModel" />
         </div>
         <div class="cfg-field" id="ttsEngineHintField">
           <label><span class="lang-ja">エンジン状態</span><span class="lang-zh">引擎状态</span></label>
-          <div class="cfg-hint-pill" id="ttsEngineHintText">SenseTime Nia 24kHz</div>
+          <div class="cfg-hint-pill" id="ttsEngineHintText">Vertex Gemini TTS</div>
         </div>
       </div>
 
