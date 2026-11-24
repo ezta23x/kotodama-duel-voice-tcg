@@ -4503,6 +4503,124 @@
     background: rgba(226, 198, 146, 0.72);
   }
 
+  /* ---------- 同类组件配色严格归一化（同一组件族全站共享完全一致的底色、描边与交互态） ---------- */
+  :root {
+    --btn-dk-bg: linear-gradient(180deg, #6d6256 0%, #5c5247 100%);
+    --btn-dk-hover: linear-gradient(180deg, #7b6f62 0%, #695e52 100%);
+    --btn-dk-border: #9b8462;
+    --cta-gold-bg: linear-gradient(180deg, #c7953c 0%, #a87927 100%);
+    --cta-gold-hover: linear-gradient(180deg, #d2a046 0%, #b4842f 100%);
+    --cta-gold-border: #8a621c;
+    --cta-ok-bg: linear-gradient(180deg, #438f67 0%, #347553 100%);
+    --cta-ok-border: #295e42;
+    --cta-danger-bg: linear-gradient(180deg, #c65d51 0%, #a6463b 100%);
+    --cta-danger-border: #88372e;
+    --card-dk-bg: linear-gradient(180deg, #685e53 0%, #5c5248 100%);
+    --well-dk-bg: #453d35;
+    --token-mat-bg: linear-gradient(180deg, #f5efe2 0%, #e7dcc6 100%);
+    --token-mat-border: #b29973;
+    --modal-inset-bg: #e6dac2;
+    --modal-inset-border: #c7b08a;
+    --modal-input-bg: #fbf8f0;
+  }
+
+  /* A. 深色底次要按钮 & 筛选胶囊全站统一 */
+  .top-btn,
+  .side-panel .btn-sm,
+  .hand-rail .btn-sm,
+  .dlog-chip {
+    background: var(--btn-dk-bg);
+    border-color: var(--btn-dk-border);
+    color: var(--dk-ink);
+  }
+  .top-btn:hover,
+  .side-panel .btn-sm:hover:where(:not(:disabled)),
+  .hand-rail .btn-sm:hover:where(:not(:disabled)),
+  .dlog-chip:hover {
+    background: var(--btn-dk-hover);
+    border-color: #c7ad80;
+    color: #fffdf8;
+  }
+
+  /* B. 主操作 CTA（暖金）/ 绿态（通话·引导·普通难度）/ 红态（挂断·危险·困难难度）全站统一 */
+  .side-panel .btn-sm.primary,
+  .hand-actions .btn-sm.btn-endturn,
+  .modal-box .btn-sm.primary,
+  .action-popover .btn-sm.primary,
+  .top-btn.log-on,
+  .dlog-chip.active {
+    background: var(--cta-gold-bg);
+    border-color: var(--cta-gold-border);
+    color: #fffdf8;
+  }
+  .side-panel .btn-sm.primary:hover:not(:disabled),
+  .hand-actions .btn-sm.btn-endturn:hover,
+  .modal-box .btn-sm.primary:hover:not(:disabled),
+  .top-btn.log-on:hover {
+    background: var(--cta-gold-hover);
+  }
+  .btn-voice,
+  .top-btn.guide-on,
+  .diff-btn.active {
+    background: var(--cta-ok-bg);
+    border-color: var(--cta-ok-border);
+    color: #fffdf8;
+  }
+  .btn-voice.in-call,
+  .modal-box .btn-sm.danger,
+  .diff-btn.hard.active {
+    background: var(--cta-danger-bg);
+    border-color: var(--cta-danger-border);
+    color: #fffdf8;
+  }
+
+  /* C. 侧栏信息卡片统一底色，仅以左侧 3.5px 语义色条区分角色 */
+  .bubble,
+  .bubble.rival,
+  .live-tip-box,
+  .dlog-item {
+    background: var(--card-dk-bg);
+    border: 1px solid rgba(255, 246, 228, 0.14);
+  }
+  .bubble { border-left: 3.5px solid #7ab2cf; }
+  .bubble.rival { border-left: 3.5px solid #df7d6e; }
+  .live-tip-box { border-left: 3.5px solid #6ac492; }
+
+  /* D. 侧栏凹槽容器与输入框统一 */
+  .notepad-log,
+  .dlog-list,
+  .voice-controls-grid input {
+    background: var(--well-dk-bg);
+    border-color: rgba(214, 186, 138, 0.3);
+    color: var(--dk-ink);
+  }
+
+  /* E. 牌桌指示物（牌库 / 弃牌 / 奖赏计数 / 回合次数）统一 */
+  .pile-box,
+  .prize-count-pill,
+  .limit-pill {
+    background: var(--token-mat-bg);
+    border-color: var(--token-mat-border);
+    color: #3f3225;
+  }
+
+  /* F. 弹窗内分区块与表单控件全站统一 */
+  .rules-block,
+  .cfg-section,
+  .codex-legend,
+  .pile-modal-banner,
+  .endturn-hints-list,
+  .dropzone {
+    background: var(--modal-inset-bg);
+    border-color: var(--modal-inset-border);
+  }
+  .cfg-field input,
+  .cfg-field select {
+    background: var(--modal-input-bg);
+    border-color: #bfa57b;
+    color: #2f2419;
+  }
+
   /* 中等桌面与小屏横屏下防止三列固定宽超出容器 */
   @media (min-width: 821px) and (max-width: 1280px),
          (max-height: 620px) and (orientation: landscape),
@@ -4791,22 +4909,22 @@
         <div class="notepad-log" id="matchLog"></div>
       </div>
 
-      <!-- 语音通话 / 输入框 / 实时 Tips 建议 -->
+      <!-- 实时战术建议（位于对局日志下方、语音通话与输入框上方） -->
+      <div class="live-tip-box" id="liveTipBox">
+        <div class="live-tip-label" style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+          <span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21h6v-1H9v1zm3-19a7 7 0 0 0-4 12.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26A7 7 0 0 0 12 2z"/></svg>Tips<span id="liveTipAiTag" style="display:none;margin-left:5px;font-size:11px;padding:0 5px;border-radius:4px;background:rgba(72,166,114,0.22);color:var(--dk-ok-text);">AI</span></span>
+          <button class="btn-sm" id="btnAiTip" style="padding:2px 8px;font-size:11.5px;"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/></svg><span class="lang-ja">AI戦術</span><span class="lang-zh">AI战术</span></button>
+        </div>
+        <div class="live-tip-ja" id="liveTipJa"></div>
+        <div class="live-tip-zh" id="liveTipZh" lang="zh-CN"></div>
+      </div>
+
+      <!-- 底部操作区：语音通话 + 指令输入发送（与右侧防御/结束回合底边对齐） -->
       <div class="voice-dock">
         <div class="voice-controls-grid">
           <button class="btn-voice" id="btnLiveCall"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.46.57 3.58a1 1 0 0 1-.25 1.01l-2.2 2.2z"/></svg><span class="lang-ja">通話開始</span><span class="lang-zh">开始通话</span></button>
           <input type="search" id="cmdInput" name="kotodama_cmd_search" placeholder="コマンド入力" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" />
           <button class="btn-sm primary" id="btnSendCmd"><span class="lang-ja">送信</span><span class="lang-zh">发送</span></button>
-        </div>
-
-        <!-- 实时战术建议（本地即时刷新 + 按需 AI 深度分析） -->
-        <div class="live-tip-box" id="liveTipBox">
-          <div class="live-tip-label" style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21h6v-1H9v1zm3-19a7 7 0 0 0-4 12.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26A7 7 0 0 0 12 2z"/></svg>Tips<span id="liveTipAiTag" style="display:none;margin-left:5px;font-size:11px;padding:0 5px;border-radius:4px;background:rgba(72,166,114,0.22);color:var(--dk-ok-text);">AI</span></span>
-            <button class="btn-sm" id="btnAiTip" style="padding:2px 8px;font-size:11.5px;"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/></svg><span class="lang-ja">AI戦術</span><span class="lang-zh">AI战术</span></button>
-          </div>
-          <div class="live-tip-ja" id="liveTipJa"></div>
-          <div class="live-tip-zh" id="liveTipZh" lang="zh-CN"></div>
         </div>
       </div>
     </aside>
