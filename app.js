@@ -9980,9 +9980,11 @@
       VoiceEngine.toggleCall((payload) => BattleEngine.handleUserInput(payload));
     });
 
-    $("btnRecordVoice").addEventListener("click", () => {
-      VoiceEngine.toggleRecord((payload) => BattleEngine.handleUserInput(payload));
-    });
+    if ($("btnRecordVoice")) {
+      $("btnRecordVoice").addEventListener("click", () => {
+        VoiceEngine.toggleRecord((payload) => BattleEngine.handleUserInput(payload));
+      });
+    }
 
     const submitText = () => {
       const val = $("cmdInput").value.trim();

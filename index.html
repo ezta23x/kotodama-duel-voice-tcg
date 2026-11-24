@@ -4080,75 +4080,159 @@
   }
 
   /* =========================================================================
-     10. 全站统一「暗胡桃木 & 古铜金」深色外壳主题（衬托中央羊皮纸牌桌与象牙实体卡牌）
+     10. 全站统一「曜石黑金（Boot 同源）」配色体系（低调高级、色彩克制、零色相打架）
      ========================================================================= */
   :root {
-    --dk-bg-0: #1e140c;
-    --dk-bg-1: #2a1c12;
-    --dk-bg-2: #362417;
-    --dk-bg-3: #452f1e;
-    --dk-inset: #21160e;
-    --dk-border: #8d6c3d;
-    --dk-border-soft: rgba(196, 154, 86, 0.34);
-    --dk-ink: #f7ebd3;
-    --dk-ink-sub: #c9b594;
-    --dk-ink-muted: #a48e6c;
-    --dk-gold-text: #f3d285;
-    --dk-ok-text: #7be0a5;
-    --dk-danger-text: #f39a8e;
+    --dk-bg-0: #0e0e10;
+    --dk-bg-1: #161619;
+    --dk-bg-2: #1f1f23;
+    --dk-bg-3: #2a2a30;
+    --dk-inset: #121215;
+    --dk-border: rgba(212, 166, 76, 0.42);
+    --dk-border-soft: rgba(212, 166, 76, 0.22);
+    --dk-ink: #f3eee2;
+    --dk-ink-sub: #aca79e;
+    --dk-ink-muted: #7f7b74;
+    --dk-gold-text: #f3d792;
+    --dk-ok-text: #72dca0;
+    --dk-danger-text: #f2968a;
   }
 
   body {
     background:
-      radial-gradient(circle at 50% 24%, rgba(212, 166, 76, 0.1), transparent 56%),
-      linear-gradient(160deg, #332215 0%, #1d130b 100%);
+      radial-gradient(circle at 50% 24%, rgba(212, 166, 76, 0.06), transparent 54%),
+      linear-gradient(180deg, #1b1b1f 0%, #0e0e10 100%);
   }
 
-  /* 顶部栏：与左右暗胡桃木侧栏融为一体 */
+  /* 顶部栏：与启动黑金屏同源曜石炭黑 + 细香槟金线 */
   .topbar {
-    background: linear-gradient(180deg, #3a2719 0%, #281a10 100%);
-    border-color: var(--dk-border);
-    box-shadow: 0 4px 14px rgba(14, 8, 3, 0.45), inset 0 1px 0 rgba(255, 232, 186, 0.14);
+    background: linear-gradient(180deg, #222126 0%, #16161a 100%);
+    border: 1.5px solid var(--dk-border);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 240, 206, 0.08);
+  }
+  .turn-pill {
+    background: rgba(212, 166, 76, 0.12);
+    border-color: rgba(212, 166, 76, 0.42);
+    color: var(--dk-gold-text);
+  }
+  .turn-pill.enemy-turn {
+    background: rgba(189, 79, 59, 0.24);
+    border-color: rgba(240, 146, 134, 0.54);
+    color: #ffe3df;
   }
   .top-btn {
-    background: linear-gradient(180deg, #4b3422 0%, #372517 100%);
-    border-color: #8f6e3f;
+    background: linear-gradient(180deg, #2b2b31 0%, #1f1f24 100%);
+    border-color: rgba(212, 166, 76, 0.34);
     color: var(--dk-ink);
-    box-shadow: 0 2px 5px rgba(12, 7, 3, 0.36), inset 0 1px 0 rgba(255, 236, 196, 0.16);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
   .top-btn:hover {
-    background: linear-gradient(180deg, #593e28 0%, #432d1c 100%);
-    border-color: #c29855;
-    color: #fff8e8;
+    background: linear-gradient(180deg, #35353d 0%, #27272d 100%);
+    border-color: rgba(226, 182, 92, 0.68);
+    color: #fffdf7;
   }
   .top-btn.guide-on {
-    background: linear-gradient(180deg, #35835a 0%, #256242 100%);
-    border-color: #63b588;
+    background: linear-gradient(180deg, #2f7d55 0%, #225e3f 100%);
+    border-color: rgba(114, 220, 160, 0.56);
     color: #fffdf8;
   }
   .top-btn.log-on {
-    background: linear-gradient(180deg, #c78f30 0%, #9c6c1b 100%);
-    border-color: #e4bd6d;
+    background: linear-gradient(180deg, #c68f31 0%, #9b6c1c 100%);
+    border-color: #e6c174;
     color: #fffdf8;
   }
-
-  /* 中央羊皮纸对战垫：温润沙石焦糖底，作为全屏绝对视觉主角 */
-  .playmat {
-    background:
-      radial-gradient(ellipse at 50% 46%, #e8d5ae 0%, #d8bf91 60%, #c6a876 100%);
-    border: 2px solid #9f7c46;
-    box-shadow:
-      0 12px 30px rgba(12, 7, 3, 0.48),
-      inset 0 0 0 2px rgba(255, 245, 220, 0.28),
-      inset 0 0 38px rgba(102, 70, 32, 0.24);
+  .lang-switch {
+    background: rgba(12, 12, 15, 0.62);
+    border-color: rgba(212, 166, 76, 0.38);
   }
 
-  /* 左右双侧栏（语音/日志栏 + 纵向手牌栏）：统一暗胡桃木底色，彻底不与牌桌喧宾夺主 */
+  /* 中央对战垫：低饱和曜石暗铜绒面舞台 + 中央微光，彻底消除土黄与暗褐打架，让象牙实体卡牌成为绝对主角 */
+  .playmat {
+    background:
+      radial-gradient(ellipse at 50% 48%, rgba(212, 166, 76, 0.09) 0%, transparent 56%),
+      radial-gradient(ellipse at 50% 48%, #2c2a2f 0%, #212025 56%, #18181c 100%);
+    border: 1.5px solid rgba(212, 166, 76, 0.5);
+    box-shadow:
+      0 14px 34px rgba(0, 0, 0, 0.56),
+      inset 0 0 0 1px rgba(255, 244, 214, 0.08),
+      inset 0 0 42px rgba(0, 0, 0, 0.34);
+  }
+  .zone-label { color: #d6ceb8; }
+  .slot-box {
+    background: rgba(10, 10, 13, 0.36);
+    border: 1px solid rgba(212, 166, 76, 0.22);
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.38);
+  }
+  .slot-box.active-slot {
+    background: rgba(212, 166, 76, 0.06);
+    border: 1.5px solid rgba(218, 174, 84, 0.62);
+    box-shadow: inset 0 1px 8px rgba(212, 166, 76, 0.1), 0 0 16px rgba(212, 166, 76, 0.08);
+  }
+  .slot-tag { color: rgba(226, 214, 186, 0.68); }
+  .slot-empty { color: rgba(196, 188, 172, 0.44); }
+
+  /* 奖赏卡 / 牌库 / 弃牌区 / 中心分界线：统一黑金竞赛指示物风格 */
+  .prize-card {
+    background: linear-gradient(145deg, #2a2830, #17161b);
+    border: 1.5px solid #d4a64c;
+    color: #f3d792;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.42), inset 0 0 0 1px rgba(255, 236, 188, 0.16);
+  }
+  .prize-count-pill {
+    background: rgba(18, 18, 22, 0.85);
+    border-color: rgba(212, 166, 76, 0.36);
+    color: #e6d8b8;
+    box-shadow: none;
+  }
+  .prize-count-pill.has-progress {
+    background: rgba(47, 125, 85, 0.26);
+    border-color: rgba(114, 220, 160, 0.5);
+    color: var(--dk-ok-text);
+  }
+  .prize-count-pill.enemy-progress {
+    background: rgba(189, 79, 59, 0.26);
+    border-color: rgba(242, 150, 138, 0.5);
+    color: var(--dk-danger-text);
+  }
+  .pile-box {
+    background: linear-gradient(180deg, #26252b 0%, #19191d 100%);
+    border-color: rgba(212, 166, 76, 0.34);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+  .pile-box:hover {
+    background: linear-gradient(180deg, #302f36 0%, #222127 100%);
+    border-color: #dfa93e;
+  }
+  .pile-box strong { color: var(--dk-gold-text); }
+  .pile-box .pile-ja, .pile-box .pile-zh { color: var(--dk-ink-sub); }
+
+  .mat-divider::before,
+  .mat-divider::after {
+    background: linear-gradient(90deg, transparent, rgba(212, 166, 76, 0.38), transparent);
+  }
+  .vs-badge {
+    background: linear-gradient(180deg, #2b2930 0%, #19181d 100%);
+    border-color: rgba(212, 166, 76, 0.58);
+    color: var(--dk-gold-text);
+  }
+  .limit-pill {
+    background: rgba(20, 20, 24, 0.86);
+    border-color: rgba(212, 166, 76, 0.34);
+    color: var(--dk-ink);
+    box-shadow: none;
+  }
+  .limit-pill.used {
+    background: rgba(20, 20, 24, 0.4);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: var(--dk-ink-muted);
+  }
+
+  /* 左右双侧栏（语音/日志栏 + 纵向手牌栏）：与 Boot 屏完全同源的曜石炭黑 */
   .side-panel,
   .hand-rail {
-    background: linear-gradient(180deg, #352316 0%, #261910 100%);
-    border: 2px solid var(--dk-border);
-    box-shadow: 0 10px 28px rgba(12, 7, 3, 0.44), inset 0 1px 0 rgba(255, 232, 186, 0.12);
+    background: linear-gradient(180deg, #1f1f24 0%, #141417 100%);
+    border: 1.5px solid var(--dk-border);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 244, 214, 0.07);
     color: var(--dk-ink);
   }
   .panel-title,
@@ -4160,110 +4244,111 @@
   #handSelectionHint { color: var(--dk-ink-sub); }
 
   .call-state-badge {
-    background: rgba(255, 236, 198, 0.1);
+    background: rgba(255, 255, 255, 0.07);
     color: var(--dk-ink-sub);
-    border-color: var(--dk-border-soft);
+    border-color: rgba(212, 166, 76, 0.24);
   }
   .call-state-badge.live {
-    background: rgba(184, 69, 58, 0.26);
-    color: #ffd4ce;
-    border-color: rgba(236, 128, 114, 0.56);
+    background: rgba(189, 79, 59, 0.24);
+    color: #ffd5cf;
+    border-color: rgba(242, 150, 138, 0.52);
   }
 
-  /* 左侧对手/裁判气泡、追问条、对局日志、语音区与 Tips */
+  /* 左侧对手/裁判气泡、追问条、对局日志、语音区（全宽通话按钮）与 Tips */
   .bubble {
-    background: linear-gradient(180deg, #2d1e13 0%, #23170e 100%);
-    border: 1px solid var(--dk-border-soft);
-    border-left: 3.5px solid #6499b5;
-    box-shadow: 0 2px 8px rgba(10, 5, 2, 0.28), inset 0 1px 0 rgba(255, 236, 198, 0.06);
+    background: linear-gradient(180deg, #25252b 0%, #1b1b20 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-left: 3.5px solid #5f9bc0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
   .bubble.rival {
-    background: linear-gradient(180deg, #311f16 0%, #251710 100%);
-    border-left-color: #d66a5b;
+    background: linear-gradient(180deg, #272226 0%, #1c181c 100%);
+    border-left-color: #d66858;
   }
-  .bubble-role { color: #8fc0da; }
-  .bubble.rival .bubble-role { color: #f09588; }
+  .bubble-role { color: #8dc2e0; }
+  .bubble.rival .bubble-role { color: #f29688; }
   .bubble-ja, .bubble-zh { color: var(--dk-ink); }
 
   .pending-bar {
-    background: linear-gradient(180deg, #453017 0%, #342310 100%);
-    border-color: #cfa049;
-    box-shadow: 0 4px 12px rgba(10, 5, 2, 0.34), inset 0 1px 0 rgba(255, 236, 192, 0.16);
+    background: linear-gradient(180deg, #2d261a 0%, #211c13 100%);
+    border-color: #d4a64c;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.38);
   }
-  .pending-ja, .pending-zh { color: #ffefc8; }
+  .pending-ja, .pending-zh { color: #fff1cc; }
 
   .log-bar { color: var(--dk-ink-sub); }
   .notepad-log {
     background: var(--dk-inset);
-    border-color: var(--dk-border-soft);
+    border-color: rgba(255, 255, 255, 0.09);
     color: var(--dk-ink);
-    box-shadow: inset 0 2px 6px rgba(8, 4, 1, 0.42);
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.45);
   }
-  .log-entry { border-bottom-color: rgba(196, 154, 86, 0.18); }
-  .log-ja, .log-zh { color: #eadbc0; }
+  .log-entry { border-bottom-color: rgba(255, 255, 255, 0.07); }
+  .log-ja, .log-zh { color: #e6e0d4; }
 
   .voice-dock,
   .hand-actions {
     border-top-color: var(--dk-border-soft);
   }
+  #btnLiveCall {
+    grid-column: 1 / -1;
+  }
   .voice-controls-grid input {
     background: var(--dk-inset);
-    border-color: #826338;
+    border-color: rgba(212, 166, 76, 0.34);
     color: var(--dk-ink);
-    box-shadow: inset 0 1px 4px rgba(8, 4, 1, 0.45);
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.48);
   }
   .voice-controls-grid input::placeholder { color: var(--dk-ink-muted); }
   .voice-controls-grid input:focus {
-    border-color: #d9a84c;
-    box-shadow: inset 0 1px 4px rgba(8, 4, 1, 0.4), 0 0 0 2.5px rgba(217, 168, 76, 0.25);
+    border-color: #dfa93e;
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4), 0 0 0 2.5px rgba(223, 169, 62, 0.22);
   }
 
-  /* 暗底通用按钮（单次、防御、弹窗取消/次要按钮等） */
-  .btn-sm,
-  .btn-ptt {
-    background: linear-gradient(180deg, #4a3320 0%, #372516 100%);
-    border-color: #8c6b3d;
+  /* 暗底通用按钮（防御、弹窗次要按钮、发送等） */
+  .btn-sm {
+    background: linear-gradient(180deg, #2b2b31 0%, #1f1f24 100%);
+    border-color: rgba(212, 166, 76, 0.34);
     color: var(--dk-ink);
-    box-shadow: 0 2px 5px rgba(12, 7, 3, 0.34), inset 0 1px 0 rgba(255, 236, 196, 0.15);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
-  .btn-sm:hover:where(:not(:disabled)),
-  .btn-ptt:hover {
-    background: linear-gradient(180deg, #5a3f28 0%, #442e1c 100%);
-    border-color: #c79c56;
-    color: #fff9ec;
+  .btn-sm:hover:where(:not(:disabled)) {
+    background: linear-gradient(180deg, #36363e 0%, #28282f 100%);
+    border-color: rgba(226, 182, 92, 0.68);
+    color: #fffdf7;
   }
-  .btn-sm .btn-zh, .btn-ptt .btn-zh { color: var(--dk-ink-sub); }
+  .btn-sm .btn-zh { color: var(--dk-ink-sub); }
   .hand-actions .btn-sm.btn-defend {
-    background: linear-gradient(180deg, #32575c 0%, #244045 100%);
-    border-color: #5b8e94;
-    color: #e6f7f8;
-    box-shadow: 0 2px 6px rgba(10, 20, 22, 0.38), inset 0 1px 0 rgba(215, 245, 248, 0.18);
+    background: linear-gradient(180deg, #27444c 0%, #1c3138 100%);
+    border-color: rgba(108, 178, 194, 0.5);
+    color: #e6f6fa;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(215, 245, 250, 0.14);
   }
   .hand-actions .btn-sm.btn-defend:hover {
-    background: linear-gradient(180deg, #3b656b 0%, #2b4c52 100%);
-    border-color: #77aeb4;
+    background: linear-gradient(180deg, #30535d 0%, #223c44 100%);
+    border-color: rgba(132, 202, 218, 0.72);
   }
 
   .live-tip-box {
-    background: linear-gradient(180deg, #2d1f14 0%, #23170e 100%);
-    border: 1px solid var(--dk-border-soft);
+    background: linear-gradient(180deg, #222328 0%, #18191d 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-left: 3.5px solid #48a672;
-    box-shadow: 0 2px 8px rgba(10, 5, 2, 0.28);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
   .live-tip-label { color: var(--dk-ok-text); }
   .live-tip-ja, .live-tip-zh { color: var(--dk-ink); }
 
-  /* 右侧暗木手牌栏中的空槽占位符与滚动条 */
+  /* 右侧黑金手牌栏中的空槽占位符 */
   .hand-drop-placeholder {
-    border-color: #d9a84c;
-    background: rgba(217, 168, 76, 0.14);
+    border-color: #dfa93e;
+    background: rgba(223, 169, 62, 0.1);
   }
   .hand-drop-placeholder .drop-slot-ja { color: var(--dk-gold-text); }
   .hand-drop-placeholder .drop-slot-zh { color: var(--dk-ink-sub); }
 
-  /* 左侧调试日志抽屉：深色胡桃木统一风格 */
+  /* 左侧调试日志抽屉：Boot 同源曜石黑金 */
   .debug-log-drawer {
-    background: linear-gradient(180deg, #332215 0%, #23170e 100%);
+    background: linear-gradient(180deg, #1f1f24 0%, #141417 100%);
     color: var(--dk-ink);
   }
   .dlog-head {
@@ -4271,95 +4356,116 @@
     border-bottom-color: var(--dk-border-soft);
   }
   .dlog-chip {
-    background: linear-gradient(180deg, #47311f 0%, #352315 100%);
-    border-color: #826338;
+    background: linear-gradient(180deg, #2a2a30 0%, #1e1e23 100%);
+    border-color: rgba(212, 166, 76, 0.28);
     color: var(--dk-ink-sub);
     box-shadow: none;
   }
   .dlog-chip.active {
-    background: linear-gradient(180deg, #c78f30 0%, #9c6c1b 100%);
-    border-color: #e4bd6d;
+    background: linear-gradient(180deg, #c68f31 0%, #9b6c1c 100%);
+    border-color: #e6c174;
     color: #fffdf8;
   }
   .dlog-list {
     background: var(--dk-inset);
-    border-color: var(--dk-border-soft);
+    border-color: rgba(255, 255, 255, 0.09);
   }
   .dlog-item {
-    background: #2f2014;
-    border-color: rgba(196, 154, 86, 0.24);
+    background: #202025;
+    border-color: rgba(255, 255, 255, 0.08);
     color: var(--dk-ink);
   }
   .dlog-item.cat-ERR {
-    background: rgba(184, 69, 58, 0.18);
-    border-left-color: #e26458;
+    background: rgba(189, 79, 59, 0.18);
+    border-left-color: #e46a5d;
   }
   .dlog-meta { color: var(--dk-ink-sub); }
   .dlog-msg { color: var(--dk-ink); }
-  .dlog-detail { color: #c7b495; }
+  .dlog-detail { color: #b7b2a8; }
   .dlog-foot { border-top-color: var(--dk-border-soft); }
 
-  /* 牌桌内浮层（引导卡 / 手动弹出菜单 / 奖赏提示）：统一暗胡桃木磨砂质感 */
+  /* 实体卡牌与引导卡：柔和暖象牙羊皮纸面（#f4efe3 → #e7decb），在曜石黑金牌桌上清晰聚焦且不刺眼突兀 */
+  .card,
+  .codex-card {
+    background: linear-gradient(180deg, #f4efe3 0%, #e7decb 100%);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.36), inset 0 1px 0 rgba(255, 252, 245, 0.65);
+  }
+  .card .card-head,
+  .codex-card .card-head { background: #e8dfcd; }
+  .card.fire .card-head,
+  .codex-card.fire .card-head { background: #eed8cf; }
+  .card.water .card-head,
+  .codex-card.water .card-head { background: #d8e4ee; }
+  .card.thunder .card-head,
+  .codex-card.thunder .card-head { background: #efe3c4; }
+  .card.item .card-head,
+  .codex-card.item .card-head { background: #d7e6dd; }
+  .card.supporter .card-head,
+  .codex-card.supporter .card-head { background: #e2d9eb; }
+  .card .skill-line { background: rgba(112, 86, 52, 0.09); }
+  .card .hp-badge { background: #f8f4ea; }
+
+  /* 引导浮动卡：与实体卡牌保持一致的柔和暖象牙卡面 */
   .guide-card {
-    background: rgba(38, 25, 15, 0.92);
-    border: 1.5px solid #a88348;
-    border-left: 4px solid #48a672;
-    box-shadow: 0 12px 28px rgba(12, 7, 3, 0.45);
-    color: var(--dk-ink);
+    background: linear-gradient(180deg, #f4efe3 0%, #e7decb 100%);
+    border: 2px solid rgba(212, 166, 76, 0.72);
+    border-left: 4px solid var(--ok);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 252, 245, 0.65);
+    color: var(--ink);
   }
-  .guide-tag { color: var(--dk-ok-text); }
-  .guide-ja, .guide-zh { color: var(--dk-ink); }
+  .guide-tag { color: var(--ok); }
+  .guide-ja, .guide-zh { color: var(--ink); }
   .guide-close {
-    background: rgba(255, 236, 198, 0.12);
-    border-color: var(--dk-border-soft);
-    color: var(--dk-ink-sub);
+    background: rgba(112, 79, 41, 0.1);
+    border-color: #c9b086;
+    color: var(--ink-sub);
   }
-  .guide-close:hover { background: rgba(255, 236, 198, 0.22); color: #fff; border-color: #cfa049; }
+  .guide-close:hover { background: #e6d5b4; color: var(--ink); border-color: #9e7c49; }
 
   .action-popover {
-    background: linear-gradient(180deg, #3a2719 0%, #271a10 100%);
-    border-color: #a88348;
+    background: linear-gradient(180deg, #24242a 0%, #17171b 100%);
+    border-color: rgba(212, 166, 76, 0.52);
     color: var(--dk-ink);
-    box-shadow: 0 14px 34px rgba(12, 7, 3, 0.52), inset 0 1px 0 rgba(255, 236, 196, 0.14);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.07);
   }
 
   .prize-toast {
-    background: linear-gradient(180deg, #3c2919 0%, #2a1c11 100%);
-    border-color: #d4a64c;
-    box-shadow: 0 12px 28px rgba(12, 7, 3, 0.48);
+    background: linear-gradient(180deg, #27252b 0%, #18171c 100%);
+    border-color: #dfa93e;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.56);
   }
-  .prize-toast .pt-ja, .prize-toast .pt-zh { color: #fdf0d2; }
+  .prize-toast .pt-ja, .prize-toast .pt-zh { color: #fdf2d6; }
   .prize-toast .toast-icon { color: #f0c25c; }
   .prize-toast.enemy {
-    background: linear-gradient(180deg, #4b231e 0%, #341713 100%);
-    border-color: #d4695c;
+    background: linear-gradient(180deg, #341d1c 0%, #221313 100%);
+    border-color: #d66858;
   }
   .prize-toast.enemy .pt-ja, .prize-toast.enemy .pt-zh { color: #ffe0db; }
   .prize-toast.enemy .toast-icon { color: #f3887b; }
 
-  /* 全局所有弹窗（规则 / 设置 / 图鉴 / 弃牌堆 / 确认 / 胜负 / 数据加载）：统一暗胡桃木配色 */
-  .modal-backdrop { background: rgba(16, 10, 5, 0.68); backdrop-filter: blur(3.5px); }
+  /* 全局所有弹窗（规则 / 设置 / 图鉴 / 弃牌堆 / 确认 / 胜负 / 数据加载）：与 Boot 屏完全一致的曜石黑金 */
+  .modal-backdrop { background: rgba(6, 6, 8, 0.72); backdrop-filter: blur(4px); }
   .modal-box {
-    background: linear-gradient(180deg, #382618 0%, #261910 100%);
-    border: 2px solid #a68044;
+    background: linear-gradient(180deg, #222126 0%, #151519 100%);
+    border: 1.5px solid rgba(212, 166, 76, 0.56);
     color: var(--dk-ink);
-    box-shadow: 0 24px 60px rgba(8, 4, 1, 0.62), inset 0 1px 0 rgba(255, 236, 196, 0.16);
+    box-shadow: 0 26px 64px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 244, 214, 0.09);
   }
   .modal-head { border-bottom-color: var(--dk-border-soft); }
   .modal-head h2 { color: var(--dk-gold-text); }
 
   /* 规则弹窗 & 难度选择器 & 语言开关 */
   .lang-switch.light {
-    background: rgba(24, 15, 8, 0.6);
+    background: rgba(12, 12, 15, 0.65);
     border-color: var(--dk-border);
-    box-shadow: inset 0 1px 3px rgba(8, 4, 1, 0.45);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
   }
   .lang-switch.light .lang-pill { color: var(--dk-ink-sub); }
-  .lang-switch.light .lang-pill:hover:not(.active) { background: rgba(255, 236, 198, 0.12); color: #fff; }
+  .lang-switch.light .lang-pill:hover:not(.active) { background: rgba(255, 255, 255, 0.08); color: #fff; }
   .rules-block {
-    background: linear-gradient(180deg, #2d1e13 0%, #24180f 100%);
-    border-color: var(--dk-border-soft);
-    box-shadow: inset 0 1px 4px rgba(8, 4, 1, 0.35);
+    background: linear-gradient(180deg, #1b1b20 0%, #141418 100%);
+    border-color: rgba(255, 255, 255, 0.09);
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.42);
   }
   .rules-block h3 { color: var(--dk-gold-text); }
   .rules-list { color: var(--dk-ink); }
@@ -4367,71 +4473,71 @@
   .diff-picker { color: var(--dk-ink); }
   .diff-seg {
     background: var(--dk-inset);
-    border-color: var(--dk-border);
-    box-shadow: inset 0 1px 3px rgba(8, 4, 1, 0.45);
+    border-color: rgba(212, 166, 76, 0.34);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
   }
   .diff-btn { color: var(--dk-ink-sub); }
-  .diff-btn:hover:not(.active) { background: rgba(255, 236, 198, 0.1); color: #fff; }
+  .diff-btn:hover:not(.active) { background: rgba(255, 255, 255, 0.08); color: #fff; }
 
   /* 设置弹窗 */
   .cfg-footer {
     border-top-color: var(--dk-border-soft);
-    background: linear-gradient(180deg, #2e1f14 0%, #23170e 100%);
+    background: linear-gradient(180deg, #1c1c21 0%, #141418 100%);
   }
   .cfg-section {
-    background: linear-gradient(180deg, #2f2014 0%, #271a10 100%);
-    border-color: var(--dk-border-soft);
-    box-shadow: inset 0 1px 0 rgba(255, 236, 196, 0.08);
+    background: linear-gradient(180deg, #1d1d22 0%, #17171b 100%);
+    border-color: rgba(255, 255, 255, 0.09);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
   .cfg-section-head { border-bottom-color: var(--dk-border-soft); }
   .cfg-section-title { color: var(--dk-gold-text); }
   .cfg-section-badge {
-    background: rgba(217, 168, 76, 0.16);
-    border-color: rgba(217, 168, 76, 0.42);
+    background: rgba(212, 166, 76, 0.14);
+    border-color: rgba(212, 166, 76, 0.38);
     color: var(--dk-gold-text);
   }
   .cfg-sub-box {
-    background: rgba(24, 15, 8, 0.48);
-    border-color: var(--dk-border-soft);
+    background: rgba(12, 12, 15, 0.5);
+    border-color: rgba(255, 255, 255, 0.08);
   }
   .cfg-sub-label { color: var(--dk-ink-sub); }
   .cfg-field label { color: var(--dk-ink); }
   .cfg-field input, .cfg-field select {
     background: var(--dk-inset);
-    border-color: #826338;
+    border-color: rgba(212, 166, 76, 0.32);
     color: var(--dk-ink);
-    box-shadow: inset 0 1px 4px rgba(8, 4, 1, 0.45);
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.5);
   }
-  .cfg-field select option { background: #261910; color: var(--dk-ink); }
+  .cfg-field select option { background: #17171b; color: var(--dk-ink); }
   .cfg-hint-pill {
-    background: rgba(24, 15, 8, 0.45);
-    border-color: var(--dk-border-soft);
+    background: rgba(12, 12, 15, 0.45);
+    border-color: rgba(255, 255, 255, 0.08);
     color: var(--dk-ink-sub);
   }
   .cfg-toggle-inline { color: var(--dk-ink); }
   .cfg-voice-tag { color: var(--dk-gold-text); }
   .dropzone {
-    background: rgba(24, 15, 8, 0.45);
-    border-color: #8f6e3f;
+    background: rgba(12, 12, 15, 0.45);
+    border-color: rgba(212, 166, 76, 0.36);
     color: var(--dk-ink-sub);
   }
   .dropzone.dragover { border-color: #5cc489; background: rgba(47, 122, 83, 0.22); color: #fff; }
 
   /* 确认弹窗 / 胜负弹窗 / 弃牌堆弹窗 / 图鉴弹窗 */
-  .reset-confirm-icon { fill: #e0b354; }
+  .reset-confirm-icon { fill: #dfa93e; }
   .mobile-fs-title-ja, .mobile-fs-title-zh { color: var(--dk-gold-text) !important; }
   .mobile-fs-desc-ja, .mobile-fs-desc-zh { color: var(--dk-ink) !important; }
   .endturn-hints-list {
     background: var(--dk-inset);
-    border-color: var(--dk-border-soft);
+    border-color: rgba(255, 255, 255, 0.09);
   }
-  .endturn-hints-list li::before { color: #e0b354; }
+  .endturn-hints-list li::before { color: #dfa93e; }
   .endturn-hint-ja, .endturn-hint-zh { color: var(--dk-ink) !important; }
   .reset-confirm-actions { border-top-color: var(--dk-border-soft); }
 
   .codex-legend {
     background: var(--dk-inset);
-    border-color: var(--dk-border-soft);
+    border-color: rgba(255, 255, 255, 0.09);
     color: var(--dk-ink-sub);
   }
   .codex-card { color: var(--ink); }
@@ -4450,20 +4556,20 @@
     border-bottom-color: var(--dk-border-soft);
   }
   .pile-chip {
-    background: #2f2014;
-    border-color: var(--dk-border-soft);
+    background: #1f1f24;
+    border-color: rgba(255, 255, 255, 0.09);
     color: var(--dk-ink);
   }
   .pile-chip-name { color: var(--dk-ink); }
   .pile-chip-zh { color: var(--dk-ink-sub); }
-  .pile-chip-qty { background: #493320; color: var(--dk-gold-text); }
+  .pile-chip-qty { background: #2d2d35; color: var(--dk-gold-text); }
   .pile-empty {
     background: var(--dk-inset);
-    border-color: var(--dk-border-soft);
+    border-color: rgba(255, 255, 255, 0.09);
     color: var(--dk-ink-sub);
   }
 
-  /* 统一暗木细滚动条 */
+  /* 统一曜石细滚动条 */
   .hand-cards::-webkit-scrollbar,
   .notepad-log::-webkit-scrollbar,
   .dlog-list::-webkit-scrollbar,
@@ -4475,21 +4581,21 @@
   .notepad-log::-webkit-scrollbar-track,
   .dlog-list::-webkit-scrollbar-track,
   .cfg-scroll-body::-webkit-scrollbar-track {
-    background: rgba(18, 11, 6, 0.35);
+    background: rgba(8, 8, 10, 0.4);
     border-radius: 999px;
   }
   .hand-cards::-webkit-scrollbar-thumb,
   .notepad-log::-webkit-scrollbar-thumb,
   .dlog-list::-webkit-scrollbar-thumb,
   .cfg-scroll-body::-webkit-scrollbar-thumb {
-    background: rgba(182, 141, 76, 0.45);
+    background: rgba(212, 166, 76, 0.36);
     border-radius: 999px;
   }
   .hand-cards::-webkit-scrollbar-thumb:hover,
   .notepad-log::-webkit-scrollbar-thumb:hover,
   .dlog-list::-webkit-scrollbar-thumb:hover,
   .cfg-scroll-body::-webkit-scrollbar-thumb:hover {
-    background: rgba(212, 166, 86, 0.72);
+    background: rgba(223, 169, 62, 0.68);
   }
 </style>
 </head>
@@ -4777,7 +4883,6 @@
       <div class="voice-dock">
         <div class="voice-controls-grid">
           <button class="btn-voice" id="btnLiveCall"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.62 10.79a15.05 15.05 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24c1.12.37 2.33.57 3.58.57a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1C10.61 21 3 13.39 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.46.57 3.58a1 1 0 0 1-.25 1.01l-2.2 2.2z"/></svg><span class="lang-ja">通話開始</span><span class="lang-zh">开始通话</span></button>
-          <button class="btn-ptt" id="btnRecordVoice"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg><span class="lang-ja">単発</span><span class="lang-zh">单次</span></button>
           <input type="search" id="cmdInput" name="kotodama_cmd_search" placeholder="コマンド入力" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-1p-ignore="true" data-form-type="other" />
           <button class="btn-sm primary" id="btnSendCmd"><span class="lang-ja">送信</span><span class="lang-zh">发送</span></button>
         </div>
