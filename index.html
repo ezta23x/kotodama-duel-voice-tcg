@@ -2885,7 +2885,7 @@
   /* =========================================================================
      8. v1.2.0 升级：防闪屏黑金遮罩 / 矢量 SVG Logo / 全局单语言切换 / 大字号重排 / 语音 HUD / 防触控板后退
      ========================================================================= */
-  html, body, .app-shell, .table-shell, .playmat, .hand-cards, .bench-row {
+  html, body, .app-shell, .table-shell, .playmat, .hand-cards, .bench-row, .modal-backdrop, .modal-box {
     overscroll-behavior-x: none;
     overscroll-behavior-y: none;
   }
@@ -4559,6 +4559,47 @@
   .top-btn.log-on:hover {
     background: var(--cta-gold-hover);
   }
+  .side-panel .btn-sm.btn-ai-tip {
+    background: linear-gradient(180deg, #f6ecd6 0%, #e3cfa7 100%);
+    border: 1px solid #d9b56c;
+    color: #362413;
+    padding: 3.5px 10px;
+    min-height: 25px;
+    border-radius: 7px;
+    font-size: var(--fs-xs);
+    font-weight: 800;
+    line-height: 1.1;
+    gap: 4px;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(24, 16, 8, 0.34), inset 0 1px 0 rgba(255, 254, 248, 0.88);
+    transition: transform 0.14s ease, background 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  .side-panel .btn-sm.btn-ai-tip svg {
+    width: 12px;
+    height: 12px;
+    color: #b07418;
+    flex-shrink: 0;
+  }
+  .side-panel .btn-sm.btn-ai-tip.is-loading svg {
+    animation: hudSpin 0.9s linear infinite;
+  }
+  .side-panel .btn-sm.btn-ai-tip:hover:where(:not(:disabled)) {
+    background: linear-gradient(180deg, #fff7e4 0%, #eddab4 100%);
+    border-color: #ebd08f;
+    color: #2b1a0c;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(24, 16, 8, 0.38), inset 0 1px 0 rgba(255, 255, 252, 0.95);
+  }
+  .side-panel .btn-sm.btn-ai-tip:active:where(:not(:disabled)) {
+    transform: translateY(1px);
+    box-shadow: 0 1px 2px rgba(24, 16, 8, 0.34), inset 0 1px 2px rgba(58, 36, 16, 0.18);
+  }
+  .side-panel .btn-sm.btn-ai-tip:disabled {
+    opacity: 0.72;
+    cursor: wait;
+  }
   .btn-voice,
   .top-btn.guide-on,
   .diff-btn.active {
@@ -4913,7 +4954,7 @@
       <div class="live-tip-box" id="liveTipBox">
         <div class="live-tip-label" style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
           <span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21h6v-1H9v1zm3-19a7 7 0 0 0-4 12.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26A7 7 0 0 0 12 2z"/></svg>Tips<span id="liveTipAiTag" style="display:none;margin-left:5px;font-size:11px;padding:0 5px;border-radius:4px;background:rgba(72,166,114,0.22);color:var(--dk-ok-text);">AI</span></span>
-          <button class="btn-sm" id="btnAiTip" style="padding:2px 8px;font-size:11.5px;"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/></svg><span class="lang-ja">AI戦術</span><span class="lang-zh">AI战术</span></button>
+          <button type="button" class="btn-sm btn-ai-tip" id="btnAiTip"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/></svg><span class="lang-ja">AI戦術</span><span class="lang-zh">AI战术</span></button>
         </div>
         <div class="live-tip-ja" id="liveTipJa"></div>
         <div class="live-tip-zh" id="liveTipZh" lang="zh-CN"></div>

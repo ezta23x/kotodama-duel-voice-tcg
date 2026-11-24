@@ -21,8 +21,8 @@
 
 ## 简介
 
-**言灵对决（言霊デュエル）** 是一款在浏览器中直接运行的 **26 张卡组、3 奖赏卡制** 回合制语音卡牌对战 Demo。  
-玩家可在开局规则页、牌桌顶栏或设置面板一键切换 **纯日语（默认） / 纯中文** 单语言大字号界面，用 **日语或中文直接开口下达单步或多步连招指令**（也支持文字输入与点击操作）。系统以 0ms 本地口语快通道优先、云端 LLM 兜底并由 **确定性本地状态机** 严格裁定全部战斗规则，通过 **WebRTC AEC3 硬件回声消除 + SenseTime Nia 24kHz 流式 TTS / 16kHz 流式 ASR** 实现语种与音色自动联动、可随时插话打断（Barge-in）的真实桌游语音对战体验。
+**言灵对决（言霊デュエル）** 是一款在浏览器中开箱即玩的 **26 张卡组、3 奖赏卡制** 回合制语音卡牌对战 Demo。  
+你可以随时以 **纯日语（默认）或纯中文** 界面游玩，直接开口说出单步指令或连续多步连招，也可以配合键盘输入与鼠标/触屏点击操作。底层以 **0ms 本地口语快通道** 优先解析、云端 LLM 兜底，并由 **确定性本地规则引擎** 严格裁定全部战斗结算，无需任何构建工具或后端即可部署体验。
 
 > **立即体验**：打开 [https://ezta23x.github.io/kotodama-duel-voice-tcg/](https://ezta23x.github.io/kotodama-duel-voice-tcg/)（推荐使用 **Chrome / Edge** 并允许麦克风权限；不开麦克风也可全程点击或打字游玩）。
 
@@ -30,19 +30,19 @@
 
 ## 核心亮点
 
-### 沉浸式语音与单语言双语联动
-- **全双工实时语音 + 实时语音 HUD 浮层**：内置 WebRTC 本地回环将 TTS 音频接入浏览器硬件级 AEC3 回声消除，支持播报期间直接插话打断（Barge-in）；牌桌悬浮实时声波 HUD，清晰反馈「正在聆听 / 已执行（0ms 本地快通道） / AI 意图解析中」三态。
-- **单语言纯净切换 + TTS/ASR 自动联动**：默认日语（`ja`），可在开局规则页、顶栏与设置弹窗实时切换中文（`zh`）且无需刷新页面。切换语言时，SenseTime Nia 流式 TTS 自动在 `JAPANESE`（小婉 / 子宸等 9 种日语音色）与 `ZH_CN`（Luna / 星野等 9 种中文音色）间切换，流式 ASR 亦自动联动对应语种。
-- **一句话多步顺序连招 + 反幻觉护栏**：支持日语 て形无标点连读与中文无标点连读（如「把雷狮放备战区给炎狐贴火能用火花攻击」），本地 0ms 拆解为顺序动作队列并附带子句级目标隔离与原文核对护栏，防止误识别与 AI 脑补目标。
+### 全双工语音与单语言双声线联动
+- **WebRTC AEC3 全双工通话 + 实时语音 HUD**：通过本地 WebRTC 回环将 TTS 音频接入浏览器硬件级回声消除参考通道，实现免按键持续收音与自然插话打断（Barge-in）；牌桌悬浮声波 HUD 实时提示「正在聆听 / 已执行 / AI 解析中」三态。
+- **纯单语言切换 + 流式 TTS / ASR 联动**：开局规则页、顶栏与设置面板均可一键切换 **纯日语（`ja`） / 纯中文（`zh`）** 界面且不中断当前对局或语音播报。切换后，SenseTime Nia 24kHz 流式 TTS 自动在 `JAPANESE`（9 种日语音色）与 `ZH_CN`（9 种中文音色）间切换并重载正在播报的队列，流式 ASR 亦同步联动。
+- **一句多步连招 + 严格反幻觉护栏**：支持日语 て形无标点连读与中文无标点连读，本地毫秒级拆分为顺序动作队列并内置子句级目标隔离与原文核对护栏；多候选不臆断，按规则追问确认后继续执行剩余连招。
 
-### 桌游质感与多端适配
-- **零闪屏启动 + 全矢量 SVG 纹章**：内置黑金启动预遮罩与定制 SVG 言灵纹章 Logo、SVG 语言徽章及声波图标，首屏直接呈现完整规则页。
-- **单语言大字号暖木羊皮纸 UI**：针对单语言模式重新校准字号与间距，桌面端 `100vh` 无滚动条舒展排布；并内置水平滚动与触控板边界防穿透保护，避免在 Mac 触控板双指左右切牌时误触发浏览器后退。
-- **PC / 手机横屏 / 手机竖屏三端自适应**：手机端自动适配横屏与竖屏，顶栏提供全屏切换按钮；支持新手浮动语音引导、备战区空位提示、双档 AI 难度（普通 / 困难，困难模式 100% 仅读桌面公开信息）以及重开/结束回合二次确认。
+### 精致桌游美术与多端适配
+- **零闪屏启动 + 全矢量 SVG 图鉴**：内置黑金纹章启动遮罩、SVG 品牌与语种徽章，以及全部 **8 只怪兽与 5 类道具/支援卡的定制矢量 SVG 头像**，高清无锯齿且无需额外图片资源。
+- **五档明度排版 + 触控板防误触**：采用「深暖灰外框 → 柔灰咖双侧栏 → 温润亚麻牌桌 → 暖象牙卡牌」五档明度阶梯与五档字号排版，桌面端 `100dvh` 一屏舒展呈献；内置全局横向滚轮/手势边界保护，防止 Mac 触控板左右滑动切牌时误触浏览器历史后退。
+- **三端自适应 + 双档公平 AI**：自适应桌面横屏、手机横屏（含顶栏全屏切换）与手机竖屏；内置「普通」与「困难」两档 AI（困难 AI 100% 仅依据桌面公开信息进行整回合连招搜索与 2 回合局势评估），配套新手引导、AI 战术一键分析及防误触二次确认弹窗。
 
-### 极简工程与数据解耦
-- **单一数据源驱动**：全部卡牌、技能、牌组、台词、双语规则、LLM 提示词与 ASR 纠错表集中存放在 [`gamedata.json`](./gamedata.json)，支持页面内拖拽热更新。
-- **零构建纯静态**：无打包器、无框架依赖，双击脚本本地运行或直接推送 GitHub Pages 即可上线。
+### 单一数据源与零构建工程
+- **JSON 驱动与热更新**：全部规则、初始 26 张卡组、怪兽技能、道具效果、对手台词、Prompt 与 ASR 纠错词典集中定义在 [`gamedata.json`](./gamedata.json)，支持设置页直接拖入自定义 JSON 热更新。
+- **零构建纯静态**：无打包器、无运行时依赖，双击脚本本地启动或直接托管 GitHub Pages 即可运行。
 
 ---
 
@@ -66,6 +66,7 @@
 | 贴能量 | 「炎エネルギーをヒノキツネに貼る」 | 「给炎狐贴火能量」 |
 | 使用道具 / 支援者 | 「補給バッグを使う」 / 「きずぐすり」 | 「用补给包抽牌」 / 「给前排吃伤药」 |
 | 发动技能攻击 | 「ヒノキツネでひのこ」 | 「用火花攻击」 / 「炎狐放炎弹」 |
+| 一句多步顺序连招 | 「ミズガメをベンチに出して炎エネルギーをヒノキツネに貼ってひのこ」 | 「把水龟放备战区给炎狐贴火能用火花攻击」 |
 | 防御 / 撤退 / 结束 | 「防御」 / 「交代」 / 「ターン終了」 | 「防御姿态」 / 「撤退换雷狮」 / 「结束回合」 |
 
 ---
@@ -104,21 +105,24 @@ cd kotodama-duel-voice-tcg
 
 ## 界面一览
 
-### 1. 主对战牌桌分区
+### 1. 主对战牌桌三栏分区
 
 | 区域 | 说明 |
 | --- | --- |
-| **顶部工具栏** | 回合状态、全屏切换（手机端）、调试日志 `Log`、新手引导开关、重开对局（带二次确认）、图鉴、规则与设置 |
-| **敌我双半场** | 奖赏卡进度、可点击查阅的牌库与弃牌堆、战斗区与 3 格备战区（显示 HP、属性弱点、能量珠与实时斩杀/威胁标） |
-| **中线次数牌** | 实时追踪本回合 `贴能 1/1`、`支援 1/1`、`撤退 1/1` 使用状态 |
-| **手牌与快捷操作** | 支持点击出战/入备战/贴能/用道具及拖拽排序；右侧提供「防御姿态（下回合受击 -30）」与「结束回合」 |
-| **语音与对局手账** | 持续通话 / 单次录音 / 文本输入框、实时 AI 战术建议（Tips）、对手与裁判双语气泡及滚动对局记录 |
+| **顶部工具栏** | 定制 SVG 言灵纹章、回合状态、`日本語 / 中文` 切换胶囊、全屏切换（手机端）、日志抽屉（`ログ / 日志`）、新手引导开关、重开对局（带二次确认）、图鉴、规则与设置 |
+| **左侧语音・对局手账** | 对手与裁判单语对话气泡、追问快捷按钮、对局日志、本地实时 Tips + **AI 战术分析按钮**、全双工持续通话控制与文本指令输入框；全链路调试日志抽屉亦从此侧平铺展开 |
+| **中间帆布对战垫** | 敌我备战区（3 格）与主战区、奖赏卡进度、可点击查阅的牌库/弃牌区，以及中线本回合 `贴能 / 支援 / 撤退 1/1` 状态牌 |
+| **右侧手牌与回合操作** | 纵向手牌列表（支持点击使用与拖拽排序，手机竖屏自动切换为横向滑动）及底部「防御姿态（下回合受击 -30）/ 结束回合」固定操作栏 |
 
-### 2. 设置与热更新面板
+### 2. 开局规则与难度 / 语言选择页
+
+![开局规则与语言难度选择](docs/rules-ui.png)
+
+### 3. 设置与热更新面板
 
 ![接口与语音设置面板](docs/settings-ui.png)
 
-点击右上角「設定 / 设置」可一键切换界面与配音语言（`日本語` / `中文`），并分别配置 **LLM 指令解析**、**ASR 语音识别（默认 SenseTime Nia / 云端直传 / Chrome）** 与 **TTS 语音合成（默认 SenseTime Nia / 云端 / Chrome）**；切换语言或引擎时音色选择栏会自动联动对应语种的合法音色目录，并支持调整无响应提醒秒数（默认 `15s`）、对手 AI 难度及拖放 `gamedata.json` 实现零代码热更新。
+点击右上角「設定 / 设置」可一键切换界面与配音语言（`日本語` / `中文`），并分别配置 **LLM 指令解析**、**ASR 语音识别（SenseTime Nia / Gemini 音频直传 / Chrome 识别 / 离线本地）** 与 **TTS 语音合成（SenseTime Nia / Vertex Gemini / 浏览器内置）**；切换语言或引擎时音色选择栏会自动联动对应语种的合法音色目录，并支持调整无响应提醒秒数（默认 `15s`）、对手 AI 难度及拖放 `gamedata.json` 实现零代码热更新。
 
 ---
 
@@ -126,13 +130,13 @@ cd kotodama-duel-voice-tcg
 
 ```text
 kotodama-duel-voice-tcg/
-├── index.html       # 页面骨架、双语字体栈、暖木羊皮纸立体 UI 与三端响应式 CSS
+├── index.html       # 页面骨架、矢量 SVG 纹章、五档明度/字号单语言排版与三端响应式 CSS
 ├── app.js           # 9 大核心模块：DebugLog / GuideEngine / ConfigManager / SpecEngine /
 │                    # VoiceEngine / NLUEngine / BattleEngine / TableUI / MobileViewportManager
 ├── gamedata.json    # 唯一游戏数据源（规则、牌组、怪兽/技能、道具、台词、Prompt、ASR 词典）
 ├── start.command    # macOS / Linux 本地静态服务一键启动脚本
 ├── start.bat        # Windows 本地静态服务一键启动脚本
-├── docs/            # README 演示截图（battle-ui.png / settings-ui.png）
+├── docs/            # README 演示截图（battle-ui.png / rules-ui.png / settings-ui.png）
 └── README.md        # 项目说明与二次开发文档
 ```
 
@@ -147,15 +151,15 @@ kotodama-duel-voice-tcg/
 
 ```mermaid
 flowchart TD
-    A["玩家输入（语音 / 文本 / 点击）"] --> B["VoiceEngine（ASR / VAD / Barge-in）"]
+    A["玩家输入（语音 / 文本 / 点击）"] --> B["VoiceEngine（流式 ASR / 自适应 VAD / Barge-in）"]
     B --> C["BattleEngine.handleUserInput()"]
-    C --> D{"NLUEngine.localParse()\n本地双语规则 & 模糊索引"}
-    D -- "命中（毫秒级零延迟）" --> F["标准化 Result JSON\n(transcript / status / actions)"]
+    C --> D{"NLUEngine.localParse()\n本地双语连招规则 & 模糊索引"}
+    D -- "命中（0ms 本地快通道）" --> F["标准化 Result JSON\n(transcript / status / actions)"]
     D -- "未命中或纯音频" --> E["NLUEngine.parse()\n云端 LLM 意图解析兜底"]
     E --> F
     F --> G["BattleEngine\n确定性规则引擎 & AI 对手决策"]
-    G --> H["TableUI.renderAll()\n牌桌动效 / 手牌 / 双语字幕"]
-    G --> I["VoiceEngine.speak()\n双声线日语 TTS 经 WebRTC AEC3 输出"]
+    G --> H["TableUI.renderAll()\n牌桌动效 / 手牌 / 当前语种字幕"]
+    G --> I["VoiceEngine.speak()\n双声线日/中 24kHz 流式 TTS 经 WebRTC AEC3 输出"]
 ```
 
 </details>
@@ -176,17 +180,17 @@ flowchart TD
   });
   ```
 - **核心替换点（`VoiceEngine`）**：
-  - `startContinuousAsrCall()` / `stopCall()`：全双工持续通话启停。
-  - `createNiaAsrSession()`：内置 WebSocket 16kHz PCM 流式 ASR 接入实现（默认接入 SenseTime Nia），收到 final transcript 后调用 `this.callCallback({ text, fromVoice: true })`。
-  - `spawnContinuousRec()`：浏览器 Web Speech API 降级通道。
-  - `toggleRecord()`：单次按键录音入口。
-  - `startVadMonitor()`：本地 `AudioContext + AnalyserNode` 人声检测、650ms 预缓冲与插话打断（`stopPlayback()`）。
+  - `startContinuousAsrCall()` / `stopCall()`：全双工持续通话启停，断网或鉴权失败时自动降级浏览器 ASR 并支持在线恢复回连。
+  - `createNiaAsrSession()`：内置 WebSocket `16kHz` Int16LE PCM 流式 ASR 接入实现（默认 SenseTime Nia），识别完成后通过 `this.callCallback({ text, fromVoice: true })` 触发解析。
+  - `spawnContinuousRec()` / `restartChromeAsrIfNeeded()`：浏览器 Web Speech API 降级与语种热重启通道。
+  - `startVadMonitor()`：本地 `AudioContext + AnalyserNode` 声学与 ASR 文本双信号自适应判停、`650ms` 预缓冲与全双工语义/强音量打断（`fadeOutAndStopPlayback()` / `stopPlayback()`）。
 
 #### ② 语音合成（TTS）
-- **统一播报入口**：`await VoiceEngine.speak(textJa, role)`（`role`: `"referee" | "rival"`）。
+- **统一播报入口**：`await VoiceEngine.speak({ ja, zh }, role, opts)`（`role`: `"referee" | "rival"`，`opts.priority`: `"critical" | "high" | "normal" | "low"`，内置 4 级子句边界让位与 `replayCurrentQueueInLang()` 切换语种实时重播）。
 - **核心替换点（`VoiceEngine`）**：
-  - `fetchNiaTtsAudioBuffer(text, role)` / `fetchTtsAudioBuffer(text, role)`：分别为 WebSocket 24kHz PCM（默认 SenseTime Nia）与 REST（Vertex Gemini）TTS 接入实现；替换为任意自研 TTS 并返回标准 Web Audio `AudioBuffer`，即可复用整套 `ensureAecOutput()` WebRTC AEC3 回声消除、LRU 缓存、预取与插话打断机制。
-  - `speakChrome(text, role)`：浏览器本地 `speechSynthesis` 离线降级通道。
+  - `ensureNiaTtsStream(text, role, lang)` / `speakNiaTts(...)`：SenseTime Nia WebSocket `24kHz` PCM 边收边播流式 TTS 实现（支持 `JAPANESE` 与 `ZH_CN`）。
+  - `fetchTtsAudioBuffer(text, role, lang)`：Vertex Gemini REST TTS 接入实现；替换为任意自研 TTS 并返回标准 Web Audio `AudioBuffer`，即可复用整套 `ensureAecOutput()` WebRTC AEC3 回声消除与 LRU 缓存机制。
+  - `speakChrome(text, role, token, lang)`：浏览器本地 `speechSynthesis` 离线降级通道。
 
 #### ③ 大模型 / 意图识别（NLU / LLM）
 - **请求封装（`ConfigManager`）**：`buildRestUrl(model)`、`buildAuthHeaders()`（Gemini LLM），以及 `generateNiaJwt()`（HS256 JWT 签发）。
@@ -212,8 +216,8 @@ flowchart TD
   ```
 
 #### ④ 视口与交互扩展
-- `BattleEngine`：包含 `normal`（稳健常规）与 `hard`（整回合联合连招搜索 + 2 回合局势评估）两档 AI 决策引擎。
-- `TableUI`：卡牌、特效标签、动效与双语提示渲染。
+- `BattleEngine`：包含 `normal`（稳健常规）与 `hard`（仅读公开信息的整回合联合连招搜索 + 2 回合局势评估）两档 AI 决策引擎。
+- `TableUI`：卡牌、特效标签、动效、单语言气泡/日志渲染与手牌拖拽排序。
 - `MobileViewportManager`：负责手机端（含手机切 PC 模式）识别与顶栏全屏切换按钮状态同步。
 
 </details>
@@ -233,7 +237,7 @@ flowchart TD
 | `asrCorrections` | `{ standard, variants[], meaning }[]` | 日语同音误识别与中文别名纠错词典 |
 
 #### 内置参数化效果（免改代码调数值）
-在 `items[].effect_type` 或 `monsters[].skills[].effect` 中可直接组合或修改数字后缀：
+在 `items[].effect_type` 或 `monsters[].skills[].effect` 中可直接修改数值，或用 `+` 组合多项效果（如 `guard_30+heal_self_20`、`bench_splash_10+discard_self_1`）：
 - `heal_ally_30` / `heal_self_20` → 回复己方或自身指定数值 HP
 - `draw_1` / `draw_2` → 发动技能或使用道具时抽指定张数卡牌
 - `boost_20` → 本回合攻击增伤指定数值
@@ -246,16 +250,16 @@ flowchart TD
 
 #### 热更新方式
 - **修改文件**：直接编辑 `gamedata.json` 并刷新页面（内置防缓存参数）。
-- **页面内临时测试**：在「設定（设置）」底部拖入自定义 `gamedata.json` 立即生效；点击「初期値に戻す（恢复默认）」即可清除覆盖缓存。
+- **页面内临时测试**：在「設定 / 设置」底部拖入自定义 `gamedata.json` 立即生效；点击「初期値に戻す / 恢复默认」即可清除覆盖缓存。
 
 </details>
 
 <details>
 <summary><strong>4. 调试日志、浏览器存储键与安全部署建议</strong></summary>
 
-- **全链路调试日志**：点击顶栏 `Log` 打开调试抽屉，支持按 `ALL / ASR / NLU / TTS / AEC / ERR` 过滤，以及一键复制或导出 `log.json`（导出内容不含任何密钥）。
+- **全链路调试日志**：点击顶栏「ログ / 日志」打开调试抽屉，支持按 `ALL / ASR / NLU / TTS / AEC / ERR` 过滤，以及一键复制或导出 JSON 日志（导出内容不含任何密钥）。
 - **浏览器存储键**：
-  - `localStorage["elemental_table_api_cfg_v14"]`：LLM / ASR / TTS 引擎、密钥、音色、无响应秒数（默认 `15`）、难度等用户配置
+  - `localStorage["elemental_table_api_cfg_v14"]`：界面语种、LLM / ASR / TTS 引擎、密钥、音色、无响应秒数（默认 `15`）、难度等用户配置
   - `localStorage["kotodama_duel_imported_gamedata_v2"]`：页面手动导入的 `gamedata.json` 覆盖缓存
 - **公开发布安全提示**：当前演示版为方便开箱体验内置了默认测试密钥。如用于正式对外公开部署，建议将 `app.js` 中的默认 Key 置空，或将云端推理与语音鉴权改为经由后端代理转发，避免前端密钥被滥用。
 

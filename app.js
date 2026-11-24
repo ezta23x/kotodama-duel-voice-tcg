@@ -100,16 +100,16 @@
       .replace(_EXT_ZH_RE, "怪兽");
   }
 
-  /* 卡面简洁卡通插画（独立小头像框，不遮挡文字，保持高可读性） */
+  /* 卡面简洁卡通插画（独立小头像框，高对比轮廓，兼具可爱感与物种辨识度） */
   const CARD_ART = {
-    p_fox: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fde8e1"/><polygon points="8,18 11,6 19,14" fill="#e25b37"/><polygon points="32,18 29,6 21,14" fill="#e25b37"/><polygon points="10,16 12,9 16,14" fill="#fff0d9"/><polygon points="30,16 28,9 24,14" fill="#fff0d9"/><ellipse cx="20" cy="23" rx="12" ry="10" fill="#f06d42"/><path d="M11,25 Q20,33 29,25 Q24,34 20,34 Q16,34 11,25 Z" fill="#fff6ea"/><path d="M20,11 Q23,14 20,17 Q17,14 20,11 Z" fill="#ffd15c"/><circle cx="15.5" cy="22" r="2" fill="#272018"/><circle cx="24.5" cy="22" r="2" fill="#272018"/><circle cx="16.2" cy="21.3" r="0.7" fill="#fff"/><circle cx="25.2" cy="21.3" r="0.7" fill="#fff"/><polygon points="18.5,25 21.5,25 20,27" fill="#272018"/></svg>',
-    p_turtle: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#e3f1fc"/><path d="M8,28 Q20,10 32,28 Z" fill="#3f8f7b"/><path d="M13,26 Q20,17 27,26" fill="none" stroke="#d8f0e8" stroke-width="1.8"/><circle cx="20" cy="21" r="9" fill="#5ba4dc"/><circle cx="16.5" cy="20" r="2" fill="#272018"/><circle cx="23.5" cy="20" r="2" fill="#272018"/><circle cx="17.1" cy="19.3" r="0.7" fill="#fff"/><circle cx="24.1" cy="19.3" r="0.7" fill="#fff"/><path d="M17,24 Q20,26.5 23,24" fill="none" stroke="#272018" stroke-width="1.6" stroke-linecap="round"/><path d="M31,11 Q34,15 31,17 Q28,15 31,11 Z" fill="#2c6da4"/></svg>',
+    p_fox: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fde8e1"/><path d="M27,29 Q36,24 35,14 Q32,18 30,17 Q29,12 26,15 Q26,23 23,29 Z" fill="#ff9436" stroke="#c94b24" stroke-width="0.9"/><path d="M33,17 Q34.5,15 34.2,13.5 Q32,15.5 31.8,17.2 Z" fill="#ffe169"/><polygon points="7.5,19 10.5,5.5 19,14" fill="#df552e"/><polygon points="32.5,19 29.5,5.5 21,14" fill="#df552e"/><polygon points="9.8,16.5 11.8,8.8 16.5,14" fill="#fff0d9"/><polygon points="30.2,16.5 28.2,8.8 23.5,14" fill="#fff0d9"/><path d="M7.5,24 L10.5,22 L9,26.5 L13,27 L27,27 L31,26.5 L29.5,22 L32.5,24 Q31,32 20,34.5 Q9,32 7.5,24 Z" fill="#f06d42"/><ellipse cx="20" cy="22.5" rx="11.5" ry="9.5" fill="#f06d42"/><path d="M10.5,24.5 Q20,33.5 29.5,24.5 Q24.5,34.5 20,34.5 Q15.5,34.5 10.5,24.5 Z" fill="#fff6ea"/><path d="M20,9.5 Q23.8,13.5 20,17.2 Q16.2,13.5 20,9.5 Z" fill="#ff9a2e"/><path d="M20,12 Q22,14.5 20,16.8 Q18,14.5 20,12 Z" fill="#ffe169"/><circle cx="15.3" cy="21.8" r="2" fill="#272018"/><circle cx="24.7" cy="21.8" r="2" fill="#272018"/><circle cx="16" cy="21.1" r="0.72" fill="#fff"/><circle cx="25.4" cy="21.1" r="0.72" fill="#fff"/><polygon points="18.3,25.2 21.7,25.2 20,27.3" fill="#272018"/></svg>',
+    p_turtle: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#dff2fc"/><path d="M31.5,23.5 Q37.5,20.5 36.2,14.5 Q33.2,18 32,20 Z" fill="#2c7ab8"/><path d="M34.5,17 Q36,15 35.4,13.5" fill="none" stroke="#8ad5ff" stroke-width="1.3" stroke-linecap="round"/><ellipse cx="17.5" cy="29.5" rx="4.2" ry="3.2" fill="#3a89c9"/><ellipse cx="28" cy="29.5" rx="4.2" ry="3.2" fill="#3a89c9"/><path d="M13,25.5 C12.5,12.5 21,9 28.5,11.5 C34,13.5 35.5,21 33.5,25.5 Z" fill="#2d8c6e" stroke="#1d5f4a" stroke-width="1.1"/><path d="M17.5,12.2 L20.5,18.5 L15,24.5 M25.5,11.5 L24.5,18.5 L29.5,24.5 M20.5,18.5 L24.5,18.5" fill="none" stroke="#7de0be" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.2,25.2 Q23.5,28.5 34.4,25.2" fill="none" stroke="#f3e5be" stroke-width="2.6" stroke-linecap="round"/><ellipse cx="10.8" cy="18.2" rx="6.4" ry="5.5" fill="#4da3e3" stroke="#286ca1" stroke-width="1"/><path d="M8,22.5 Q12,24.5 16,22.5" fill="none" stroke="#bde6ff" stroke-width="1.4" stroke-linecap="round"/><circle cx="9.2" cy="16.8" r="1.85" fill="#1e242b"/><circle cx="9.7" cy="16.1" r="0.68" fill="#fff"/><path d="M5.8,19.8 Q8.5,21.8 11.4,20.2" fill="none" stroke="#1e242b" stroke-width="1.25" stroke-linecap="round"/><path d="M10.8,5.8 Q13.2,9 10.8,11.2 Q8.4,9 10.8,5.8 Z" fill="#3288cc"/></svg>',
     p_lion: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fcf2d4"/><circle cx="20" cy="22" r="14" fill="#cc7a10"/><circle cx="11" cy="14" r="5" fill="#d98a14"/><circle cx="29" cy="14" r="5" fill="#d98a14"/><circle cx="8.5" cy="22" r="5" fill="#d98a14"/><circle cx="31.5" cy="22" r="5" fill="#d98a14"/><circle cx="12" cy="30" r="5" fill="#c4710e"/><circle cx="28" cy="30" r="5" fill="#c4710e"/><circle cx="20" cy="32.5" r="5" fill="#c4710e"/><circle cx="20" cy="11" r="5.5" fill="#e09418"/><circle cx="11.5" cy="11.2" r="4.2" fill="#f7c852" stroke="#b5670c" stroke-width="1.2"/><circle cx="11.5" cy="11.4" r="2.1" fill="#c97228"/><circle cx="28.5" cy="11.2" r="4.2" fill="#f7c852" stroke="#b5670c" stroke-width="1.2"/><circle cx="28.5" cy="11.4" r="2.1" fill="#c97228"/><ellipse cx="20" cy="22.5" rx="9.4" ry="8.6" fill="#ffdc73"/><polygon points="20.6,14.3 18.4,17.3 20.1,17.3 19.2,19.7 21.8,16.6 20.1,16.6" fill="#d9531e"/><ellipse cx="17.2" cy="26.2" rx="3.5" ry="2.6" fill="#fff6db"/><ellipse cx="22.8" cy="26.2" rx="3.5" ry="2.6" fill="#fff6db"/><path d="M13.5,18.7 L17.3,19.6" stroke="#8a4b0f" stroke-width="1.3" stroke-linecap="round"/><path d="M26.5,18.7 L22.7,19.6" stroke="#8a4b0f" stroke-width="1.3" stroke-linecap="round"/><circle cx="15.8" cy="21.4" r="1.9" fill="#272018"/><circle cx="24.2" cy="21.4" r="1.9" fill="#272018"/><circle cx="16.4" cy="20.7" r="0.65" fill="#fff"/><circle cx="24.8" cy="20.7" r="0.65" fill="#fff"/><polygon points="17.8,23.5 22.2,23.5 20,25.8" fill="#7a3e0e"/><path d="M17.2,27.2 Q18.6,28.5 20,27.0 Q21.4,28.5 22.8,27.2" fill="none" stroke="#63380c" stroke-width="1.3" stroke-linecap="round"/><path d="M11.8,25.2 L14.5,25.7 M12.2,27.2 L14.7,26.9 M28.2,25.2 L25.5,25.7 M27.8,27.2 L25.3,26.9" stroke="#8a4b0f" stroke-width="1.05" stroke-linecap="round"/></svg>',
-    p_dragon_ex: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fde4cf"/><polygon points="7,14 13,5 17,15" fill="#c98d18"/><polygon points="33,14 27,5 23,15" fill="#c98d18"/><polygon points="5,24 12,18 11,29" fill="#d94f2b"/><polygon points="35,24 28,18 29,29" fill="#d94f2b"/><ellipse cx="20" cy="23" rx="11" ry="10" fill="#d94f2b"/><ellipse cx="20" cy="27" rx="7" ry="5" fill="#ffd56b"/><circle cx="15.5" cy="21" r="2.2" fill="#fff"/><circle cx="24.5" cy="21" r="2.2" fill="#fff"/><circle cx="15.8" cy="21" r="1.1" fill="#9e1c0e"/><circle cx="24.2" cy="21" r="1.1" fill="#9e1c0e"/><polygon points="16,28 17.5,31 19,28" fill="#fff"/><polygon points="21,28 22.5,31 24,28" fill="#fff"/></svg>',
-    e_dog: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fbe5df"/><polygon points="9,17 8,7 17,13" fill="#5a3a31"/><polygon points="31,17 32,7 23,13" fill="#5a3a31"/><ellipse cx="20" cy="23" rx="11.5" ry="10" fill="#75473b"/><ellipse cx="20" cy="27" rx="7" ry="5" fill="#d96c47"/><path d="M13,18 L18,20" stroke="#ffb14a" stroke-width="2" stroke-linecap="round"/><path d="M27,18 L22,20" stroke="#ffb14a" stroke-width="2" stroke-linecap="round"/><circle cx="15.5" cy="21.5" r="1.9" fill="#fff"/><circle cx="24.5" cy="21.5" r="1.9" fill="#fff"/><circle cx="15.8" cy="21.5" r="1" fill="#c9472d"/><circle cx="24.2" cy="21.5" r="1" fill="#c9472d"/><polygon points="18,25 22,25 20,27.3" fill="#272018"/><polygon points="16,29 17.5,31.5 19,29" fill="#fff"/><polygon points="21,29 22.5,31.5 24,29" fill="#fff"/></svg>',
-    e_fish: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#e2f2fb"/><polygon points="30,22 37,15 37,29" fill="#458ec4"/><ellipse cx="19" cy="22" rx="11" ry="9" fill="#5baee2"/><ellipse cx="19" cy="25" rx="8" ry="4.5" fill="#d8f1ff"/><circle cx="15" cy="20" r="2.4" fill="#fff"/><circle cx="14.6" cy="20" r="1.3" fill="#1d2c3a"/><circle cx="28" cy="10" r="3" fill="none" stroke="#3b82b8" stroke-width="1.6"/><circle cx="33" cy="7" r="1.8" fill="none" stroke="#3b82b8" stroke-width="1.4"/></svg>',
-    e_bird: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fbf1d2"/><polygon points="16,12 20,4 23,11 27,6 26,14" fill="#e6a817"/><circle cx="20" cy="22" r="10" fill="#f5c93d"/><path d="M9,23 Q13,18 15,25" fill="#d49311"/><path d="M31,23 Q27,18 25,25" fill="#d49311"/><circle cx="16.2" cy="20.5" r="2" fill="#272018"/><circle cx="23.8" cy="20.5" r="2" fill="#272018"/><circle cx="16.8" cy="19.8" r="0.7" fill="#fff"/><circle cx="24.4" cy="19.8" r="0.7" fill="#fff"/><polygon points="17.5,23 22.5,23 20,27.5" fill="#e06b1f"/></svg>',
-    e_shark_ex: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#d9eefc"/><polygon points="17,14 22,5 25,14" fill="#1f5b8f"/><ellipse cx="20" cy="23" rx="13" ry="9.5" fill="#2c6da4"/><ellipse cx="20" cy="27" rx="10" ry="5" fill="#edf7ff"/><circle cx="14.5" cy="21" r="2.2" fill="#fff"/><circle cx="25.5" cy="21" r="2.2" fill="#fff"/><circle cx="14.8" cy="21" r="1.1" fill="#c98d18"/><circle cx="25.2" cy="21" r="1.1" fill="#c98d18"/><polygon points="14,27 16,30 18,27 20,30 22,27 24,30 26,27" fill="#fff" stroke="#1f5b8f" stroke-width="0.6"/></svg>',
+    p_dragon_ex: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fce0c8"/><polygon points="2.5,12 13,18 11,31 5,25 3,19" fill="#b32d18"/><polygon points="4.5,14.5 12,19 10,27.5 6.5,23" fill="#f29a38"/><polygon points="37.5,12 27,18 29,31 35,25 37,19" fill="#b32d18"/><polygon points="35.5,14.5 28,19 30,27.5 33.5,23" fill="#f29a38"/><path d="M15,12 Q10,6.5 9.5,3.5 Q13.5,5.5 17.8,10.5 Z" fill="#e6aa28" stroke="#9e620b" stroke-width="0.8"/><path d="M25,12 Q30,6.5 30.5,3.5 Q26.5,5.5 22.2,10.5 Z" fill="#e6aa28" stroke="#9e620b" stroke-width="0.8"/><polygon points="20,6 22.2,11 17.8,11" fill="#ff9429"/><polygon points="12.5,13.5 20,10.5 27.5,13.5 29.5,21.5 25.2,32.5 20,35.5 14.8,32.5 10.5,21.5" fill="#d4391f" stroke="#8a1b0c" stroke-width="1"/><polygon points="14.5,27 20,25 25.5,27 24,33 20,35 16,33" fill="#ffd466"/><polygon points="16.2,15 20,13.2 23.8,15 22.4,24.5 20,26 17.6,24.5" fill="#b52612"/><polygon points="12.5,18.2 17.4,19.8 16,22.2 12.2,20.8" fill="#fff07a"/><polygon points="27.5,18.2 22.6,19.8 24,22.2 27.8,20.8" fill="#fff07a"/><polygon points="14.4,18.8 15.6,19.2 14.9,21.8 13.8,21.3" fill="#9e1c0e"/><polygon points="25.6,18.8 24.4,19.2 25.1,21.8 26.2,21.3" fill="#9e1c0e"/><circle cx="18" cy="24.2" r="0.8" fill="#4a1008"/><circle cx="22" cy="24.2" r="0.8" fill="#4a1008"/><path d="M14.5,27.6 Q20,30.2 25.5,27.6" fill="none" stroke="#61180d" stroke-width="1.3"/><polygon points="15.5,27.8 16.8,30.6 18.1,28.1" fill="#fff"/><polygon points="24.5,27.8 23.2,30.6 21.9,28.1" fill="#fff"/></svg>',
+    e_dog: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fae2da"/><polygon points="8,18 6.5,5.5 16.5,12" fill="#4a2b23"/><polygon points="32,18 33.5,5.5 23.5,12" fill="#4a2b23"/><polygon points="9.2,16 8.5,8.2 14.5,12.5" fill="#ff8a30"/><polygon points="30.8,16 31.5,8.2 25.5,12.5" fill="#ff8a30"/><polygon points="7,24 10,16 14,12 20,10.5 26,12 30,16 33,24 28,33.5 20,36 12,33.5" fill="#3d231c"/><path d="M10.5,26 L13.5,28 L12,32 M29.5,26 L26.5,28 L28,32 M20,11 L18.5,14.5 L21.5,14.5 Z" fill="none" stroke="#ff7a29" stroke-width="1.3" stroke-linecap="round"/><polygon points="11.5,16.5 20,13.5 28.5,16.5 27.2,26.5 20,32.5 12.8,26.5" fill="#704034"/><ellipse cx="20" cy="26.5" rx="5.8" ry="4.6" fill="#d97852"/><polygon points="13.2,18.2 17.8,20.2 15.8,22.2 12.8,20.6" fill="#ffe166"/><polygon points="26.8,18.2 22.2,20.2 24.2,22.2 27.2,20.6" fill="#ffe166"/><circle cx="15.3" cy="20.4" r="1" fill="#8f180b"/><circle cx="24.7" cy="20.4" r="1" fill="#8f180b"/><path d="M18,24 L22,24 L20,26.4 Z" fill="#231814"/><path d="M16.2,28.5 Q20,27.2 23.8,28.5" fill="none" stroke="#231814" stroke-width="1.25" stroke-linecap="round"/><polygon points="16.8,28.4 17.9,31 19,28.4" fill="#fff"/><polygon points="23.2,28.4 22.1,31 21,28.4" fill="#fff"/></svg>',
+    e_fish: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#dff1fb"/><circle cx="7.5" cy="11.5" r="2.7" fill="#eef9ff" stroke="#3182bd" stroke-width="1.3"/><circle cx="6.7" cy="10.6" r="0.7" fill="#fff"/><circle cx="5.2" cy="6.8" r="1.6" fill="#eef9ff" stroke="#3182bd" stroke-width="1.2"/><path d="M14,15 Q19,7.5 26,12.5 L23,17.5 Z" fill="#327eb8"/><path d="M18,28.5 Q21,34.5 25.5,31.5 L22.5,27 Z" fill="#327eb8"/><polygon points="27,22 36,13.5 34.2,22 36,30.5" fill="#398bc7" stroke="#246496" stroke-width="0.9" stroke-linejoin="round"/><ellipse cx="18" cy="22" rx="10.8" ry="8.2" fill="#52ace6" stroke="#246496" stroke-width="1"/><path d="M8.8,24 Q18,29.5 27.2,24 Q24,29.8 18,29.8 Q12,29.8 8.8,24 Z" fill="#d9f2ff"/><path d="M19.5,19.5 Q21.5,22 19.5,24.5 M23,19.8 Q24.8,22 23,24.2" fill="none" stroke="#9ad7fa" stroke-width="1.3" stroke-linecap="round"/><circle cx="12.8" cy="20.2" r="2.5" fill="#fff"/><circle cx="12.3" cy="20.2" r="1.35" fill="#182838"/><circle cx="12.9" cy="19.5" r="0.6" fill="#fff"/><ellipse cx="8.2" cy="22.8" rx="1.2" ry="1.5" fill="#235c8c"/></svg>',
+    e_bird: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fbf0cc"/><polygon points="3,17 13,20 12.5,27 5.5,25.5 7,22.5 3.8,21.5" fill="#d68f0e"/><polygon points="37,17 27,20 27.5,27 34.5,25.5 33,22.5 36.2,21.5" fill="#d68f0e"/><polygon points="13.5,13 15.5,5.5 18.8,10 21.5,3.5 23.5,10.2 27.2,5.8 26.5,13.5" fill="#f2b318" stroke="#9e6b06" stroke-width="0.8" stroke-linejoin="round"/><polygon points="15.5,11.5 21,5.8 24.5,11.8" fill="#ffea6b"/><ellipse cx="20" cy="22.5" rx="9.5" ry="9" fill="#f7c936" stroke="#b37b0c" stroke-width="0.9"/><path d="M11.5,19 L17.5,21 L15.5,24 L11,22 Z" fill="#6b4b08"/><path d="M28.5,19 L22.5,21 L24.5,24 L29,22 Z" fill="#6b4b08"/><circle cx="15.2" cy="20.6" r="1.9" fill="#fff"/><circle cx="24.8" cy="20.6" r="1.9" fill="#fff"/><circle cx="15.6" cy="20.7" r="1.05" fill="#1e1810"/><circle cx="24.4" cy="20.7" r="1.05" fill="#1e1810"/><polygon points="16.8,22.8 23.2,22.8 20,29" fill="#e65e10" stroke="#9c3804" stroke-width="0.7" stroke-linejoin="round"/><polygon points="17.6,23.2 22.4,23.2 20,25.2" fill="#ff9036"/></svg>',
+    e_shark_ex: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#d6ecfc"/><path d="M17.5,13.5 C18.5,6.5 22,3.5 25.5,4.2 C23.5,8.2 24.5,11.5 26,13.8 Z" fill="#164b7a" stroke="#0d3152" stroke-width="0.9"/><polygon points="4.5,28 11.5,22 12.5,29.5" fill="#195285"/><polygon points="35.5,28 28.5,22 27.5,29.5" fill="#195285"/><path d="M7.5,23.5 C8,14 13.5,10.5 20,10.5 C26.5,10.5 32,14 32.5,23.5 C32,30.5 26.5,34 20,34 C13.5,34 8,30.5 7.5,23.5 Z" fill="#2569a1" stroke="#133d63" stroke-width="1"/><path d="M9.5,25.5 C12.5,32.5 27.5,32.5 30.5,25.5 C27,28 13,28 9.5,25.5 Z" fill="#eef8ff"/><path d="M9.2,21.5 Q10.4,23.2 9.2,25 M10.9,21.8 Q12,23.3 10.9,24.8" fill="none" stroke="#103457" stroke-width="1.1" stroke-linecap="round"/><path d="M30.8,21.5 Q29.6,23.2 30.8,25 M29.1,21.8 Q28,23.3 29.1,24.8" fill="none" stroke="#103457" stroke-width="1.1" stroke-linecap="round"/><polygon points="11.5,17.2 17,19.4 14.5,21.2 11.5,19.6" fill="#ffd859"/><polygon points="28.5,17.2 23,19.4 25.5,21.2 28.5,19.6" fill="#ffd859"/><circle cx="14.5" cy="19.3" r="0.9" fill="#0f243b"/><circle cx="25.5" cy="19.3" r="0.9" fill="#0f243b"/><path d="M12.5,24.5 Q20,21.5 27.5,24.5 Q27,31.2 20,31.2 Q13,31.2 12.5,24.5 Z" fill="#0f243b"/><polygon points="14,24.2 15.5,27 17,23.7 18.5,26.8 20,23.4 21.5,26.8 23,23.7 24.5,27 26,24.2" fill="#fff"/><polygon points="15,29.6 16.5,27.3 18,29.9 20,27.2 22,29.9 23.5,27.3 25,29.6" fill="#fff"/></svg>',
     item_potion: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#e6f4ea"/><rect x="16" y="7" width="8" height="5" rx="1.5" fill="#8c6239"/><path d="M16,12 L24,12 L28,21 A9,9 0 1 1 12,21 Z" fill="#3f9e66"/><rect x="18.5" y="20" width="3" height="9" rx="1" fill="#fff"/><rect x="15.5" y="23" width="9" height="3" rx="1" fill="#fff"/></svg>',
     item_flute: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#f6eedb"/><path d="M9,29 L29,9 L33,13 L13,33 Z" fill="#c28e2b"/><circle cx="18" cy="22" r="1.5" fill="#4a331d"/><circle cx="22" cy="18" r="1.5" fill="#4a331d"/><circle cx="26" cy="14" r="1.5" fill="#4a331d"/><path d="M11,13 Q14,9 17,13" fill="none" stroke="#4e6e58" stroke-width="2" stroke-linecap="round"/></svg>',
     item_bag: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#eef5ec"/><path d="M15,14 Q20,7 25,14" fill="none" stroke="#6c4d2e" stroke-width="2.6" stroke-linecap="round"/><rect x="10" y="14" width="20" height="18" rx="5" fill="#5a8266"/><rect x="10" y="14" width="20" height="8" rx="4" fill="#466a51"/><rect x="18" y="20" width="4" height="4" rx="1" fill="#f5d07a"/></svg>',
@@ -1573,6 +1573,7 @@
     vadSpeechStart: 0,
     vadLastLoud: 0,
     vadPeakRms: 0,
+    vadContStreak: 0,
     recRunning: false,
     recStarting: false,
     recRetryDelay: 300,
@@ -1676,6 +1677,15 @@
       this.pendingSpeakCount = (this.isSpeaking ? 1 : 0) + this.speakQueue.length;
     },
 
+    /** 立即关闭尚未完成或已脱离监听的 SenseTime Nia 流式 TTS WebSocket，避免并发堆积报错 */
+    abortNiaTtsStreams(onlyUnattached = false) {
+      for (const s of Array.from(this.niaStreams.values())) {
+        if (!s || s.done) continue;
+        if (onlyUnattached && s.listeners && s.listeners.size > 0) continue;
+        try { if (typeof s.abort === "function") s.abort(); } catch (_) {}
+      }
+    },
+
     /** 立即中断所有正在播放或排队中的语音（仅用于玩家插话打断、重开对局、手动试听等强中断场景） */
     stopPlayback() {
       this.speakToken += 1;
@@ -1683,6 +1693,7 @@
       this.isSpeaking = false;
       this.isDrainingQueue = false;
       this.currentSpeakItem = null;
+      this.abortNiaTtsStreams(false);
       while (this.speakQueue.length) {
         const item = this.speakQueue.shift();
         try { if (item && item.resolve) item.resolve(); } catch (_) {}
@@ -1731,13 +1742,14 @@
       }
       if (snapshot.length === 0) return false;
 
-      /* 仅终止当前音频流与旧播放令牌，但保留原 Promise resolve 链以新语言重新入队 */
+      /* 仅终止当前音频流与旧播放令牌，关闭不再需要的 Nia WS 连接，并保留原 Promise resolve 链以新语言重新入队 */
       this.speakToken += 1;
       this._drainId = (this._drainId || 0) + 1;
       this.isSpeaking = false;
       this.isDrainingQueue = false;
       this.currentSpeakItem = null;
       this.speakQueue = [];
+      this.abortNiaTtsStreams(false);
       if (window.speechSynthesis) {
         try { speechSynthesis.cancel(); } catch (_) {}
       }
@@ -1759,6 +1771,7 @@
       const newToken = this.speakToken;
       for (let i = 0; i < snapshot.length; i++) {
         const old = snapshot[i];
+        old._replaying = true;
         const rawForLang = targetLang === "zh"
           ? (old.zhText || old.jaText || old.spokenText || "")
           : (old.jaText || old.zhText || old.spokenText || "");
@@ -1769,10 +1782,12 @@
         }
         if (i === 0) {
           this.prefetch(spokenText, old.role, targetLang);
-        } else {
+        } else if (i === 1) {
           const r = old.role;
           const st = spokenText;
-          setTimeout(() => { this.prefetch(st, r, targetLang); }, 320 * i);
+          setTimeout(() => {
+            if (this.speakToken === newToken) this.prefetch(st, r, targetLang);
+          }, 320 * i);
         }
         this.speakQueue.push({
           spokenText,
@@ -2040,6 +2055,10 @@
         throw new Error("Nia AK/SK 未設定");
       }
 
+      if (this.niaStreams.size >= 2) {
+        this.abortNiaTtsStreams(true);
+      }
+
       const stream = {
         cacheKey,
         voiceId,
@@ -2047,10 +2066,12 @@
         chunks: [],
         totalBytes: 0,
         done: false,
+        aborted: false,
         error: null,
         buffer: null,
         listeners: new Set(),
         ws: null,
+        abort: null,
         t0: Date.now(),
         tFirstAudio: 0,
         promise: null
@@ -2067,24 +2088,41 @@
         let idleTimer = null;
         let maxTimer = null;
         let settled = false;
+        let wsResolve = null;
         const clearTimers = () => {
           if (idleTimer) { clearTimeout(idleTimer); idleTimer = null; }
           if (maxTimer) { clearTimeout(maxTimer); maxTimer = null; }
         };
 
+        stream.abort = () => {
+          if (stream.aborted || stream.done) return;
+          stream.aborted = true;
+          stream.done = true;
+          this.niaStreams.delete(cacheKey);
+          clearTimers();
+          try { if (stream.ws && stream.ws.readyState < 2) stream.ws.close(); } catch (_) {}
+          notify("aborted", null);
+          if (!settled) {
+            settled = true;
+            if (wsResolve) wsResolve();
+          }
+        };
+
         try {
           const jwt = await ConfigManager.generateNiaJwt();
+          if (stream.aborted) return null;
           const url = `wss://nia.sensetime.com/biz/tts/ws?jwt=${encodeURIComponent(jwt)}`;
           await new Promise((resolve, reject) => {
+            wsResolve = resolve;
             const fail = (err) => {
-              if (settled) return;
+              if (settled || stream.aborted) return;
               settled = true;
               clearTimers();
               try { if (stream.ws && stream.ws.readyState < 2) stream.ws.close(); } catch (_) {}
               reject(err);
             };
             const finishOk = () => {
-              if (settled) return;
+              if (settled || stream.aborted) return;
               settled = true;
               clearTimers();
               try { if (stream.ws && stream.ws.readyState < 2) stream.ws.close(); } catch (_) {}
@@ -2107,9 +2145,18 @@
             } catch (e) {
               return fail(e);
             }
+            if (stream.aborted) {
+              try { if (ws.readyState < 2) ws.close(); } catch (_) {}
+              if (!settled) { settled = true; clearTimers(); resolve(); }
+              return;
+            }
             stream.ws = ws;
             ws.binaryType = "arraybuffer";
             ws.onopen = () => {
+              if (stream.aborted) {
+                try { if (ws.readyState < 2) ws.close(); } catch (_) {}
+                return;
+              }
               try {
                 /* 按角色注入差异化韵律参数：裁判清脆利落，对手「莲」更有热血挑衅张力 */
                 const personaProsody = role === "rival"
@@ -2136,6 +2183,7 @@
               }
             };
             ws.onmessage = (ev) => {
+              if (stream.aborted) return;
               if (ev.data instanceof ArrayBuffer) {
                 const u8 = new Uint8Array(ev.data);
                 if (u8.byteLength > 0) {
@@ -2169,14 +2217,16 @@
                 }
               }
             };
-            ws.onerror = () => fail(new Error("Nia TTS WebSocket error"));
+            ws.onerror = () => { if (!stream.aborted) fail(new Error("Nia TTS WebSocket error")); };
             ws.onclose = (ev) => {
-              if (!settled) {
+              if (!settled && !stream.aborted) {
                 if (stream.totalBytes > 100 && ev.code === 1000) finishOk();
                 else fail(new Error(`Nia TTS closed (${ev.code})`));
               }
             };
           });
+
+          if (stream.aborted) return null;
 
           const merged = new Uint8Array(stream.totalBytes);
           let off = 0;
@@ -2223,7 +2273,7 @@
       const spoken = this.extractSpokenText(text, lang);
       if (!cfg.autoSpeak || !spoken || this.apiTtsBlocked || cfg.ttsEngine === "chrome_tts") return;
       if (cfg.ttsEngine === "nia_tts") {
-        if (!ConfigManager.hasNiaCredentials()) return;
+        if (!ConfigManager.hasNiaCredentials() || this.niaStreams.size >= 2) return;
         try { this.ensureNiaTtsStream(spoken, role, lang); } catch (_) {}
         return;
       }
@@ -2336,6 +2386,7 @@
         } catch (_) {}
         const sourcesToStop = this.activeSources.slice();
         const cancelsToRun = this.activeStreamCancels.slice();
+        const oldStreamsToAbort = Array.from(this.niaStreams.values());
         this.activeSources = [];
         this.activeStreamCancels = [];
         this.speakToken += 1;
@@ -2343,6 +2394,11 @@
         this.isSpeaking = false;
         this.isDrainingQueue = false;
         this.currentSpeakItem = null;
+        oldStreamsToAbort.forEach((s) => {
+          if (s && !s.done && s.listeners && s.listeners.size === 0 && typeof s.abort === "function") {
+            try { s.abort(); } catch (_) {}
+          }
+        });
         while (this.speakQueue.length) {
           const item = this.speakQueue.shift();
           try { if (item && item.resolve) item.resolve(); } catch (_) {}
@@ -2351,6 +2407,7 @@
         if (window.speechSynthesis) { try { speechSynthesis.cancel(); } catch (_) {} }
         setTimeout(() => {
           for (const cancelFn of cancelsToRun) { try { if (typeof cancelFn === "function") cancelFn(); } catch (_) {} }
+          for (const s of oldStreamsToAbort) { try { if (s && !s.done && typeof s.abort === "function") s.abort(); } catch (_) {} }
           for (const entry of sourcesToStop) {
             try { if (entry && entry.src) { entry.src.onended = null; entry.src.stop(); } } catch (_) {}
             try { if (entry && entry.resolve) entry.resolve(); } catch (_) {}
@@ -2466,6 +2523,9 @@
           }
           localEntries.length = 0;
           finishOk();
+          if (s.listeners.size === 0 && !s.done && typeof s.abort === "function") {
+            s.abort();
+          }
         };
 
         const rearmGuard = () => {
@@ -2582,6 +2642,10 @@
         const onStreamEvent = (type, payload) => {
           if (settled) return;
           if (token !== this.speakToken) { cancelPlayback(); return; }
+          if (type === "aborted") {
+            finishOk();
+            return;
+          }
           if (type === "chunk") {
             enqueuePcmChunk(payload);
           } else if (type === "done") {
@@ -2910,8 +2974,10 @@
             }
           } finally {
             if (this.currentSpeakItem === item) this.currentSpeakItem = null;
-            if (myToken === this.speakToken) {
+            if (!item._replaying) {
               try { resolve(); } catch (_) {}
+            }
+            if (myToken === this.speakToken) {
               this.isSpeaking = false;
               this.lastSpeakEndAt = Date.now();
               this.pendingSpeakCount = this.speakQueue.length;
@@ -3122,7 +3188,8 @@
           rejectFail(e);
           return;
         }
-        endWaitTimer = setTimeout(() => resolveDone(), 4500);
+        const hasTextNow = Boolean(getTranscript());
+        endWaitTimer = setTimeout(() => resolveDone(), hasTextNow ? 650 : 1200);
       };
 
       const startPacer = () => {
@@ -3192,7 +3259,7 @@
               if (preview && onPartial) onPartial(preview, true);
               if (ending && endSent) {
                 clearTimeout(endWaitTimer);
-                endWaitTimer = setTimeout(() => resolveDone(), 260);
+                endWaitTimer = setTimeout(() => resolveDone(), 180);
               }
             } else if (msg.type === "finished") {
               resolveDone();
@@ -3292,11 +3359,11 @@
       };
     },
 
-    /** 判断当前识别文本结尾是否停在连接词/助词上，避免在玩家连招或思考停顿时过早截断 */
+    /** 判断当前识别文本结尾是否停在连接词/助词上，避免在玩家连招或思考停顿时过早截断（不匹配 〜て/〜して 完整祈使结尾） */
     isIncompleteTrailingPhrase(text) {
       const s = String(text || "").trim().replace(/[、，,]+$/, "");
       if (!s) return true;
-      return /(?:然后|接着|之后|并且|而且|但是|不过|顺便|先把|先给|再把|再给|再|把|给|向|对|用|让|派|换|贴|の|を|に|へ|で|と|が|は|も|から|まで|て|して|そして|それから|あとで|そのあと)$/.test(s);
+      return /(?:然后|接着|之后|并且|而且|但是|不过|顺便|先把|先给|再把|再给|再|把|给|向|对|用|让|派|换|贴|の|を|に|へ|で|と|が|は|も|から|まで|てから|してから|そして|それから|あとで|そのあと)$/.test(s);
     },
 
     /** 中断当前尚未提交的 VAD 录音切片、Nia 流式会话与 PCM 采集缓冲 */
@@ -3304,6 +3371,7 @@
       this.vadCapturing = false;
       this.vadSimultaneousMode = false;
       this.vadLoudBargeStreak = 0;
+      this.vadContStreak = 0;
       this.vadLastAsrText = "";
       this.vadLastAsrChangeAt = 0;
       this.vadGotFinal = false;
@@ -3406,6 +3474,8 @@
       this.vadHitStreak = 0;
       this.vadBargeStreak = 0;
       this.vadLoudFrames = 0;
+      this.vadContStreak = 0;
+      const normAsrKey = (txt) => String(txt || "").replace(/[\s、，。.,！!？?…]+/g, "");
 
       clearInterval(this.vadTimer);
       this.vadTimer = setInterval(() => {
@@ -3415,6 +3485,7 @@
         if (!playerCanSpeak || now < this.sfxPlayingUntil) {
           this.vadHitStreak = 0;
           this.vadBargeStreak = 0;
+          this.vadContStreak = 0;
           if (this.vadRecorder || this.vadCapturing) this.abortVadRecorder();
           this.updateVoiceWave(0, 0.02, false);
           return;
@@ -3434,7 +3505,7 @@
         /* 全双工边播边识别（Nia 模式）：TTS 播放期间同步开启流式 ASR 试听，确认非回声有效人声后再平滑淡出打断 TTS */
         if (this.isSpeaking) {
           const isLowInterruptible = Boolean(this.currentSpeakItem && this.currentSpeakItem.interruptible);
-          if (!isLowInterruptible && this.bargeInGuardUntil && now < this.bargeInGuardUntil) {
+          if (!this.vadCapturing && !isLowInterruptible && this.bargeInGuardUntil && now < this.bargeInGuardUntil) {
             this.vadBargeStreak = 0;
             this.vadLoudBargeStreak = 0;
             this.updateVoiceWave(rms * 0.2, 0.08, false);
@@ -3455,6 +3526,7 @@
               if (this.vadBargeStreak >= 2) {
                 this.vadBargeStreak = 0;
                 this.vadLoudBargeStreak = rms > strongBargeThresh ? 1 : 0;
+                this.vadContStreak = 0;
                 this.vadSimultaneousMode = true;
                 this.vadLastAsrText = "";
                 this.vadLastAsrChangeAt = 0;
@@ -3472,10 +3544,10 @@
                   onPartial: (txt, isFinal) => {
                     const cleaned = this.stripSpokenEcho(txt);
                     if (!cleaned || NLUEngine.isMeaninglessTranscript(cleaned) || this.isLikelySelfEcho(cleaned)) return;
-                    if (cleaned !== this.vadLastAsrText) {
-                      this.vadLastAsrText = cleaned;
+                    if (normAsrKey(cleaned) !== normAsrKey(this.vadLastAsrText)) {
                       this.vadLastAsrChangeAt = Date.now();
                     }
+                    this.vadLastAsrText = cleaned;
                     if (isFinal) this.vadGotFinal = true;
                     if (this.vadSimultaneousMode && this.isSpeaking) {
                       this.vadSimultaneousMode = false;
@@ -3556,13 +3628,14 @@
             this.vadHitStreak += 1;
           } else {
             this.vadHitStreak = 0;
-            /* 仅在确认是背景静音时才更新底噪，禁止把清辅音起音爬坡吸纳进底噪导致门限虚高 */
-            if (rms < this.vadNoiseFloor * 1.35) {
-              this.vadNoiseFloor = Math.min(0.015, Math.max(0.004, this.vadNoiseFloor * 0.94 + rms * 0.06));
+            /* 仅在确认是背景静音时才更新底噪，允许适应中等风扇/空调环境声同时防止爬坡吸纳起音 */
+            if (rms < this.vadNoiseFloor * 1.4) {
+              this.vadNoiseFloor = Math.min(0.028, Math.max(0.004, this.vadNoiseFloor * 0.94 + rms * 0.06));
             }
           }
           if (this.vadHitStreak >= 2) {
             this.vadHitStreak = 0;
+            this.vadContStreak = 0;
             this.vadLastAsrText = "";
             this.vadLastAsrChangeAt = 0;
             this.vadGotFinal = false;
@@ -3583,9 +3656,11 @@
                   lang: this.getEffectiveNiaAsrLang(),
                   onPartial: (txt, isFinal) => {
                     const cleanTxt = String(txt || "").trim();
-                    if (cleanTxt && cleanTxt !== this.vadLastAsrText) {
+                    if (cleanTxt) {
+                      if (normAsrKey(cleanTxt) !== normAsrKey(this.vadLastAsrText)) {
+                        this.vadLastAsrChangeAt = Date.now();
+                      }
                       this.vadLastAsrText = cleanTxt;
-                      this.vadLastAsrChangeAt = Date.now();
                     }
                     if (isFinal && cleanTxt) this.vadGotFinal = true;
                     if (cleanTxt && $("cmdInput")) $("cmdInput").value = cleanTxt;
@@ -3632,10 +3707,16 @@
             }
           }
         } else {
+          const strongVoice = rms > Math.max(contThresh * 1.25, this.vadPeakRms * 0.35);
           if (rms > contThresh) {
-            this.vadLastLoud = now;
-            this.vadLoudFrames += 1;
+            this.vadContStreak = (this.vadContStreak || 0) + 1;
+            if (this.vadContStreak >= 2 || strongVoice) {
+              this.vadLastLoud = now;
+              this.vadLoudFrames += 1;
+            }
             if (rms > this.vadPeakRms) this.vadPeakRms = rms;
+          } else {
+            this.vadContStreak = 0;
           }
           const dur = now - this.vadSpeechStart;
           const silence = now - this.vadLastLoud;
@@ -3643,14 +3724,20 @@
           const tailSilenceMs = incompleteTail ? 1350 : (this.vadGotFinal ? 620 : (dur < 1200 ? 720 : 960));
           const asrIdleMs = this.vadLastAsrChangeAt ? (now - this.vadLastAsrChangeAt) : 0;
           const asrStableLimit = incompleteTail ? 1950 : (this.vadGotFinal ? 900 : 1350);
-          /* 声学静音 + ASR 文本稳定双信号联合判停：不过短不截断连招，微弱底噪下也能可靠自动提交 */
-          const asrTextStableDone = Boolean(this.vadLastAsrText && dur >= 500 && asrIdleMs >= asrStableLimit && rms < Math.max(0.032, this.vadNoiseFloor * 2.8));
+          /* 声学静音 + ASR 文本稳定双信号联合判停：连续人声防单帧底噪误清零，放宽环境底噪下文本稳定提交 */
+          const asrTextStableDone = Boolean(
+            this.vadLastAsrText
+            && dur >= 500
+            && asrIdleMs >= asrStableLimit
+            && rms < Math.max(0.045, this.vadNoiseFloor * 3.2, this.vadPeakRms * 0.55)
+          );
           if ((dur >= 380 && silence >= tailSilenceMs) || asrTextStableDone || dur >= 10000) {
             if (this.vadProcessor) {
               const wasSimultaneous = Boolean(this.vadSimultaneousMode);
               this.vadCapturing = false;
               this.vadSimultaneousMode = false;
               this.vadLoudBargeStreak = 0;
+              this.vadContStreak = 0;
               this.vadLastAsrText = "";
               this.vadLastAsrChangeAt = 0;
               this.vadGotFinal = false;
@@ -3713,6 +3800,32 @@
           }
         }
       }, 35);
+    },
+
+    /** 语种切换或设置保存后重启正在运行的 Chrome 持续语音识别 */
+    restartChromeAsrIfNeeded() {
+      if (!this.callActive || this.callMode !== "chrome_asr") return;
+      clearTimeout(this.recRestartTimer);
+      clearTimeout(this.chromeResumeTimer);
+      if (this.callRec) {
+        try {
+          this.callRec.onstart = null;
+          this.callRec.onresult = null;
+          this.callRec.onerror = null;
+          this.callRec.onend = null;
+          this.callRec.abort();
+        } catch (_) {}
+        this.callRec = null;
+      }
+      this.recRunning = false;
+      this.recStarting = false;
+      if (!this.isSpeaking) {
+        setTimeout(() => {
+          if (this.callActive && this.callMode === "chrome_asr" && !this.isSpeaking) {
+            this.spawnContinuousRec();
+          }
+        }, 120);
+      }
     },
 
     /** 离线/浏览器语音识别兜底：严格等待 TTS 与音效播完后再收音 */
@@ -4589,7 +4702,7 @@
           const h = candidates.find((u) => u.slot === `${side}_bench_0`);
           if (h) return h.slot;
         }
-        if (/中央|真ん中|中间/.test(clause)) {
+        if (/中央|真ん中|中间|中位|备战中|(?:^|[\s・,，、])中(?:$|[\s・,，、])/.test(clause)) {
           const h = candidates.find((u) => u.slot === `${side}_bench_1`);
           if (h) return h.slot;
         }
@@ -4638,7 +4751,7 @@
       }
 
       if (/左/.test(clause)) return `${side}_bench_0`;
-      if (/中央|真ん中|中间/.test(clause)) return `${side}_bench_1`;
+      if (/中央|真ん中|中间|中位|备战中|(?:^|[\s・,，、])中(?:$|[\s・,，、])/.test(clause)) return `${side}_bench_1`;
       if (/右/.test(clause)) return `${side}_bench_2`;
       if (/前|バトル場|前排|战斗区/.test(clause)) return `${side}_active`;
       if (/一番HPが低|一番弱|HPが低|弱ってる|血最少|残血|最弱|受伤/.test(clause) && pool.length) {
@@ -5651,7 +5764,7 @@
         const it = SpecEngine.getItem(id);
         return it && it.category === "energy";
       });
-      if (!s.energyAttachedThisTurn && hasHandEnergy) {
+      if (!s.energyUsedThisTurn && hasHandEnergy) {
         list.push({
           key: "energy",
           ja: "このターンはまだエネルギーを貼っていません（手札にエネあり）",
@@ -5946,8 +6059,8 @@
                 originalUtterance: this.lastPlayerUtterance,
                 context: { usable, target: null },
                 options: [
-                  ...usable.map((sk) => ({ label: t(`${sk.name_ja} (${sk.damage})`, `${sk.name_zh} (${sk.damage})`), reply: sk.name_ja })),
-                  { label: t("キャンセル", "取消"), reply: "キャンセル" }
+                  ...usable.map((sk) => ({ labelJa: `${sk.name_ja} (${sk.damage})`, labelZh: `${sk.name_zh} (${sk.damage})`, reply: sk.name_ja })),
+                  { labelJa: "キャンセル", labelZh: "取消", reply: "キャンセル" }
                 ]
               });
             }
@@ -5980,8 +6093,8 @@
             promptZh: zh,
             originalUtterance: this.lastPlayerUtterance,
             options: [
-              { label: t("はい（降参）", "确认认输"), reply: "はい" },
-              { label: t("いいえ（続行）", "继续对战"), reply: "いいえ" }
+              { labelJa: "はい（降参）", labelZh: "确认认输", reply: "はい" },
+              { labelJa: "いいえ（続行）", labelZh: "继续对战", reply: "いいえ" }
             ]
           });
           VoiceEngine.clearQueuedOnly(false);
@@ -6089,8 +6202,8 @@
             originalUtterance: rawUtter,
             context: { actionType: "END_TURN", opportunities: opps },
             options: [
-              { label: t("このまま終了", "确认结束"), reply: "はい" },
-              { label: t("戻る", "返回操作"), reply: "いいえ" }
+              { labelJa: "このまま終了", labelZh: "确认结束", reply: "はい" },
+              { labelJa: "戻る", labelZh: "返回操作", reply: "いいえ" }
             ]
           });
           TableUI.openEndTurnConfirmModal(opps, true);
@@ -6291,8 +6404,13 @@
         const rivalPriority = priority === "high" ? "high" : "normal";
         const firstRivalChunk = VoiceEngine.splitIntoClauses(spokenRival, lang)[0] || spokenRival;
         VoiceEngine.speak({ ja: rJa, zh: rZh }, "rival", { priority: rivalPriority, lang, deferPrefetch: true });
+        const expectedToken = VoiceEngine.speakToken;
         /* 错峰 350ms 预取对手语音首句，避免 0ms 并发两条 Nia TTS WS 互相争抢带宽 */
-        setTimeout(() => { VoiceEngine.prefetch(firstRivalChunk, "rival", lang); }, 350);
+        setTimeout(() => {
+          if (VoiceEngine.speakToken === expectedToken) {
+            VoiceEngine.prefetch(firstRivalChunk, "rival", lang);
+          }
+        }, 350);
       }
       return Promise.resolve();
     },
@@ -6363,7 +6481,7 @@
                 context: { action: act, candidates: energyTypes },
                 options: energyTypes.map((cid) => {
                   const it = SpecEngine.getItem(cid);
-                  return { label: `${it ? it.name_ja : cid}（${it ? it.name_zh : cid}）`, reply: it ? it.name_ja : cid };
+                  return { labelJa: it ? it.name_ja : cid, labelZh: it ? it.name_zh : cid, reply: it ? it.name_ja : cid };
                 })
               });
               await this.announceAndReact(ja, zh, null);
@@ -6392,8 +6510,10 @@
                 type: "choose_target", promptJa: ja, promptZh: zh,
                 context: { side: "player", action: { ...act, card_id: cardId } },
                 options: allAllies.map((e) => ({
-                  label: `${e.slot === "player_active" ? "前" : POS_JA[e.idx]}・${e.def.name_ja}（${e.def.name_zh}）`,
-                  reply: e.slot === "player_active" ? "前" : POS_JA[e.idx]
+                  labelJa: `${e.slot === "player_active" ? "前" : POS_JA[e.idx]}・${e.def.name_ja}`,
+                  labelZh: `${e.slot === "player_active" ? "前" : POS_ZH[e.idx]}・${e.def.name_zh}`,
+                  reply: e.slot === "player_active" ? "前" : POS_JA[e.idx],
+                  slot: e.slot
                 }))
               });
               await this.announceAndReact(ja, zh, null);
@@ -6491,7 +6611,7 @@
                 context: { action: act, candidates: monTypes },
                 options: monTypes.map((cid) => {
                   const m = SpecEngine.getMonster(cid);
-                  return { label: `${m.name_ja}（${m.name_zh} HP${m.hp}）`, reply: m.name_ja };
+                  return { labelJa: `${m.name_ja} (HP${m.hp})`, labelZh: `${m.name_zh} (HP${m.hp})`, reply: m.name_ja };
                 })
               });
               await this.announceAndReact(ja, zh, null);
@@ -6548,8 +6668,10 @@
                   type: "choose_target", promptJa: ja, promptZh: zh,
                   context: { side: "player", action: act },
                   options: wounded.map((e) => ({
-                    label: `${e.slot === "player_active" ? "前" : POS_JA[e.idx]}・${e.def.name_ja}（${e.def.name_zh}）`,
-                    reply: e.slot === "player_active" ? "前" : POS_JA[e.idx]
+                    labelJa: `${e.slot === "player_active" ? "前" : POS_JA[e.idx]}・${e.def.name_ja}`,
+                    labelZh: `${e.slot === "player_active" ? "前" : POS_ZH[e.idx]}・${e.def.name_zh}`,
+                    reply: e.slot === "player_active" ? "前" : POS_JA[e.idx],
+                    slot: e.slot
                   }))
                 });
                 await this.announceAndReact(ja, zh, null);
@@ -6601,7 +6723,12 @@
                 this.setPending({
                   type: "choose_target", promptJa: ja, promptZh: zh,
                   context: { side: "enemy", action: act },
-                  options: eBench.map((e) => ({ label: `${POS_JA[e.idx]}・${e.def.name_ja}（${e.def.name_zh}）`, reply: POS_JA[e.idx] }))
+                  options: eBench.map((e) => ({
+                    labelJa: `${POS_JA[e.idx]}・${e.def.name_ja}`,
+                    labelZh: `${POS_ZH[e.idx]}・${e.def.name_zh}`,
+                    reply: POS_JA[e.idx],
+                    slot: e.slot
+                  }))
                 });
                 await this.announceAndReact(ja, zh, null);
                 return false;
@@ -6763,7 +6890,12 @@
               this.setPending({
                 type: "choose_target", promptJa: ja, promptZh: zh,
                 context: { side: "player", action: act },
-                options: myBench.map((e) => ({ label: `${POS_JA[e.idx]}・${e.def.name_ja}（${e.def.name_zh}）`, reply: POS_JA[e.idx] }))
+                options: myBench.map((e) => ({
+                  labelJa: `${POS_JA[e.idx]}・${e.def.name_ja}`,
+                  labelZh: `${POS_ZH[e.idx]}・${e.def.name_zh}`,
+                  reply: POS_JA[e.idx],
+                  slot: e.slot
+                }))
               });
               await this.announceAndReact(ja, zh, null);
               return false;
@@ -6867,8 +6999,8 @@
                 type: "choose_skill", promptJa: ja, promptZh: zh,
                 context: { usable, target: act.target },
                 options: [
-                  ...usable.map((sk) => ({ label: `${sk.name_ja}（${sk.name_zh} ${sk.damage}）`, reply: sk.name_ja })),
-                  { label: "キャンセル（取消）", reply: "キャンセル" }
+                  ...usable.map((sk) => ({ labelJa: `${sk.name_ja} (${sk.damage})`, labelZh: `${sk.name_zh} (${sk.damage})`, reply: sk.name_ja })),
+                  { labelJa: "キャンセル", labelZh: "取消", reply: "キャンセル" }
                 ]
               });
               await this.announceAndReact(ja, zh, null);
@@ -6894,8 +7026,10 @@
                 type: "choose_target", promptJa: ja, promptZh: zh,
                 context: { side: "enemy", action: { type: "ATTACK", skill_name: chosenSkill.name_ja, target: null } },
                 options: eUnits.map((e) => ({
-                  label: `${e.slot === "enemy_active" ? "前" : POS_JA[e.idx]}・${e.def.name_ja}（${e.def.name_zh} HP${e.unit.hp}）`,
-                  reply: e.slot === "enemy_active" ? "前" : POS_JA[e.idx]
+                  labelJa: `${e.slot === "enemy_active" ? "前" : POS_JA[e.idx]}・${e.def.name_ja} (HP${e.unit.hp})`,
+                  labelZh: `${e.slot === "enemy_active" ? "前" : POS_ZH[e.idx]}・${e.def.name_zh} (HP${e.unit.hp})`,
+                  reply: e.slot === "enemy_active" ? "前" : POS_JA[e.idx],
+                  slot: e.slot
                 }))
               });
               await this.announceAndReact(ja, zh, null);
@@ -7128,7 +7262,12 @@
           const zh = "请选择备战区一只怪兽补位至战斗区。";
           this.setPending({
             type: "promote_bench", promptJa: ja, promptZh: zh,
-            options: myBench.map((e) => ({ label: `${POS_JA[e.idx]}・${e.def.name_ja}（${e.def.name_zh}）`, reply: POS_JA[e.idx] }))
+            options: myBench.map((e) => ({
+              labelJa: `${POS_JA[e.idx]}・${e.def.name_ja}`,
+              labelZh: `${POS_ZH[e.idx]}・${e.def.name_zh}`,
+              reply: POS_JA[e.idx],
+              slot: e.slot
+            }))
           });
           TableUI.setReferee(ja, zh);
         }
@@ -8052,6 +8191,15 @@
               await this.checkKnockOuts();
               if (seq !== this.matchSeq || s.gameOver) return;
             }
+            const fatigueJa = `ターン${s.turn}、あなたの番です。`;
+            const fatigueZh = `第 ${s.turn} 回合，轮到你的回合。`;
+            TableUI.showTurnBanner(`ターン ${s.turn} · あなたのターン`, `第 ${s.turn} 回合 · 你的回合`, false);
+            if (s.pending && s.pending.type === "promote_bench") {
+              TableUI.setReferee(`${s.pending.promptJa}（${fatigueJa}）`, `${s.pending.promptZh}（${fatigueZh}）`);
+            } else {
+              TableUI.setReferee(fatigueJa, fatigueZh);
+              VoiceEngine.speak({ ja: fatigueJa, zh: fatigueZh }, "referee", { priority: "low" });
+            }
           } else {
             const drawn = this.drawCard("player", 1);
             TableUI.renderAll();
@@ -8856,7 +9004,11 @@
       }
 
       const seq = ++this._tipSeq;
-      if (btn) { btn.disabled = true; btn.textContent = t("解析中…", "分析中…"); }
+      if (btn) {
+        btn.disabled = true;
+        btn.classList.add("is-loading");
+        btn.innerHTML = `${SVG_ICONS.hudSpinner}${escapeHtml(t("解析中…", "分析中…"))}`;
+      }
       const ac = typeof AbortController !== "undefined" ? new AbortController() : null;
       const timer = ac ? setTimeout(() => ac.abort(), 8000) : null;
       try {
@@ -8903,7 +9055,11 @@
         TableUI.showToast("AI戦術分析に失敗・ローカル提案を表示中", "AI战术分析失败，已显示本地建议");
       } finally {
         if (timer) clearTimeout(timer);
-        if (btn) { btn.disabled = false; btn.innerHTML = `${SVG_ICONS.sparkle}${escapeHtml(t("AI戦術", "AI战术"))}`; }
+        if (btn) {
+          btn.disabled = false;
+          btn.classList.remove("is-loading");
+          btn.innerHTML = `${SVG_ICONS.sparkle}${escapeHtml(t("AI戦術", "AI战术"))}`;
+        }
       }
     },
 
@@ -9056,10 +9212,26 @@
       $("playerTrashCount").textContent = s.player.trash.length;
 
       const selCardId = s.selectedHandIndex !== null ? s.player.hand[s.selectedHandIndex] : null;
-      const needAllyTarget = selCardId && (selCardId.startsWith("energy_") || selCardId === "item_potion");
+      const isWoundedUnit = (u) => {
+        if (!u) return false;
+        const d = SpecEngine.getMonster(u.id);
+        return Boolean(d && u.hp < d.hp);
+      };
+      const needEnergyAlly = Boolean(selCardId && selCardId.startsWith("energy_"));
+      const needPotionAlly = selCardId === "item_potion";
       const needEnemyBench = selCardId === "item_flute";
       const pendingAlly = s.pending && (s.pending.type === "promote_bench" || (s.pending.type === "choose_target" && s.pending.context.side === "player"));
       const pendingEnemy = s.pending && s.pending.type === "choose_target" && s.pending.context.side === "enemy";
+      const pendingSlots = new Set((s.pending?.options || []).map((o) => o.slot).filter(Boolean));
+      const highlightEnemyActive = Boolean(
+        s.enemy.active && pendingEnemy && (pendingSlots.size ? pendingSlots.has("enemy_active") : s.pending?.context?.action?.card_id !== "item_flute")
+      );
+      const highlightPlayerActive = Boolean(
+        s.phase === "setup"
+        || (needEnergyAlly && s.player.active)
+        || (needPotionAlly && isWoundedUnit(s.player.active))
+        || (pendingAlly && s.player.active && (pendingSlots.size ? pendingSlots.has("player_active") : s.pending?.type !== "promote_bench" && s.pending?.context?.action?.type !== "RETREAT"))
+      );
 
       /* 重绘槽位前暂存仍在播放中的飘字与命中光效节点，防止击倒重绘瞬间 0ms 抹杀特效 */
       const savedVfx = {};
@@ -9071,17 +9243,17 @@
       });
 
       const eAct = $("enemyActiveSlot");
-      eAct.className = "slot-box active-slot" + (pendingEnemy ? " highlight-enemy" : "");
+      eAct.className = "slot-box active-slot" + (highlightEnemyActive ? " highlight-enemy" : "");
       eAct.innerHTML = `<span class="slot-tag">${escapeHtml(t("相手バトル場", "对手战斗区"))}</span>` +
         (s.enemy.active ? this.renderMonsterCard(s.enemy.active, "enemy_active") : `<div class="slot-empty">${escapeHtml(s.phase === "setup" ? t("裏向き待機中", "对手暗置首发中") : t("空き", "空位"))}</div>`);
 
       const pAct = $("playerActiveSlot");
-      pAct.className = "slot-box active-slot" + (needAllyTarget || s.phase === "setup" ? " highlight-ally" : "");
+      pAct.className = "slot-box active-slot" + (highlightPlayerActive ? " highlight-ally" : "");
       pAct.innerHTML = `<span class="slot-tag">${escapeHtml(t("自分バトル場", "己方战斗区"))}</span>` +
         (s.player.active ? this.renderMonsterCard(s.player.active, "player_active") : `<div class="slot-empty">${escapeHtml(s.phase === "setup" ? t("手札から1体選択", "请从手牌选择首发") : t("空き", "空位"))}</div>`);
 
       $("enemyBenchRow").innerHTML = s.enemy.bench.map((inst, i) => `
-        <div class="slot-box ${(needEnemyBench || pendingEnemy) && inst ? "highlight-enemy" : ""}" data-slot-box="enemy_bench_${i}">
+        <div class="slot-box ${(needEnemyBench || (pendingEnemy && (pendingSlots.size ? pendingSlots.has(`enemy_bench_${i}`) : true))) && inst ? "highlight-enemy" : ""}" data-slot-box="enemy_bench_${i}">
           <span class="slot-tag">${escapeHtml(t(`相手ベンチ ${POS_JA[i]}`, `对手备战 ${POS_ZH[i]}`))}</span>
           ${inst ? this.renderMonsterCard(inst, `enemy_bench_${i}`) : `<div class="slot-empty">${escapeHtml(t("空き", "空位"))}</div>`}
         </div>
@@ -9092,7 +9264,7 @@
       const canHintBench = s.phase === "battle" && s.currentPlayer === "player" && !s.gameOver && hasHandMon && hasEmptyBench;
 
       $("playerBenchRow").innerHTML = s.player.bench.map((inst, i) => `
-        <div class="slot-box ${(needAllyTarget || pendingAlly) && inst ? "highlight-ally" : ""}" data-slot-box="player_bench_${i}">
+        <div class="slot-box ${((needEnergyAlly || (needPotionAlly && isWoundedUnit(inst)) || (pendingAlly && (pendingSlots.size ? pendingSlots.has(`player_bench_${i}`) : true)))) && inst ? "highlight-ally" : ""}" data-slot-box="player_bench_${i}">
           <span class="slot-tag">${escapeHtml(t(`ベンチ ${POS_JA[i]}`, `己方备战 ${POS_ZH[i]}`))}</span>
           ${inst ? this.renderMonsterCard(inst, `player_bench_${i}`) : (canHintBench && i === s.player.bench.indexOf(null) ? `<div class="slot-empty">${escapeHtml(t("手札のモンスターを出せます", "可放入手牌怪兽"))}</div>` : `<div class="slot-empty">${escapeHtml(t("空き", "空位"))}</div>`)}
         </div>
@@ -9117,9 +9289,12 @@
         bar.classList.add("open");
         $("pendingJa").textContent = s.pending.promptJa || "";
         $("pendingZh").textContent = s.pending.promptZh || "";
-        $("pendingBtns").innerHTML = (s.pending.options || []).map((o) =>
-          `<button class="btn-sm" data-reply="${escapeHtml(o.reply)}">${formatBilingualLabelHtml(o.label)}</button>`
-        ).join("");
+        $("pendingBtns").innerHTML = (s.pending.options || []).map((o) => {
+          const btnLabel = (o.labelJa || o.labelZh)
+            ? escapeHtml(t(o.labelJa || o.label, o.labelZh || o.label))
+            : formatBilingualLabelHtml(o.label);
+          return `<button class="btn-sm" data-reply="${escapeHtml(o.reply)}">${btnLabel}</button>`;
+        }).join("");
         $("pendingBtns").querySelectorAll("button").forEach((b) => {
           b.addEventListener("click", async () => {
             if (s.busy || s.gameOver) return;
@@ -9198,8 +9373,10 @@
           type: "choose_target", promptJa: ja, promptZh: zh,
           context: { side: "enemy", action: { type: "ATTACK", skill_name: sk.name_ja, target: null } },
           options: targets.map((e) => ({
-            label: `${e.slot === "enemy_active" ? "前" : POS_JA[e.idx]}・${e.def.name_ja}（${e.def.name_zh} HP${e.unit.hp}）`,
-            reply: e.slot === "enemy_active" ? "前" : POS_JA[e.idx]
+            labelJa: `${e.slot === "enemy_active" ? "前" : POS_JA[e.idx]}・${e.def.name_ja} (HP${e.unit.hp})`,
+            labelZh: `${e.slot === "enemy_active" ? "前" : POS_ZH[e.idx]}・${e.def.name_zh} (HP${e.unit.hp})`,
+            reply: e.slot === "enemy_active" ? "前" : POS_JA[e.idx],
+            slot: e.slot
           }))
         });
         TableUI.setReferee(ja, zh);
@@ -9494,6 +9671,7 @@
      7. 初始化、设置表单同步与全局事件绑定
      ========================================================================= */
   let settingsTtsEnginePrev = "nia_tts";
+  let settingsAsrLangTouched = false;
   let settingsVoiceDraft = {
     nia_tts_ja: { referee: DEFAULT_CONFIG.niaVoiceReferee, rival: DEFAULT_CONFIG.niaVoiceRival },
     nia_tts_zh: { referee: DEFAULT_CONFIG.niaVoiceRefereeZh, rival: DEFAULT_CONFIG.niaVoiceRivalZh },
@@ -9609,6 +9787,7 @@
     if ($("idlePromptSec")) $("idlePromptSec").value = c.idlePromptSec;
     if ($("chkAutoSpeak")) $("chkAutoSpeak").checked = Boolean(c.autoSpeak);
     if ($("mdStatusText")) $("mdStatusText").textContent = `${t("読込元：", "数据源：")}${SpecEngine.sourceLabel}`;
+    settingsAsrLangTouched = false;
     settingsVoiceDraft = {
       nia_tts_ja: { referee: c.niaVoiceReferee, rival: c.niaVoiceRival },
       nia_tts_zh: { referee: c.niaVoiceRefereeZh, rival: c.niaVoiceRivalZh },
@@ -9663,6 +9842,15 @@
   function applyUiLanguage(lang, opts = {}) {
     const next = lang === "zh" ? "zh" : "ja";
     const prev = ConfigManager.data.uiLang;
+    const settingsOpen = Boolean($("settingsModal")?.classList.contains("open"));
+    if (settingsOpen && $("voiceReferee") && $("voiceRival")) {
+      const prevTts = $("ttsEngine")?.value || settingsTtsEnginePrev;
+      const prevKey = getVoiceDraftKey(prevTts, prev);
+      settingsVoiceDraft[prevKey] = {
+        referee: $("voiceReferee").value,
+        rival: $("voiceRival").value
+      };
+    }
     if (!opts.skipSave) {
       const patch = { uiLang: next };
       if (!ConfigManager.data.niaAsrLangManual) {
@@ -9692,12 +9880,25 @@
     GuideEngine.syncVisibleCard();
     VoiceEngine.updateCallButtonUI();
     MobileViewportManager.syncUi();
-    syncSettingsForm();
+    if (settingsOpen) {
+      /* 设置弹窗打开时保留用户未保存的编辑内容，仅联动语种选项、音色目录与状态提示 */
+      if (!settingsAsrLangTouched && !ConfigManager.data.niaAsrLangManual) {
+        if ($("niaAsrLang")) $("niaAsrLang").value = "";
+        if ($("asrLang")) $("asrLang").value = next === "zh" ? "zh-CN" : "ja-JP";
+      }
+      populateVoiceSelectsForEngine($("ttsEngine")?.value || settingsTtsEnginePrev);
+      syncSettingsVisibility();
+    } else {
+      syncSettingsForm();
+    }
     if ($("mdStatusText") && SpecEngine.sourceLabel) $("mdStatusText").textContent = `${t("読込元：", "数据源：")} ${SpecEngine.sourceLabel}`;
     if ($("actionPopover")) $("actionPopover").classList.remove("open");
     if (BattleEngine.state) TableUI.renderAll();
     if ($("codexModal")?.classList.contains("open")) TableUI.renderCodex();
     if (!opts.silent && prev !== next) {
+      if (!ConfigManager.data.niaAsrLangManual && !settingsAsrLangTouched) {
+        VoiceEngine.restartChromeAsrIfNeeded();
+      }
       VoiceEngine.replayCurrentQueueInLang(next);
       TableUI.showToast("日本語に切り替えました", "已切换为中文界面与中文配音");
     }
@@ -9838,7 +10039,6 @@
     });
 
     /* 用户手动调整 ASR 语种时标记 manual 锁，避免后续切界面语言覆盖其手动偏好 */
-    let settingsAsrLangTouched = false;
     $("niaAsrLang")?.addEventListener("change", () => { settingsAsrLangTouched = true; });
     $("asrLang")?.addEventListener("change", () => { settingsAsrLangTouched = true; });
 
@@ -9907,6 +10107,7 @@
     $("btnSaveConfig").addEventListener("click", () => {
       savedConfigDuringTtsTest = true;
       const prevAsr = ConfigManager.data.asrMode;
+      const prevAsrLang = ConfigManager.data.asrLang;
       const prevNiaAk = ConfigManager.data.niaAk;
       const prevNiaSk = ConfigManager.data.niaSk;
       VoiceEngine.apiTtsBlocked = false;
@@ -9915,6 +10116,7 @@
       VoiceEngine.apiAsrBlockReason = "";
       VoiceEngine.clearApiAsrReconnectTimer();
       ConfigManager.save(readSettingsFormPatch());
+      settingsAsrLangTouched = false;
       syncDifficultyUi();
       TableUI.renderLiveTip();
       TableUI.showToast("設定を保存しました", "配置已保存");
@@ -9925,6 +10127,8 @@
       if (VoiceEngine.callActive && asrChanged) {
         VoiceEngine.stopCall(true);
         VoiceEngine.startContinuousAsrCall(true);
+      } else if (VoiceEngine.callActive && prevAsrLang !== ConfigManager.data.asrLang) {
+        VoiceEngine.restartChromeAsrIfNeeded();
       }
     });
 
@@ -10058,18 +10262,29 @@
 
   function bindTrackpadSwipeGuard() {
     const isHorizScrollable = (el) => el && el.scrollWidth > el.clientWidth + 1;
+    const findScrollableX = (node) => {
+      let cur = node && node.nodeType === 1 ? node : node?.parentElement;
+      while (cur && cur !== document.documentElement && cur !== document.body) {
+        if (isHorizScrollable(cur)) {
+          const ovX = window.getComputedStyle(cur).overflowX;
+          if (ovX === "auto" || ovX === "scroll" || cur.tagName === "INPUT" || cur.tagName === "TEXTAREA") {
+            return cur;
+          }
+        }
+        cur = cur.parentElement;
+      }
+      return null;
+    };
     window.addEventListener("wheel", (e) => {
       if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
-      const target = e.target?.closest?.("#playerHand, .hand-cards, .bench-row, .playmat, .app-shell");
-      if (!target) return;
-      const hand = e.target?.closest?.("#playerHand, .hand-cards");
-      if (hand && isHorizScrollable(hand)) {
-        const atLeft = hand.scrollLeft <= 0 && e.deltaX < 0;
-        const atRight = hand.scrollLeft + hand.clientWidth >= hand.scrollWidth - 1 && e.deltaX > 0;
+      const scroller = findScrollableX(e.target);
+      if (scroller) {
+        const atLeft = scroller.scrollLeft <= 0 && e.deltaX < 0;
+        const atRight = scroller.scrollLeft + scroller.clientWidth >= scroller.scrollWidth - 1 && e.deltaX > 0;
         if (atLeft || atRight) {
           e.preventDefault();
         } else {
-          hand.scrollLeft += e.deltaX;
+          scroller.scrollLeft += e.deltaX;
           e.preventDefault();
         }
       } else {
