@@ -150,7 +150,7 @@
     asrLang: "ja-JP",
     niaAk: _decodeBuiltinNiaAk(),
     niaSk: _decodeBuiltinNiaSk(),
-    niaAsrLang: "ja",
+    niaAsrLang: "",
     niaAsrLangManual: false,
     ttsEngine: "nia_tts",
     niaVoiceReferee: "female_xiaowan",
@@ -507,7 +507,7 @@
       if (out.niaAsrLangManual && VALID_NIA_LANG.has(src.niaAsrLang)) {
         out.niaAsrLang = src.niaAsrLang;
       } else {
-        out.niaAsrLang = out.uiLang === "zh" ? "zh" : "ja";
+        out.niaAsrLang = "";
       }
       if (VALID_LANG.has(src.asrLang)) out.asrLang = src.asrLang;
       else out.asrLang = out.uiLang === "zh" ? "zh-CN" : "ja-JP";
@@ -683,10 +683,89 @@
       return `https://aiplatform.googleapis.com/v1/publishers/google/models/${m}:generateContent`;
     },
 
+    /** 构建 Vertex SSE 流式接口地址（streamGenerateContent?alt=sse） */
+    buildStreamRestUrl(model) {
+      const k = String(this.data.apiKey || "").trim();
+      const m = encodeURIComponent(String(model || this.data.llmModel || "gemini-3.5-flash-lite").trim());
+      if (!k) return "";
+      return `https://aiplatform.googleapis.com/v1/publishers/google/models/${m}:streamGenerateContent?alt=sse`;
+    },
+
     /** 构建带密钥认证的请求头 */
     buildAuthHeaders() {
       const k = String(this.data.apiKey || "").trim();
       return k ? { "Content-Type": "application/json", "x-goog-api-key": k } : { "Content-Type": "application/json" };
+    },
+
+    /** 统一 Vertex SSE 流式文本调用（支持 onDelta 实时回调，流式失败或无 body.getReader 时自动回退非流式接口） */
+    async streamVertexText(model, payload, opts = {}) {
+      const streamUrl = this.buildStreamRestUrl(model);
+      const restUrl = this.buildRestUrl(model);
+      if (!restUrl) throw new Error("missing apiKey");
+      const headers = this.buildAuthHeaders();
+      const bodyStr = JSON.stringify(payload);
+      const onDelta = typeof opts.onDelta === "function" ? opts.onDelta : null;
+
+      if (streamUrl && typeof ReadableStream !== "undefined") {
+        try {
+          const res = await fetch(streamUrl, {
+            method: "POST",
+            headers,
+            body: bodyStr,
+            signal: opts.signal
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status} (${model})`);
+          if (res.body && typeof res.body.getReader === "function") {
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+            let buf = "";
+            let fullText = "";
+            const consumeLine = (rawLine) => {
+              const line = rawLine.trim();
+              if (!line || !line.startsWith("data:")) return;
+              const jsonStr = line.slice(5).trim();
+              if (!jsonStr || jsonStr === "[DONE]") return;
+              try {
+                const chunk = JSON.parse(jsonStr);
+                const parts = chunk?.candidates?.[0]?.content?.parts;
+                if (Array.isArray(parts)) {
+                  for (const p of parts) {
+                    if (p && typeof p.text === "string" && p.text) {
+                      fullText += p.text;
+                      if (onDelta) onDelta(p.text, fullText);
+                    }
+                  }
+                }
+              } catch (_) {}
+            };
+            while (true) {
+              const { value, done } = await reader.read();
+              if (done) break;
+              buf += decoder.decode(value, { stream: true });
+              const lines = buf.split(/\r?\n/);
+              buf = lines.pop() || "";
+              for (const ln of lines) consumeLine(ln);
+            }
+            if (buf.trim()) consumeLine(buf);
+            if (fullText) return { text: fullText, streamed: true };
+          }
+        } catch (err) {
+          if (err?.name === "AbortError") throw err;
+          /* 若流式端点暂不可用或被代理截断，平滑回退到标准非流式接口 */
+        }
+      }
+
+      const res = await fetch(restUrl, {
+        method: "POST",
+        headers,
+        body: bodyStr,
+        signal: opts.signal
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status} (${model})`);
+      const data = await res.json();
+      const raw = data?.candidates?.[0]?.content?.parts?.find((p) => p.text)?.text || "";
+      if (raw && onDelta) onDelta(raw, raw);
+      return { text: raw, streamed: false };
     }
   };
 
@@ -1551,11 +1630,11 @@
       ]
     },
 
-    /** 获取当前生效的 SenseTime Nia ASR 语种（未手动锁定时随界面语言联动：日语传 "ja"，中文传 "zh"） */
+    /** 获取当前生效的 SenseTime Nia ASR 语种（默认自动识别中日双语 ""；仅手动锁定时强制单语） */
     getEffectiveNiaAsrLang() {
       const cfg = ConfigManager.data;
       if (cfg.niaAsrLangManual) return String(cfg.niaAsrLang || "");
-      return getUiLang() === "zh" ? "zh" : "ja";
+      return "";
     },
 
     /** 获取当前生效的 Chrome ASR 语种 */
@@ -2665,6 +2744,7 @@
       if (!cfg.autoSpeak || !spokenText) return Promise.resolve();
 
       const priority = opts.priority || "normal"; // "critical" | "high" | "normal" | "low"
+      const interruptible = Boolean(opts.interruptible || priority === "low");
       const rank = this.PRIORITY_RANK[priority] ?? 1;
       if (typeof BattleEngine !== "undefined" && BattleEngine.clearIdleTimer) {
         BattleEngine.clearIdleTimer();
@@ -2678,10 +2758,12 @@
           return Promise.resolve();
         }
       } else {
-        /* 若当前正在播报更低优先级的长句，标记在当前子句自然标点处优雅让位（不生硬砍在字中间） */
+        /* 若当前正在播报最低优可打断追问/催促，更高优播报立即 90ms 淡出抢占；否则在子句边界让位 */
         if (this.isSpeaking && this.currentSpeakItem) {
           const curRank = this.PRIORITY_RANK[this.currentSpeakItem.priority] ?? 1;
-          if (rank > curRank) {
+          if (this.currentSpeakItem.interruptible && rank > curRank) {
+            this.fadeOutAndStopPlayback(90);
+          } else if (rank > curRank) {
             this.currentSpeakItem.preemptAfterClause = true;
           }
         }
@@ -2710,7 +2792,7 @@
 
       const myToken = this.speakToken;
       return new Promise((resolve) => {
-        this.speakQueue.push({ spokenText, jaText, zhText, role, lang, priority, preemptAfterClause: false, token: myToken, resolve });
+        this.speakQueue.push({ spokenText, jaText, zhText, role, lang, priority, interruptible, preemptAfterClause: false, token: myToken, resolve });
         this.pendingSpeakCount = (this.isSpeaking ? 1 : 0) + this.speakQueue.length;
         if (!this.isDrainingQueue) {
           this.drainSpeakQueue();
@@ -2792,6 +2874,8 @@
           }
           this.currentSpeakItem = item;
           this.isSpeaking = true;
+          /* 低优可打断追问/催促（clarify/idle）跳过 700ms 打断锁，允许玩家 0ms 随时开口打断 */
+          if (item.interruptible) this.bargeInGuardUntil = 0;
           this.pendingSpeakCount = 1 + this.speakQueue.length;
           this.recordSpoken(spokenText);
           clearTimeout(this.chromeResumeTimer);
@@ -3349,7 +3433,8 @@
 
         /* 全双工边播边识别（Nia 模式）：TTS 播放期间同步开启流式 ASR 试听，确认非回声有效人声后再平滑淡出打断 TTS */
         if (this.isSpeaking) {
-          if (this.bargeInGuardUntil && now < this.bargeInGuardUntil) {
+          const isLowInterruptible = Boolean(this.currentSpeakItem && this.currentSpeakItem.interruptible);
+          if (!isLowInterruptible && this.bargeInGuardUntil && now < this.bargeInGuardUntil) {
             this.vadBargeStreak = 0;
             this.vadLoudBargeStreak = 0;
             this.updateVoiceWave(rms * 0.2, 0.08, false);
@@ -4429,22 +4514,34 @@
           this._cachedSysPrompt = SpecEngine.buildSystemPrompt();
           this._cachedSysPromptSource = SpecEngine.sourceLabel;
         }
-        const res = await fetch(url, {
-          method: "POST",
-          headers: ConfigManager.buildAuthHeaders(),
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: this._cachedSysPrompt }] },
-            contents: [{ role: "user", parts }],
-            generationConfig: genCfg
-          }),
-          signal: ac ? ac.signal : undefined
+        const uiLangNow = getUiLang();
+        const replyKey = uiLangNow === "zh" ? "reply_zh" : "reply_ja";
+        const replyRe = new RegExp(`"${replyKey}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`);
+        let prefetchedReply = false;
+        const streamRes = await ConfigManager.streamVertexText(cfg.llmModel, {
+          systemInstruction: { parts: [{ text: this._cachedSysPrompt }] },
+          contents: [{ role: "user", parts }],
+          generationConfig: genCfg
+        }, {
+          signal: ac ? ac.signal : undefined,
+          onDelta: (_delta, acc) => {
+            if (prefetchedReply) return;
+            const m = acc.match(replyRe);
+            if (m && m[1]) {
+              prefetchedReply = true;
+              try {
+                const replyText = JSON.parse(`"${m[1]}"`);
+                if (replyText && replyText.length >= 2) {
+                  const firstClause = VoiceEngine.splitIntoClauses(replyText, uiLangNow)[0] || replyText;
+                  VoiceEngine.prefetch(firstClause, "referee", uiLangNow);
+                }
+              } catch (_) {}
+            }
+          }
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status} (${cfg.llmModel})`);
         if (VoiceEngine.apiAsrBlocked && cfg.asrMode === "gemini_audio") VoiceEngine.onOnlineApiRecovered();
-        const data = await res.json();
-        const raw = data?.candidates?.[0]?.content?.parts?.find((p) => p.text)?.text || "";
-        const parsed = this.safeParseJson(raw);
-        DebugLog.add("NLU", `Vertex ${cfg.llmModel} (${Date.now() - t0}ms, ${parsed.status})`, { transcript: parsed.transcript, actions: parsed.actions });
+        const parsed = this.safeParseJson(streamRes.text || "");
+        DebugLog.add("NLU", `Vertex ${cfg.llmModel}${streamRes.streamed ? " [SSE]" : ""} (${Date.now() - t0}ms, ${parsed.status})`, { transcript: parsed.transcript, actions: parsed.actions });
         return parsed;
       } catch (e) {
         const isUserCancelled = e?.name === "AbortError" && !timedOut;
@@ -4586,6 +4683,16 @@
       return null;
     },
 
+    /** 识别问句与盘面状态查询（防止「我有火能量吗」「前排有能量吗」「エネルギーある？」误触贴能/道具/攻击） */
+    isQuestionOrStatusQuery(rawText) {
+      const s = String(rawText || "").trim();
+      if (!s) return false;
+      if (/(有没有|还有没有|有.*吗|够不够|能.*吗|可以.*吗|能不能|是不是|几个|几张|多少|啥属性|什么属性|缺什么|差几个|差多少)/.test(s)) return true;
+      if (/(ある[？?]?$|ありますか|いる[？?]?$|足りる|足りますか|何枚|いくつ|どのくらい|使える[？?]?$|使えますか|倒せる[？?]?$|倒せますか|持ってる[？?]?$|持っていますか)/.test(s)) return true;
+      if (/[？?]$/.test(s) && !/(攻撃|攻击|貼|贴|出|使|交代|撤退|終了|结束)/.test(s)) return true;
+      return false;
+    },
+
     /** 本地双语指令解析（结合盘面上下文 0ms 口语快通道、无标点多步连招拆解与模糊匹配） */
     localParse(rawText, board, conversationContext = null, opts = null) {
       const isVoice = Boolean(opts && opts.isVoice);
@@ -4596,6 +4703,9 @@
       }
       if (/(今の状況|状況は|HPいくつ|残りHP|あと何HP|残りサイド|サイド何枚|当前状态|血量|还有多少血|看看血量|对面多少血|场上情况|局面如何|还差几张奖赏)/.test(fixed)) {
         return { transcript: fixed, status: "execute", actions: [{ type: "INSPECT" }], reply_ja: "", reply_zh: "", rival_ja: "", rival_zh: "" };
+      }
+      if (this.isQuestionOrStatusQuery(fixed)) {
+        return { transcript: fixed, status: "clarify", actions: [], reply_ja: "", reply_zh: "", rival_ja: "", rival_zh: "" };
       }
       if (/(やばい|負けそう|きつい|ピンチ|要输了|完蛋|好难打|打不过)/.test(fixed) && !/(降参|投了|リタイア|ギブアップ|逃走|もう無理|认输|投降|不打了|我投了|不玩了)/.test(fixed)) {
         const r = SpecEngine.getRivalLine("chat_weak");
@@ -5147,7 +5257,7 @@
 
       TableUI.setRival(ja, zh);
       TableUI.appendLog(`【レン】${ja}`, `【莲】${zh}`);
-      await VoiceEngine.speak({ ja, zh }, "rival", { priority: "low" });
+      await VoiceEngine.speak({ ja, zh }, "rival", { priority: "low", interruptible: true });
       this.resetIdleTimer(false);
     },
 
@@ -5353,6 +5463,91 @@
         pool.splice(idx, 1);
       }
       return pool.length >= anyNeeded;
+    },
+
+    /** 诊断能量不足的 4 种精确状态：0 能量 / 缺指定属性 / 仅缺总数 / 既缺属性又缺总数 */
+    diagnoseEnergyShortage(attachedEnergies, costArr) {
+      const attached = Array.isArray(attachedEnergies) ? attachedEnergies : [];
+      const cost = Array.isArray(costArr) ? costArr : [];
+      const total = attached.length;
+      const needTotal = cost.length;
+      const pool = [...attached];
+      const missingTypedMap = {};
+      for (const req of cost) {
+        if (req === "any") continue;
+        const idx = pool.indexOf(req);
+        if (idx !== -1) {
+          pool.splice(idx, 1);
+        } else {
+          missingTypedMap[req] = (missingTypedMap[req] || 0) + 1;
+        }
+      }
+      const missingTyped = Object.entries(missingTypedMap).map(([elem, count]) => ({ elem, count }));
+      const shortTotal = Math.max(0, needTotal - total);
+      let kind = "ok";
+      if (total === 0 && needTotal > 0) kind = "no_energy";
+      else if (missingTyped.length > 0 && shortTotal === 0) kind = "missing_element";
+      else if (missingTyped.length === 0 && shortTotal > 0) kind = "short_total";
+      else if (missingTyped.length > 0 && shortTotal > 0) kind = "missing_both";
+      return { kind, total, needTotal, shortTotal, missingTyped };
+    },
+
+    /** 基于 4 态能量诊断生成自然双语播报与短角标 */
+    buildEnergyShortageReply(monDef, skillDef, attachedEnergies) {
+      const elemNameJa = { fire: "炎エネルギー", water: "水エネルギー", thunder: "雷エネルギー", any: "無色エネルギー" };
+      const elemNameZh = { fire: "火能量", water: "水能量", thunder: "雷能量", any: "任意能量" };
+      const diag = this.diagnoseEnergyShortage(attachedEnergies, skillDef?.cost || []);
+      const costSummaryJa = (() => {
+        const counts = {};
+        for (const c of (skillDef?.cost || [])) counts[c] = (counts[c] || 0) + 1;
+        return Object.entries(counts).map(([el, n]) => `${elemNameJa[el] || el}${n}つ`).join("と");
+      })();
+      const costSummaryZh = (() => {
+        const counts = {};
+        for (const c of (skillDef?.cost || [])) counts[c] = (counts[c] || 0) + 1;
+        return Object.entries(counts).map(([el, n]) => `${n}点${elemNameZh[el] || el}`).join("和");
+      })();
+      const missingJa = diag.missingTyped.map(({ elem, count }) => `${elemNameJa[elem] || elem}${count > 1 ? `${count}つ` : ""}`).join("・");
+      const missingZh = diag.missingTyped.map(({ elem, count }) => `${count > 1 ? `${count}点` : ""}${elemNameZh[elem] || elem}`).join("、");
+      const mJa = monDef?.name_ja || "バトル場のモンスター";
+      const mZh = monDef?.name_zh || "战斗区怪兽";
+      const sJa = skillDef?.name_ja || "ワザ";
+      const sZh = skillDef?.name_zh || "技能";
+
+      if (diag.kind === "no_energy") {
+        return {
+          ...diag,
+          badgeJa: "エネ未添付",
+          badgeZh: "未贴能量",
+          ja: `${mJa}にはまだエネルギーがついていません。『${sJa}』には${costSummaryJa}が必要です。`,
+          zh: `${mZh}目前还没有附着任何能量，发动「${sZh}」需要${costSummaryZh}。`
+        };
+      }
+      if (diag.kind === "missing_element") {
+        return {
+          ...diag,
+          badgeJa: "属性不足",
+          badgeZh: "缺少属性",
+          ja: `${mJa}はエネルギー枚数は足りていますが、${missingJa}が不足しているため『${sJa}』は使えません。`,
+          zh: `${mZh}的能量总数已够，但缺少${missingZh}，无法发动「${sZh}」。`
+        };
+      }
+      if (diag.kind === "short_total") {
+        return {
+          ...diag,
+          badgeJa: `あと${diag.shortTotal}エネ`,
+          badgeZh: `还差${diag.shortTotal}能`,
+          ja: `${mJa}は属性エネルギーは揃っていますが、合計があと${diag.shortTotal}つ足りません（現在${diag.total}/${diag.needTotal}）。`,
+          zh: `${mZh}的指定属性已满足，但总能量还差 ${diag.shortTotal} 点（当前 ${diag.total}/${diag.needTotal}）。`
+        };
+      }
+      return {
+        ...diag,
+        badgeJa: "属性・枚数不足",
+        badgeZh: "缺属性且缺数",
+        ja: `${mJa}は${missingJa}が足りず、合計もあと${diag.shortTotal}つ不足しています（現在${diag.total}/${diag.needTotal}）。`,
+        zh: `${mZh}缺少${missingZh}，且总能量还差 ${diag.shortTotal} 点（当前 ${diag.total}/${diag.needTotal}）。`
+      };
     },
 
     /** 计算技能每个能量槽的实际填充状态与颜色（将 any 槽映射为已附着的实际属性色） */
@@ -5650,7 +5845,9 @@
             && !(localFirst.actions.length === 1 && localFirst.actions[0].type === "CANCEL" && !s.pending);
           const validLocalSpecial = localFirst.status === "confirm" || localFirst.status === "chat";
           const cloudActions = Array.isArray(result.actions) ? result.actions : [];
-          if (validLocalExec) {
+          /* 当玩家在提问/盘面咨询且云端已明确回复 chat/reject 时，绝不用本地解析覆盖云端回答 */
+          const cloudHandledQuestion = NLUEngine.isQuestionOrStatusQuery(heardText) && (result.status === "chat" || result.status === "reject");
+          if (validLocalExec && !cloudHandledQuestion) {
             const filteredCloudActions = cloudActions.filter((a) => {
               if (!a || !a.type) return false;
               if (a.type === "END_TURN" && !NLUEngine.hasExplicitEndTurnIntent(heardText, isVoiceInput)) return false;
@@ -5662,7 +5859,7 @@
               result.status = "execute";
               result.actions = localFirst.actions;
             }
-          } else if (validLocalSpecial && result.status !== "execute") {
+          } else if (validLocalSpecial && result.status !== "execute" && !cloudHandledQuestion) {
             result.status = localFirst.status;
             result.actions = localFirst.actions || [];
             result.reply_ja = localFirst.reply_ja || result.reply_ja;
@@ -5685,7 +5882,7 @@
           if (isManualVoice) {
             const fallback = NLUEngine.pickClarifyPhrase();
             TableUI.setReferee(fallback.ja, fallback.zh);
-            VoiceEngine.speak({ ja: fallback.ja, zh: fallback.zh }, "referee");
+            VoiceEngine.speak({ ja: fallback.ja, zh: fallback.zh }, "referee", { priority: "low", interruptible: true });
           } else {
             TableUI.setReferee(prevRefJa, prevRefZh);
           }
@@ -5756,8 +5953,8 @@
             }
           }
           VoiceEngine.clearQueuedOnly(false);
-          VoiceEngine.speak({ ja, zh }, "referee", { priority: "high" });
-          if (result.rival_ja || result.rival_zh) VoiceEngine.speak({ ja: result.rival_ja, zh: result.rival_zh }, "rival", { priority: "normal" });
+          VoiceEngine.speak({ ja, zh }, "referee", { priority: "low", interruptible: true });
+          if (result.rival_ja || result.rival_zh) VoiceEngine.speak({ ja: result.rival_ja, zh: result.rival_zh }, "rival", { priority: "low", interruptible: true });
           return;
         }
 
@@ -5815,17 +6012,17 @@
           const hasPronoun = /(?:它|他|她|这只|那只|刚才那只|それ|こいつ|そいつ|さっきの|そのまま)/.test(actClause);
           const keepComboTarget = queue.length > 1 && hasPronoun && Boolean(a.target);
           if (a.type === "ATTACK") {
-            if (!explicitSkill && !NLUEngine.hasExplicitAttackIntent(rawUtter)) continue;
+            if (!explicitSkill && !NLUEngine.hasExplicitAttackIntent(rawUtter) && !/(打|撃|うって|撃って|殴|なぐ|やれ|いけ|行け|使って|つかって|発動|はつどう|技|わざ|ワザ|倒せ|たおせ)/.test(rawUtter)) continue;
             if (!explicitSkill) a.skill_name = null;
             if (a.target && !keepComboTarget && !NLUEngine.resolveSlotFromText(actClause, "enemy", snapNow)) a.target = null;
           }
           if (a.type === "ATTACH_ENERGY") {
-            if (isVoiceInput && !/(エネルギー|えねるぎー|エネ|えね|能量|贴|充能|给|炎|火|ほのお|水|みず|雷|かみなり|でんき|つけ|はる|はっ)/.test(rawUtter) && !(explicitItem && explicitItem.category === "energy")) continue;
+            if (isVoiceInput && !/(エネルギー|えねるぎー|エネ|えね|能量|贴|充能|给|炎|火|ほのお|水|みず|雷|かみなり|でんき|貼|張|付|つけ|はる|はっ|あげ|渡|チャージ|装)/.test(rawUtter) && !(explicitItem && explicitItem.category === "energy")) continue;
             if (!keepComboTarget && !NLUEngine.resolveSlotFromText(actClause, "player", snapNow)) a.target = null;
             if (!/(炎|火|ほのお|水|みず|雷|かみなり|でんき)/.test(actClause)) a.card_id = null;
           }
           if (a.type === "PLAY_BENCH") {
-            if (isVoiceInput && !/(ベンチ|べんち|後ろ|場に出|召喚|しょうかん|出す|だす|だし|置く|おく|おい|备战|下怪|上场|出战|后排|出|放|派|上|召唤)/.test(rawUtter) && !explicitMon) continue;
+            if (isVoiceInput && !/(ベンチ|べんち|後ろ|控え|ひかえ|場に出|召喚|しょうかん|出|だす|だし|置|おく|おい|並|ならべ|呼|よぶ|セット|备战|下怪|上场|出战|后排|放|派|上|召唤)/.test(rawUtter) && !explicitMon) continue;
             if (!a._plural) {
               const clauseMons = SpecEngine.matchAllMonsters(actClause, "player");
               const matchedId = clauseMons.some((m) => m.id === a.card_id) ? a.card_id : (clauseMons[0]?.id || null);
@@ -5833,12 +6030,12 @@
             }
           }
           if (a.type === "USE_ITEM") {
-            if (isVoiceInput && !/(きずぐすり|回復|かいふく|ヒール|ポーション|体力|伤药|回血|补血|治|加血|吃药|喝药|奶|笛|ふえ|呼び出|引っ張り|強制交代|拉|補給|ほきゅう|ドロー|抽|摸|过牌|补牌|バッジ|ばっじ|パワー|バフ|アップ|力量|加攻|加伤害|增伤|強化|强化|回収|かいしゅう|回收|捞|捡|道具|グッズ|サポート|支援|使|用)/.test(rawUtter) && !explicitItem) continue;
+            if (isVoiceInput && !/(きずぐすり|回復|かいふく|ヒール|ポーション|体力|傷薬|伤药|回血|补血|治|加血|吃药|喝药|奶|飲|のむ|笛|ふえ|呼び出|引っ張り|強制交代|拉|補給|ほきゅう|ドロー|引|ひく|抽|摸|过牌|补牌|バッジ|ばっじ|パワー|バフ|アップ|力量|加攻|加伤害|增伤|強化|强化|回収|かいしゅう|回収|回收|捞|捡|戻|もど|道具|グッズ|サポート|支援|使|つかう|つかって|用)/.test(rawUtter) && !explicitItem) continue;
             if (a.card_id === "item_potion" && a.target && !keepComboTarget && !NLUEngine.resolveSlotFromText(actClause, "player", snapNow)) a.target = null;
             if (a.card_id === "item_flute" && a.target && !keepComboTarget && !NLUEngine.resolveSlotFromText(actClause, "enemy", snapNow)) a.target = null;
           }
           if (a.type === "RETREAT") {
-            if (isVoiceInput && !/(交代|こうたい|入れ替|いれかえ|下げ|さげ|逃げ|にげる|撤退|てったい|チェンジ|スイッチ|ベンチに戻|换|退|切|下场|撤下去|拉回)/.test(rawUtter)) continue;
+            if (isVoiceInput && !/(交代|こうたい|入れ替|いれかえ|下|さげ|さが|逃げ|にげる|にげ|撤退|てったい|チェン|スイッチ|バトン|戻|もど|引|ひく|换|退|切|下场|撤下去|拉回)/.test(rawUtter)) continue;
             const rSlot = NLUEngine.resolveSlotFromText(actClause, "player", snapNow);
             if (!rSlot || rSlot === "player_active") a.target = null;
           }
@@ -5870,7 +6067,7 @@
           TableUI.setReferee(fallback.ja, fallback.zh);
           TableUI.appendLog(`聞き取り「${rawUtter}」→ 指示未確定`, `识别为「${rawUtter}」，未检测到明确操作，保持当前回合`);
           VoiceEngine.clearQueuedOnly(false);
-          VoiceEngine.speak({ ja: fallback.ja, zh: fallback.zh }, "referee", { priority: "high" });
+          VoiceEngine.speak({ ja: fallback.ja, zh: fallback.zh }, "referee", { priority: "low", interruptible: true });
           return;
         }
 
@@ -6141,6 +6338,20 @@
             return false;
           }
           let handIdx = act.card_id ? s.player.hand.indexOf(act.card_id) : -1;
+          if (act.card_id && handIdx === -1) {
+            const reqIt = SpecEngine.getItem(act.card_id);
+            const availJa = energyTypes.map((cid) => SpecEngine.getItem(cid)?.name_ja || cid).join("・");
+            const availZh = energyTypes.map((cid) => SpecEngine.getItem(cid)?.name_zh || cid).join("、");
+            const reqJa = reqIt ? reqIt.name_ja : act.card_id;
+            const reqZh = reqIt ? reqIt.name_zh : act.card_id;
+            TableUI.flashDeny("player_active", "指定エネなし", "无此能量卡");
+            await this.announceAndReact(
+              `手札に${reqJa}がありません（手札にあるのは${availJa}です）。`,
+              `手牌中没有${reqZh}（当前手牌只有${availZh}）。`,
+              null
+            );
+            return false;
+          }
           if (handIdx === -1) {
             if (energyTypes.length === 1) {
               handIdx = s.player.hand.indexOf(energyTypes[0]);
@@ -6255,6 +6466,20 @@
             return false;
           }
           let handIdx = act.card_id ? s.player.hand.indexOf(act.card_id) : -1;
+          if (act.card_id && handIdx === -1) {
+            const reqMon = SpecEngine.getMonster(act.card_id);
+            const availJa = monTypes.map((cid) => SpecEngine.getMonster(cid)?.name_ja || cid).join("・");
+            const availZh = monTypes.map((cid) => SpecEngine.getMonster(cid)?.name_zh || cid).join("、");
+            const reqJa = reqMon ? reqMon.name_ja : act.card_id;
+            const reqZh = reqMon ? reqMon.name_zh : act.card_id;
+            TableUI.flashDeny("player_bench_0", "手札に不在", "手牌无此怪");
+            await this.announceAndReact(
+              `手札に${reqJa}がありません（手札にあるのは${availJa}です）。`,
+              `手牌中没有${reqZh}（当前手牌只有${availZh}）。`,
+              null
+            );
+            return false;
+          }
           if (handIdx === -1) {
             if (monTypes.length === 1) {
               handIdx = s.player.hand.indexOf(monTypes[0]);
@@ -6509,12 +6734,17 @@
           const actDef = actUnit ? SpecEngine.getMonster(actUnit.id) : null;
           const retreatCost = actDef && actDef.is_ex ? 2 : 1;
           if (!actUnit || actUnit.energies.length < retreatCost) {
-            TableUI.flashDeny("player_active", `エネ不足 (${retreatCost}必要)`, `能量不足 (需${retreatCost}能)`);
-            await this.announceAndReact(
-              `交代するにはバトル場のエネルギーが${retreatCost}つ必要です。`,
-              `战斗区${actDef && actDef.is_ex ? " ex 怪兽" : "怪兽"}撤退需要 ${retreatCost} 点能量，当前能量不足。`,
-              null
-            );
+            const curCnt = actUnit ? actUnit.energies.length : 0;
+            const monJa = actDef ? actDef.name_ja : "バトル場のモンスター";
+            const monZh = actDef ? actDef.name_zh : "战斗区怪兽";
+            TableUI.flashDeny("player_active", curCnt === 0 ? "エネ未添付" : `エネ不足 (${curCnt}/${retreatCost})`, curCnt === 0 ? "未贴能量" : `能量不足 (${curCnt}/${retreatCost})`);
+            const ja = curCnt === 0
+              ? `${monJa}にはエネルギーがついていないため交代できません（${retreatCost}つ必要）。`
+              : `${monJa}のエネルギーは現在${curCnt}つで、交代にはあと${retreatCost - curCnt}つ必要です。`;
+            const zh = curCnt === 0
+              ? `${monZh}身上还没有附着任何能量，无法撤退（需要 ${retreatCost} 点能量）。`
+              : `${monZh}当前只有 ${curCnt} 点能量，撤退还差 ${retreatCost - curCnt} 点。`;
+            await this.announceAndReact(ja, zh, null);
             return false;
           }
           const myBench = this.getBenchEntries("player");
@@ -6623,9 +6853,9 @@
           if (!chosenSkill) {
             if (usable.length === 0) {
               const firstSk = actDef.skills[0];
-              const ja = `${actDef.name_ja}はエネルギー不足で攻撃できません。『${firstSk.name_ja}』にはエネルギーが${firstSk.cost.length}つ必要です。`;
-              const zh = `${actDef.name_zh}能量不足，无法攻击。发动“${firstSk.name_zh}”需要 ${firstSk.cost.length} 点能量。`;
-              await this.announceAndReact(ja, zh, null);
+              const diag = this.buildEnergyShortageReply(actDef, firstSk, actUnit.energies);
+              TableUI.flashDeny("player_active", diag.badgeJa, diag.badgeZh);
+              await this.announceAndReact(diag.ja, diag.zh, null);
               return false;
             }
             if (usable.length === 1) {
@@ -6647,8 +6877,9 @@
           }
 
           if (!this.canPayCost(actUnit.energies, chosenSkill.cost)) {
-            TableUI.flashDeny("player_active", "エネ不足", "能量不足");
-            await this.announceAndReact(`『${chosenSkill.name_ja}』のエネルギーが足りません。`, `发动“${chosenSkill.name_zh}”所需能量不足。`, null);
+            const diag = this.buildEnergyShortageReply(actDef, chosenSkill, actUnit.energies);
+            TableUI.flashDeny("player_active", diag.badgeJa, diag.badgeZh);
+            await this.announceAndReact(diag.ja, diag.zh, null);
             return false;
           }
 
@@ -8235,23 +8466,26 @@
         ).join("");
         const targetTag = sk.target === "enemy_any"
           ? `<span class="skill-tag snipe" title="${escapeHtml(t("狙撃ワザ：バトル場・ベンチどちらにも攻撃可（ベンチは弱点なし）", "狙击技能：可攻击对手战斗区或备战区任意怪兽（对备战区不计弱点）"))}">${SVG_ICONS.snipe}${escapeHtml(t("狙撃", "狙击"))}</span>`
-          : `<span class="skill-tag normal" title="${escapeHtml(t("通常ワザ：相手バトル場のみ攻撃可", "普通技能：仅限攻击对手战斗区怪兽"))}">${escapeHtml(t("通常・前", "普通・前"))}</span>`;
+          : "";
         const effectTag = this.buildSkillEffectTags(sk);
         const canDirectClick = ready && slot === "player_active";
-        let dmgHtml = `<span class="skill-dmg">${sk.damage}</span>`;
-        let lethalHtml = "";
+        let isLethal = false;
+        let dmgInner = `${sk.damage}`;
         if (slot === "player_active" && eAct && eActDef) {
           const wk = BattleEngine.getWeaknessBonus(def.element, eActDef.element);
           const bst = sNow?.player?.attackBoost || 0;
           const red = eAct.guard || 0;
           const eff = Math.max(0, sk.damage + wk + bst - red);
           if (eff !== sk.damage) {
-            dmgHtml = `<span class="skill-dmg">${sk.damage}<span class="eff-dmg">→${eff}</span></span>`;
+            dmgInner = `${sk.damage}<span class="eff-dmg">→${eff}</span>`;
           }
           if (ready && eff >= eAct.hp) {
-            lethalHtml = `<span class="lethal-tag" title="${escapeHtml(t("一撃で撃破可能", "可直接击倒"))}">${SVG_ICONS.sword}${escapeHtml(t("撃破", "击杀"))}</span>`;
+            isLethal = true;
           }
         }
+        const dmgHtml = isLethal
+          ? `<span class="skill-dmg is-lethal" title="${escapeHtml(t("一撃で撃破可能", "可直接击倒"))}">${SVG_ICONS.sword}${dmgInner}</span>`
+          : `<span class="skill-dmg">${dmgInner}</span>`;
         return `
           <div class="skill-line ${ready ? "ready" : ""} ${justUnlocked ? "just-unlocked" : ""}"
                data-skill-ja="${escapeHtml(sk.name_ja)}"
@@ -8262,27 +8496,25 @@
               <span class="skill-name">${escapeHtml(t(sk.name_ja, sk.name_zh))}</span>
               ${targetTag}${effectTag}
             </div>
-            <span class="skill-right">
-              ${lethalHtml}
-              ${ready && !lethalHtml ? `<span class="skill-ready-tag">${escapeHtml(t("発動可", "可发动"))}</span>` : ""}
-              ${dmgHtml}
-            </span>
+            <span class="skill-right">${dmgHtml}</span>
           </div>
         `;
       }).join("");
 
       const weakElem = WEAKNESS_MAP[def.element];
       const weakBadge = weakElem
-        ? `<span class="weak-chip">${escapeHtml(t("弱", "弱"))}<span style="color:${ELEM_COLOR[weakElem] || 'inherit'};display:inline-flex;vertical-align:-1px;"><span class="chip-icon" style="margin:0 1px;">${SVG_ICONS[weakElem]}</span></span>+20</span>`
+        ? `<span class="weak-chip">${escapeHtml(t("弱", "弱"))}<span style="color:${ELEM_COLOR[weakElem] || "inherit"};display:inline-flex;vertical-align:-1px;"><span class="chip-icon" style="margin:0 1px;">${SVG_ICONS[weakElem]}</span></span>+20</span>`
         : "";
       const showBoost = (slot === "player_active" && sNow?.player?.attackBoost > 0)
         ? sNow.player.attackBoost
         : (slot === "enemy_active" && sNow?.enemy?.attackBoost > 0 ? sNow.enemy.attackBoost : 0);
-      let threatHtml = "";
+      let isThreat = false;
+      let threatTitle = "";
       if (slot === "player_active" && sNow?.phase === "battle" && eAct && eActDef) {
         const eMax = BattleEngine.estimateUnitMaxOutput(eAct, inst, true, []);
         if (typeof eMax === "number" && eMax >= inst.hp) {
-          threatHtml = `<span class="threat-chip" title="${escapeHtml(t(`相手次ターン最大${eMax}ダメージできぜつ危険`, `下回合敌方最高可打 ${eMax} 伤害，有被击倒风险`))}">${SVG_ICONS.warn}${escapeHtml(t("危険", "危险"))}</span>`;
+          isThreat = true;
+          threatTitle = t(`相手次ターン最大${eMax}ダメージできぜつ危険`, `下回合敌方最高可打 ${eMax} 伤害，有被击倒风险`);
         }
       }
       return `
@@ -8292,13 +8524,15 @@
               ${CARD_ART[inst.id] ? `<span class="card-art">${CARD_ART[inst.id]}</span>` : `<span class="pip ${escapeHtml(def.element)} filled">${SVG_ICONS[def.element] || SVG_ICONS.any}</span>`}
               <div class="card-title-inline">${escapeHtml(t(def.name_ja, def.name_zh))}</div>
             </div>
-            <div class="card-head-right">${threatHtml}<span class="hp-badge">HP ${inst.hp}/${def.hp}</span></div>
+            <div class="card-head-right">
+              <span class="hp-badge ${isThreat ? "is-threat" : ""}"${threatTitle ? ` title="${escapeHtml(threatTitle)}"` : ""}>${isThreat ? SVG_ICONS.warn : ""}HP ${inst.hp}/${def.hp}</span>
+            </div>
           </div>
           <div class="hp-track"><div class="hp-fill ${fillCls}" style="width:${pct}%"></div></div>
           <div class="token-row">
-            <div class="energy-pips">${pipsHtml || `<span style="font-size:11px;color:#8c806d;">${escapeHtml(t("エネ0", "无能量"))}</span>`}</div>
+            <div class="energy-pips">${pipsHtml || `<span class="energy-zero">${escapeHtml(t("エネ0", "无能"))}</span>`}</div>
             <div class="token-chips">
-              ${def.is_ex ? `<span class="ex-chip">${escapeHtml(t("ex・2枚", "ex・2奖"))}</span>` : ""}
+              ${def.is_ex ? `<span class="ex-chip">ex</span>` : ""}
               ${weakBadge}
               ${showBoost > 0 ? `<span class="boost-chip">${SVG_ICONS.boost}+${showBoost}</span>` : ""}
               ${dmgTaken > 0 ? `<span class="dmg-chip">-${dmgTaken}</span>` : ""}
@@ -8316,6 +8550,10 @@
       const mon = SpecEngine.getMonster(cardId);
       if (mon) {
         const isSetup = s.phase === "setup";
+        const weakElem = WEAKNESS_MAP[mon.element];
+        const weakBadge = weakElem
+          ? `<span class="weak-chip">${escapeHtml(t("弱", "弱"))}<span style="color:${ELEM_COLOR[weakElem] || "inherit"};display:inline-flex;vertical-align:-1px;"><span class="chip-icon" style="margin:0 1px;">${SVG_ICONS[weakElem]}</span></span>+20</span>`
+          : "";
         const monTitle = isSetup
           ? ` title="${escapeHtml(t("クリックまたは名前を言って先発に出す", "点击或说出名字作为首发上场"))}"`
           : ` title="${escapeHtml(t("クリックまたは音声でベンチに出せます", "可直接点击或语音放入备战区"))}"`;
@@ -8328,10 +8566,16 @@
               </div>
               <div class="card-head-right">
                 <span class="hp-badge">HP ${mon.hp}</span>
-                ${mon.is_ex ? `<span class="ex-chip">${escapeHtml(t("ex・2枚", "ex・2奖"))}</span>` : ""}
               </div>
             </div>
-            ${isSetup ? `<span class="setup-pick-tag">${escapeHtml(t("先発に選ぶ", "点击出战"))}</span>` : ""}
+            <div class="hp-track"><div class="hp-fill" style="width:100%"></div></div>
+            <div class="token-row">
+              <div class="energy-pips">${isSetup ? `<span class="setup-badge">${escapeHtml(t("先発可", "可首发"))}</span>` : `<span class="energy-zero">${escapeHtml(t("手札", "手牌"))}</span>`}</div>
+              <div class="token-chips">
+                ${mon.is_ex ? `<span class="ex-chip">ex</span>` : ""}
+                ${weakBadge}
+              </div>
+            </div>
             <div class="skills-list">
               ${mon.skills.map((sk) => `
                 <div class="skill-line">
@@ -8340,7 +8584,7 @@
                     <span class="skill-name">${escapeHtml(t(sk.name_ja, sk.name_zh))}</span>
                     ${sk.target === "enemy_any" ? `<span class="skill-tag snipe">${SVG_ICONS.snipe}${escapeHtml(t("狙撃", "狙击"))}</span>` : ""}${this.buildSkillEffectTags(sk)}
                   </div>
-                  <span class="skill-dmg">${sk.damage}</span>
+                  <span class="skill-right"><span class="skill-dmg">${sk.damage}</span></span>
                 </div>
               `).join("")}
             </div>
@@ -8350,21 +8594,31 @@
       const it = SpecEngine.getItem(cardId);
       if (!it) return "";
       const isSup = it.category === "supporter";
-      const cls = it.category === "energy" ? it.element : (isSup ? "supporter" : "item");
+      const isEnergy = it.category === "energy";
+      const cls = isEnergy ? it.element : (isSup ? "supporter" : "item");
       const supUsed = isSup && BattleEngine.state.supporterUsedThisTurn;
+      const catChip = isSup
+        ? `<span class="supporter-chip">${escapeHtml(supUsed ? t("使用済", "已用") : t("サポート", "支援"))}</span>`
+        : (isEnergy
+          ? `<span class="energy-cat-chip ${escapeHtml(cls)}">${escapeHtml(t("エネ", "能量"))}</span>`
+          : `<span class="item-cat-chip">${escapeHtml(t("グッズ", "道具"))}</span>`);
+      const watermarkHtml = isEnergy && SVG_ICONS[it.element]
+        ? `<span class="energy-watermark ${escapeHtml(cls)}" aria-hidden="true">${SVG_ICONS[it.element]}</span>`
+        : "";
       return `
-        <div class="card ${escapeHtml(cls)} hand-card ${selected ? "selected" : ""} ${supUsed ? "supporter-used" : ""}" data-hand-idx="${idx}" draggable="true">
+        <div class="card ${escapeHtml(cls)} hand-card util-card ${isEnergy ? "energy-card" : ""} ${selected ? "selected" : ""} ${supUsed ? "supporter-used" : ""}" data-hand-idx="${idx}" draggable="true">
           <div class="card-head">
             <div class="card-head-left">
               ${CARD_ART[it.id] ? `<span class="card-art">${CARD_ART[it.id]}</span>` : ""}
               <div class="card-title-inline">${escapeHtml(t(it.name_ja, it.name_zh))}</div>
             </div>
-            ${isSup ? `<span class="supporter-chip">${escapeHtml(supUsed ? t("使用済", "已用") : t("サポート", "支援"))}</span>` : `<span class="pip ${escapeHtml(cls)}">${SVG_ICONS[it.element] || SVG_ICONS.item}</span>`}
+            <div class="card-head-right">${catChip}</div>
           </div>
           <div class="card-desc">
             <div class="desc-ja">${escapeHtml(it.desc_ja)}</div>
             <div class="desc-zh" lang="zh-CN">${escapeHtml(it.desc_zh)}</div>
           </div>
+          ${watermarkHtml}
         </div>
       `;
     },
@@ -8610,29 +8864,36 @@
         const genCfg = { responseMimeType: "application/json" };
         const thinkCfg = ConfigManager.buildThinkingConfig(cfg.llmModel);
         if (thinkCfg) genCfg.thinkingConfig = thinkCfg;
-        const res = await fetch(url, {
-          method: "POST",
-          headers: ConfigManager.buildAuthHeaders(),
-          body: JSON.stringify({
-            contents: [{
-              role: "user",
-              parts: [{
-                text: `あなたは完全オリジナルカードゲーム「言霊デュエル」（水→炎、炎→雷、雷→水で弱点+20、ベンチ狙撃時は弱点なし、1ターンにエネ1回・サポート1枚）の戦術コーチです。場の生き物は必ず「モンスター」と呼び、他作品の固有名詞・略称は一切使用しないでください。盤面JSONを見て今ターン最善の1手を1文で提案し、純粋JSONのみで返してください：{"tip_ja":"日本語1文","tip_zh":"中国語訳1文"}\n盤面JSON:\n${JSON.stringify(snap)}`
-              }]
-            }],
-            generationConfig: genCfg
-          }),
-          signal: ac ? ac.signal : undefined
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        if (seq !== this._tipSeq) return;
-        const data = await res.json();
-        const raw = data?.candidates?.[0]?.content?.parts?.find((p) => p.text)?.text || "";
-        const parsed = NLUEngine.safeParseJson(raw);
-        if (seq !== this._tipSeq || !parsed?.tip_ja) throw new Error("invalid tip json");
         const jaEl = $("liveTipJa");
         const zhEl = $("liveTipZh");
         const aiTag = $("liveTipAiTag");
+        const extractPartialJsonField = (acc, key) => {
+          const m = acc.match(new RegExp(`"${key}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)`));
+          if (!m) return "";
+          return m[1].replace(/\\n/g, " ").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
+        };
+        const streamRes = await ConfigManager.streamVertexText(cfg.llmModel, {
+          contents: [{
+            role: "user",
+            parts: [{
+              text: `あなたは完全オリジナルカードゲーム「言霊デュエル」（水→炎、炎→雷、雷→水で弱点+20、ベンチ狙撃時は弱点なし、1ターンにエネ1回・サポート1枚）の戦術コーチです。場の生き物は必ず「モンスター」と呼び、他作品の固有名詞・略称は一切使用しないでください。盤面JSONを見て今ターン最善の1手を1文で提案し、純粋JSONのみで返してください：{"tip_ja":"日本語1文","tip_zh":"中国語訳1文"}\n盤面JSON:\n${JSON.stringify(snap)}`
+            }]
+          }],
+          generationConfig: genCfg
+        }, {
+          signal: ac ? ac.signal : undefined,
+          onDelta: (_delta, acc) => {
+            if (seq !== this._tipSeq) return;
+            const pJa = extractPartialJsonField(acc, "tip_ja");
+            const pZh = extractPartialJsonField(acc, "tip_zh");
+            if (pJa && jaEl) jaEl.textContent = sanitizeBrandTerms(pJa);
+            if (pZh && zhEl) zhEl.textContent = sanitizeBrandTerms(pZh);
+            if ((pJa || pZh) && aiTag) aiTag.style.display = "inline-block";
+          }
+        });
+        if (seq !== this._tipSeq) return;
+        const parsed = NLUEngine.safeParseJson(streamRes.text || "");
+        if (seq !== this._tipSeq || !parsed?.tip_ja) throw new Error("invalid tip json");
         if (jaEl) jaEl.textContent = sanitizeBrandTerms(parsed.tip_ja);
         if (zhEl) zhEl.textContent = sanitizeBrandTerms(parsed.tip_zh || parsed.tip_ja);
         if (aiTag) aiTag.style.display = "inline-block";
@@ -9401,7 +9662,7 @@
     if (!opts.skipSave) {
       const patch = { uiLang: next };
       if (!ConfigManager.data.niaAsrLangManual) {
-        patch.niaAsrLang = next === "zh" ? "zh" : "ja";
+        patch.niaAsrLang = "";
         patch.asrLang = next === "zh" ? "zh-CN" : "ja-JP";
       }
       ConfigManager.save(patch);
@@ -9571,19 +9832,6 @@
         if (targetLang) applyUiLanguage(targetLang);
       });
     });
-
-    /* 右侧面板「对局日志 / 战术 Tips」双标签切换 */
-    const switchSideTab = (tab) => {
-      const isTip = tab === "tip";
-      $("tabBtnLog")?.classList.toggle("active", !isTip);
-      $("tabBtnTip")?.classList.toggle("active", isTip);
-      $("tabBtnLog")?.setAttribute("aria-selected", String(!isTip));
-      $("tabBtnTip")?.setAttribute("aria-selected", String(isTip));
-      $("sideTabLog")?.classList.toggle("active", !isTip);
-      $("sideTabTip")?.classList.toggle("active", isTip);
-    };
-    $("tabBtnLog")?.addEventListener("click", () => switchSideTab("log"));
-    $("tabBtnTip")?.addEventListener("click", () => switchSideTab("tip"));
 
     /* 用户手动调整 ASR 语种时标记 manual 锁，避免后续切界面语言覆盖其手动偏好 */
     let settingsAsrLangTouched = false;
