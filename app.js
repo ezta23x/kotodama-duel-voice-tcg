@@ -1477,7 +1477,7 @@
       const typoDict = this.asrCorrections.map((t) =>
         `- 「${t.variants.join("」「")}」→「${t.standard}」(${t.meaning})`
       ).join("\n");
-      return `${this.promptInstructions}\n\n### カード一覧\n${monsterDict}\n${itemDict}\n\n### ASR誤認識辞書\n${typoDict}`;
+      return `${this.promptInstructions}\n\n### 応答範囲ルール\n- 常にこのカードゲーム（盤面・手札・ルール・戦術）に関する応答のみを行い、日常雑談には応じず簡潔にプレイ操作へ案内すること。\n- phase が "setup"（先発選択中）の場合は攻撃・エネ添付等は実行せず、手札モンスターからの先発選択へ案内すること。\n\n### カード一覧\n${monsterDict}\n${itemDict}\n\n### ASR誤認識辞書\n${typoDict}`;
     },
 
     /** 加载策略：1. 用户显式导入的本地缓存 → 2. 同目录 gamedata.json（单一数据源）；均失败时返回 false 由界面引导手动选择 */
@@ -5988,6 +5988,87 @@
       return -1;
     },
 
+    /** 开局选首发阶段：识别状态咨询/规则提问/提前战斗指令，始终紧扣打牌并引导选首发，绝不闲聊 */
+    buildSetupGuidanceReply(rawText) {
+      const s = this.state;
+      if (!s) return null;
+      const txt = String(rawText || "").trim();
+      const handMons = Array.from(new Set(s.player.hand.map((id) => SpecEngine.getMonster(id)).filter(Boolean)));
+      const namesJa = handMons.map((m) => m.name_ja).join("・");
+      const namesZh = handMons.map((m) => m.name_zh).join("、");
+      const recMon = handMons.find((m) => !m.is_ex && s.player.hand.includes(`energy_${m.element}`))
+        || handMons.find((m) => s.player.hand.includes(`energy_${m.element}`))
+        || handMons.find((m) => !m.is_ex)
+        || handMons[0];
+      const hasMatchedEnergy = Boolean(recMon && s.player.hand.includes(`energy_${recMon.element}`));
+
+      /* 1. 局势/手牌/玩法/推荐首发咨询：0ms 基于真实手牌给出精炼战术建议 */
+      const isStatusOrAdvice = /(啥情况|什么情况|啥状况|什么状况|现在干嘛|干什么|做什么|怎么玩|咋玩|怎么开始|怎么操作|有什么牌|有哪些牌|有哪些怪|有什么怪|手牌|推荐|建议|派谁|派哪|出哪|选哪|上哪|首发选|先出谁|先上谁|今どう|どうなってる|何すれば|何をすれば|どう始め|手札|おすすめ|どれを出|誰を出|だれを出|どれがいい)/.test(txt);
+      if (isStatusOrAdvice) {
+        const recJa = recMon
+          ? (hasMatchedEnergy ? `同色エネが揃っている「${recMon.name_ja}」がおすすめです。` : `まずは「${recMon.name_ja}」がおすすめです。`)
+          : "";
+        const recZh = recMon
+          ? (hasMatchedEnergy ? `其中「${recMon.name_zh}」手里已有同色能量，推荐首发！` : `推荐先派「${recMon.name_zh}」首发！`)
+          : "";
+        return {
+          kind: "status",
+          ja: namesJa
+            ? `今は対戦準備（先発選択）中です。手札の候補は「${namesJa}」で、${recJa}名前を言うか緑枠をクリックして開戦しましょう！`
+            : "今は対戦準備中です。手札の緑枠モンスターを選んでバトルを始めましょう！",
+          zh: namesZh
+            ? `现在是开局选首发阶段：手牌可选怪兽有「${namesZh}」，${recZh}直接说出怪兽名或点击绿框怪兽即可开战！`
+            : "现在是开局选首发阶段，请先选择 1 只绿框手牌怪兽开战！"
+        };
+      }
+
+      /* 2. 玩家在开局阶段提前说出战斗/贴能/道具/防御/结束回合等对战指令：点明原因并引回选首发 */
+      let actJa = "";
+      let actZh = "";
+      if (NLUEngine.resolveEnergyCardFromText(txt) || /(能量|贴能|加能|エネ)/.test(txt)) {
+        actJa = "エネルギー添付"; actZh = "贴能量";
+      } else if (NLUEngine.hasExplicitAttackIntent(txt) || Boolean(SpecEngine.matchSkill(txt))) {
+        actJa = "攻撃・ワザ発動"; actZh = "发动攻击";
+      } else if (NLUEngine.hasExplicitDefendIntent(txt)) {
+        actJa = "防御"; actZh = "防御姿态";
+      } else if (Boolean(SpecEngine.matchItem(txt)) || /(道具|支援|伤药|补给|召唤笛|力量|回收|グッズ|サポート)/.test(txt)) {
+        actJa = "グッズ・サポートの使用"; actZh = "使用道具或支援卡";
+      } else if (/(撤退|换人|交代|にげる|逃)/.test(txt)) {
+        actJa = "交代・撤退"; actZh = "撤退换人";
+      } else if (NLUEngine.hasExplicitEndTurnIntent(txt, false)) {
+        actJa = "ターン終了"; actZh = "结束回合";
+      }
+      if (actJa) {
+        return {
+          kind: "premature_action",
+          ja: namesJa
+            ? `まだ先発モンスターが出ていないため、今は${actJa}できません。まず手札の「${namesJa}」から1体選んでバトルを始めましょう！`
+            : `まだ先発モンスターが出ていないため、今は${actJa}できません。まず手札の緑枠モンスターを選んでください！`,
+          zh: namesZh
+            ? `还没派出首发怪兽，暂时无法${actZh}。请先从手牌「${namesZh}」中选 1 只首发开战！`
+            : `还没派出首发怪兽，暂时无法${actZh}。请先选 1 只绿框怪兽首发开战！`
+        };
+      }
+
+      /* 3. 卡牌机制/技能/规则类提问：允许交由云端按打牌规则简答（离线则回默认手牌引导） */
+      const isCardOrRuleQuestion = NLUEngine.isQuestionOrStatusQuery(txt)
+        && /(规则|ルール|弱点|克制|奖赏|サイド|ex|ＥＸ|技能|ワザ|伤害|ダメージ|能量|エネ|效果|効果|怎么算|どう計算|几张|何枚|血量|HP)/i.test(txt);
+      if (isCardOrRuleQuestion) {
+        return { kind: "card_rule_question", namesJa, namesZh };
+      }
+
+      /* 4. 其他非对局内容：不闲聊，直接简短拉回打牌选首发 */
+      return {
+        kind: "redirect",
+        ja: namesJa
+          ? `まずは対戦を始めましょう！手札の「${namesJa}」から先発モンスターの名前を言うか、緑枠をクリックしてください。`
+          : "まずは対戦を始めましょう！手札の緑枠モンスターの名前を言うか、クリックして選んでください。",
+        zh: namesZh
+          ? `先专注开局打牌吧！请从手牌「${namesZh}」中说出首发怪兽名，或直接点击绿框怪兽开战。`
+          : "先专注开局打牌吧！请说出或点击手牌中的绿框怪兽作为首发。"
+      };
+    },
+
     /** 开局阶段：玩家选定首发怪兽后，双方亮牌并抽取第 1 回合的 1 张牌正式开战 */
     selectStartingMonster(handIdx) {
       const s = this.state;
@@ -6416,7 +6497,7 @@
         return;
       }
 
-      /* 开局选首发阶段：0ms 直配手牌怪兽；若语音被流式 ASR 误转写且配置了云端 LLM，放行至多模态音频复核兜底，绝不静默卡死 */
+      /* 开局选首发阶段：0ms 直配手牌怪兽；支持局势/手牌/推荐/提前指令问答并紧扣打牌引回选首发，不闲聊；若语音误转写且配置云端 LLM 则放行多模态音频复核 */
       if (s.phase === "setup" && payload.text) {
         const isVoiceSetup = Boolean(payload.fromVoice);
         const setupText = isVoiceSetup ? VoiceEngine.stripSpokenEcho(payload.text) : payload.text;
@@ -6434,27 +6515,32 @@
           if ($("cmdInput")) $("cmdInput").value = "";
           return;
         }
-        const canAudioRescueSetup = isVoiceSetup
-          && typeof payload.fallbackAudioGetter === "function"
-          && Boolean(ConfigManager.buildRestUrl(ConfigManager.data.llmModel));
-        if (!canAudioRescueSetup) {
-          const handMons = Array.from(new Set(s.player.hand.map((id) => SpecEngine.getMonster(id)).filter(Boolean)));
-          const namesJa = handMons.map((m) => m.name_ja).join("・");
-          const namesZh = handMons.map((m) => m.name_zh).join(" / ");
-          const ja = namesJa
-            ? `聞き取り「${setupText}」：先発は手札の「${namesJa}」から名前を言うかクリックして選んでください。`
-            : "まずは手札からバトル場に出す最初のモンスター名（またはクリック）で選んでください。";
-          const zh = namesZh
-            ? `识别到「${setupText}」：请先从手牌「${namesZh}」中说出名字或点击选择首发怪兽！`
-            : "请先从手牌中选择 1 只怪兽作为首发（直接点击绿框怪兽或说出它的名字）。";
-          VoiceEngine.unduckPlayback(180);
+        const guidance = this.buildSetupGuidanceReply(setupText);
+        const hasCloudLlm = Boolean(ConfigManager.buildRestUrl(ConfigManager.data.llmModel));
+        if (guidance && (guidance.kind === "status" || guidance.kind === "premature_action")) {
+          if (VoiceEngine.isSpeaking) VoiceEngine.fadeOutAndStopPlayback(100);
+          TableUI.hideVoiceHud();
+          if ($("cmdInput")) $("cmdInput").value = "";
+          TableUI.setReferee(guidance.ja, guidance.zh);
+          TableUI.appendLog(guidance.ja, guidance.zh);
+          VoiceEngine.clearQueuedOnly(false);
+          VoiceEngine.speak({ ja: guidance.ja, zh: guidance.zh }, "referee", { priority: "high", interruptible: true });
+          return;
+        }
+        const shouldConsultCloudSetup = hasCloudLlm && (
+          guidance?.kind === "card_rule_question"
+          || (isVoiceSetup && typeof payload.fallbackAudioGetter === "function")
+        );
+        if (!shouldConsultCloudSetup) {
+          const fallbackJa = guidance?.ja || "まずは対戦を始めましょう！手札の緑枠モンスターの名前を言うか、クリックして選んでください。";
+          const fallbackZh = guidance?.zh || "先专注开局打牌吧！请说出或点击手牌中的绿框怪兽作为首发。";
+          if (VoiceEngine.isSpeaking) VoiceEngine.fadeOutAndStopPlayback(100);
           TableUI.hideVoiceHud();
           if (isVoiceSetup && $("cmdInput")) $("cmdInput").value = "";
-          TableUI.setReferee(ja, zh);
-          TableUI.appendLog(ja, zh);
-          if (!VoiceEngine.isSpeaking) {
-            VoiceEngine.speak({ ja, zh }, "referee", { priority: "low", interruptible: true });
-          }
+          TableUI.setReferee(fallbackJa, fallbackZh);
+          TableUI.appendLog(setupText ? `聞き取り「${setupText}」→ ${fallbackJa}` : fallbackJa, setupText ? `识别到「${setupText}」→ ${fallbackZh}` : fallbackZh);
+          VoiceEngine.clearQueuedOnly(false);
+          VoiceEngine.speak({ ja: fallbackJa, zh: fallbackZh }, "referee", { priority: "low", interruptible: true });
           return;
         }
       }
@@ -6593,7 +6679,7 @@
           if ($("cmdInput")) $("cmdInput").value = "";
         }
 
-        /* 开局选首发阶段：语音转写/音频复核完成后直接匹配手牌首发怪兽 */
+        /* 开局选首发阶段：语音转写/音频复核完成后优先匹配首发，其次仅回答打牌/规则问题，绝不闲聊并拉回选首发 */
         if (s.phase === "setup") {
           const fallbackId = Array.isArray(result.actions) && result.actions[0] ? result.actions[0].card_id : null;
           const idx = this.resolveStarterHandIndex(heardText, fallbackId);
@@ -6601,23 +6687,21 @@
             TableUI.showVoiceHud("fast", heardText || payload.text || "");
             this.selectStartingMonster(idx);
           } else {
-            const handMons = Array.from(new Set(s.player.hand.map((id) => SpecEngine.getMonster(id)).filter(Boolean)));
-            const namesJa = handMons.map((m) => m.name_ja).join("・");
-            const namesZh = handMons.map((m) => m.name_zh).join(" / ");
-            const ja = namesJa
-              ? `先発は手札の「${namesJa}」から名前を言うか、直接クリックして選んでください。`
-              : "手札の緑枠モンスターの名前を言うか、直接クリックして最初の1体を選んでください。";
-            const zh = namesZh
-              ? `请从手牌「${namesZh}」中说出怪兽名，或直接点击绿框怪兽作为首发！`
-              : "请说出绿色高亮手牌怪兽的名字，或直接点击它作为首发！";
-            VoiceEngine.unduckPlayback(180);
+            const guidance = this.buildSetupGuidanceReply(heardText || payload.text || "");
+            let ja = guidance?.ja || "まずは対戦を始めましょう！手札の緑枠モンスターを選んでください。";
+            let zh = guidance?.zh || "先专注开局打牌吧！请从手牌绿框怪兽中选 1 只作为首发。";
+            if (guidance?.kind === "card_rule_question" && (result.reply_ja || result.reply_zh)) {
+              const tailJa = guidance.namesJa ? ` 準備ができたら「${guidance.namesJa}」から先発を選んでください。` : "";
+              const tailZh = guidance.namesZh ? ` 看好后从「${guidance.namesZh}」中选 1 只首发开战吧！` : "";
+              ja = `${result.reply_ja || ja}${/(先発|選んで)/.test(result.reply_ja || "") ? "" : tailJa}`;
+              zh = `${result.reply_zh || zh}${/(首发|选择|选 1 只)/.test(result.reply_zh || "") ? "" : tailZh}`;
+            }
+            if (VoiceEngine.isSpeaking) VoiceEngine.fadeOutAndStopPlayback(100);
             TableUI.hideVoiceHud();
             TableUI.setReferee(ja, zh);
             TableUI.appendLog(heardText ? `聞き取り「${heardText}」→ ${ja}` : ja, heardText ? `识别到「${heardText}」→ ${zh}` : zh);
-            if (!VoiceEngine.isSpeaking) {
-              VoiceEngine.clearQueuedOnly(false);
-              VoiceEngine.speak({ ja, zh }, "referee", { priority: "low", interruptible: true });
-            }
+            VoiceEngine.clearQueuedOnly(false);
+            VoiceEngine.speak({ ja, zh }, "referee", { priority: "high", interruptible: true });
           }
           return;
         }

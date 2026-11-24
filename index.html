@@ -3908,7 +3908,13 @@
     .arena-grid { grid-template-columns: var(--side-w) minmax(0, 1fr) var(--side-w); }
     .hand-rail { padding: 6px 6px; }
     .playmat { justify-content: flex-start; }
-    .bench-row { justify-content: flex-start; overflow-x: auto; }
+    .bench-row {
+      justify-content: flex-start;
+      overflow-x: auto;
+      overflow-y: hidden;
+      overscroll-behavior-y: auto;
+      touch-action: pan-x pan-y;
+    }
     .active-band > .pile-col { flex-direction: column; gap: 4px; }
     .side-panel { padding: 6px 8px; gap: 5px; }
     .debug-log-drawer {
