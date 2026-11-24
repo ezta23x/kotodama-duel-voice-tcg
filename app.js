@@ -2451,6 +2451,34 @@
       return this.masterGain;
     },
 
+    /** 玩家开口说话时柔和闪避压低背景 TTS 音量（不掐断台词，待识别到有效指令执行操作时再平滑切换） */
+    duckPlayback(level = 0.42, rampMs = 120) {
+      if (!this.isSpeaking) return;
+      const ctx = this.audioCtx;
+      const gain = this.masterGain;
+      if (!ctx || !gain || ctx.state !== "running") return;
+      try {
+        const now = ctx.currentTime;
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setValueAtTime(Math.max(0.05, gain.gain.value || 1), now);
+        gain.gain.linearRampToValueAtTime(level, now + rampMs / 1000);
+      } catch (_) {}
+    },
+
+    /** 未识别出有效指令或仅为杂音时，平滑恢复原 TTS 正常音量继续播完 */
+    unduckPlayback(rampMs = 180) {
+      if (!this.isSpeaking) return;
+      const ctx = this.audioCtx;
+      const gain = this.masterGain;
+      if (!ctx || !gain || ctx.state !== "running") return;
+      try {
+        const now = ctx.currentTime;
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setValueAtTime(Math.max(0.05, gain.gain.value || 0.42), now);
+        gain.gain.linearRampToValueAtTime(1.0, now + rampMs / 1000);
+      } catch (_) {}
+    },
+
     /** 平滑淡出后终止当前播放（独立旧 GainNode 淡出 + 新语音立得满音量通道，杜绝新旧语音增益竞争） */
     fadeOutAndStopPlayback(fadeMs = 120) {
       if (!this.isSpeaking && this.activeSources.length === 0) {
@@ -3748,12 +3776,11 @@
                 this.vadPreRoll = [];
                 this.vadCapturing = true;
                 if (allowEasyBarge) {
-                  this.fadeOutAndStopPlayback(70);
-                  this.lastSpeakEndAt = 0;
+                  this.duckPlayback(0.42, 120);
                   BattleEngine.resetIdleTimer();
                   this.updateCallButtonUI("barge");
                   TableUI.showVoiceHud("listening", "…");
-                  DebugLog.add("AEC", "开局/引导语音快速说话打断", `rms=${rms.toFixed(3)}`);
+                  DebugLog.add("AEC", "开局/引导语音边播边听（轻度压音等待指令确认）", `rms=${rms.toFixed(3)}`);
                 }
                 if (this.vadNiaSession) { try { this.vadNiaSession.abort(); } catch (_) {} }
                 const niaSess = this.createNiaAsrSession({
@@ -3769,11 +3796,10 @@
                     if (this.vadSimultaneousMode && this.isSpeaking) {
                       this.vadSimultaneousMode = false;
                       this.vadLoudBargeStreak = 0;
-                      this.fadeOutAndStopPlayback(100);
-                      this.lastSpeakEndAt = 0;
+                      this.duckPlayback(0.42, 120);
                       BattleEngine.resetIdleTimer();
                       this.updateCallButtonUI("barge");
-                      DebugLog.add("AEC", "边播边识别触发语义打断", cleaned);
+                      DebugLog.add("AEC", "边播边识别检测到有效人声（轻度压音，指令执行后再切换语音）", cleaned);
                     }
                     if ($("cmdInput")) $("cmdInput").value = cleaned;
                     TableUI.showVoiceHud("listening", cleaned);
@@ -3785,19 +3811,18 @@
               }
               return;
             }
-            /* 已在边播边识别试听中：若持续大声插话（防高延迟网络首字偏慢），约 110ms 后平滑淡出打断 TTS */
+            /* 已在边播边识别试听中：若持续大声插话，柔和压低背景 TTS 音量并放通后续兜底，绝不提前掐断 */
             if (this.vadSimultaneousMode) {
               if (rms > strongBargeThresh) {
                 this.vadLoudBargeStreak += 1;
                 if (this.vadLoudBargeStreak >= 3) {
                   this.vadSimultaneousMode = false;
                   this.vadLoudBargeStreak = 0;
-                  this.fadeOutAndStopPlayback(100);
-                  this.lastSpeakEndAt = 0;
+                  this.duckPlayback(0.42, 120);
                   BattleEngine.resetIdleTimer();
                   this.updateCallButtonUI("barge");
                   TableUI.showVoiceHud("listening", "…");
-                  DebugLog.add("AEC", "强音量快速打断 TTS", `rms=${rms.toFixed(3)}`);
+                  DebugLog.add("AEC", "边播边听检测到清晰插话（轻度压音，待指令执行后切换）", `rms=${rms.toFixed(3)}`);
                 }
               } else {
                 this.vadLoudBargeStreak = 0;
@@ -3805,37 +3830,39 @@
             }
             /* 落入下方活跃收音尾音判停逻辑，实现真正的边播边识别 */
           } else {
-            const bargeThresh = allowEasyBarge
-              ? Math.max(0.018, this.vadNoiseFloor * 2.0 + 0.005)
-              : Math.max(0.036, this.vadNoiseFloor * 3.0);
-            const strongBargeThresh = allowEasyBarge
-              ? Math.max(0.032, this.vadNoiseFloor * 2.8 + 0.006)
-              : Math.max(0.062, this.vadNoiseFloor * 4.5);
-            if (rms > bargeThresh) {
-              this.vadBargeStreak += 1;
-              this.updateVoiceWave(rms, bargeThresh, true);
-            } else {
-              this.vadBargeStreak = 0;
-              this.updateVoiceWave(rms * 0.3, bargeThresh, false);
-            }
-            if ((allowEasyBarge && this.vadBargeStreak >= 2) || this.vadBargeStreak >= 3 || (rms > strongBargeThresh && this.vadBargeStreak >= 2)) {
-              this.vadBargeStreak = 0;
-              this.fadeOutAndStopPlayback(100);
-              this.lastSpeakEndAt = 0;
-              this.vadSpeechStart = now;
-              this.vadLastLoud = now;
-              this.vadPeakRms = rms;
-              this.vadLoudFrames = 5;
-              BattleEngine.resetIdleTimer();
-              this.updateCallButtonUI("barge");
-              TableUI.showVoiceHud("listening", "…");
-              if (this.vadProcessor) {
-                this.vadCaptureChunks = [...this.vadPreRoll];
-                this.vadPreRoll = [];
-                this.vadCapturing = true;
+            if (!this.vadCapturing && !this.vadRecorder) {
+              const bargeThresh = allowEasyBarge
+                ? Math.max(0.018, this.vadNoiseFloor * 2.0 + 0.005)
+                : Math.max(0.036, this.vadNoiseFloor * 3.0);
+              const strongBargeThresh = allowEasyBarge
+                ? Math.max(0.032, this.vadNoiseFloor * 2.8 + 0.006)
+                : Math.max(0.062, this.vadNoiseFloor * 4.5);
+              if (rms > bargeThresh) {
+                this.vadBargeStreak += 1;
+                this.updateVoiceWave(rms, bargeThresh, true);
+              } else {
+                this.vadBargeStreak = 0;
+                this.updateVoiceWave(rms * 0.3, bargeThresh, false);
               }
+              if ((allowEasyBarge && this.vadBargeStreak >= 2) || this.vadBargeStreak >= 3 || (rms > strongBargeThresh && this.vadBargeStreak >= 2)) {
+                this.vadBargeStreak = 0;
+                this.duckPlayback(0.42, 120);
+                this.vadSpeechStart = now;
+                this.vadLastLoud = now;
+                this.vadPeakRms = rms;
+                this.vadLoudFrames = 5;
+                BattleEngine.resetIdleTimer();
+                this.updateCallButtonUI("barge");
+                TableUI.showVoiceHud("listening", "…");
+                if (this.vadProcessor) {
+                  this.vadCaptureChunks = [...this.vadPreRoll];
+                  this.vadPreRoll = [];
+                  this.vadCapturing = true;
+                }
+              }
+              return;
             }
-            return;
+            /* 已在采音中：直接落入下方尾音判停，等待说完识别后再切换语音 */
           }
         } else {
           this.vadBargeStreak = 0;
@@ -3986,6 +4013,7 @@
               }
               if (!this.callActive || pcmChunks.length === 0 || loudFrames < minLoudFrames || peak < minPeak || dur < 220) {
                 if (niaSession) niaSession.abort();
+                this.unduckPlayback(180);
                 return;
               }
               if (!wasSimultaneous) SoundFX.play("tap");
@@ -4014,15 +4042,12 @@
                       this.callCallback({ audioBase64: rescueWav, audioMime: "audio/wav", fromVoice: true });
                       return;
                     }
+                    this.unduckPlayback(180);
                     DebugLog.add(wasSimultaneous ? "AEC" : "ASR", wasSimultaneous ? `边播边识别忽略回声/杂音 (${durCaptured}ms)` : `SenseTime Nia 流式识别结果为空 (${durCaptured}ms)`, rawClean || `frames=${loudFrames}, peak=${peak.toFixed(3)}`);
                     return;
                   }
                   if (wasSimultaneous) {
                     SoundFX.play("tap");
-                    if (this.isSpeaking) {
-                      this.fadeOutAndStopPlayback(100);
-                      this.lastSpeakEndAt = 0;
-                    }
                   }
                   if ($("cmdInput")) $("cmdInput").value = clean;
                   DebugLog.add("ASR", `SenseTime Nia 流式识别完成 (${durCaptured}ms)`, clean);
@@ -5908,8 +5933,8 @@
       TableUI.flashAnim("enemy_active", "anim-enter");
       const startVoiceZh = `对战正式开始！己方首发${def.name_zh}，对手派出${eStarterDef ? eStarterDef.name_zh : "怪兽"}！`;
       TableUI.showTurnBanner("ターン 1：あなたの番", "第 1 回合：你的回合", false);
-      /* 选定首发后立即终止已过时的“请选择首发”引导语音，并以高优播报裁判开幕 + 对手开场第一句话 */
-      VoiceEngine.stopPlayback();
+      /* 选定首发后平滑淡出已过时的“请选择首发”引导语音，并切换为裁判开幕 + 对手开场第一句话 */
+      VoiceEngine.fadeOutAndStopPlayback(100);
       this.announceAndReact(ja, zh, def.is_ex ? "play_ex" : "start", null, { priority: "high", interruptible: true, speakJa: startVoiceJa, speakZh: startVoiceZh });
       if (def.is_ex) GuideEngine.trigger("first_ex_card", false);
       else GuideEngine.trigger("first_turn_energy", false);
@@ -6184,10 +6209,14 @@
       return list;
     },
 
-    /** 顺序执行操作队列；若某一步触发追问，自动保存剩余连招以便确认后继续；若可跳过的前置步骤因盘面不满足而失败，保留提示后继续执行后续步骤 */
+    /** 顺序执行操作队列；确认开始执行玩家操作时平滑淡出旧 TTS 语音并切换播报；若某一步触发追问，自动保存剩余连招以便确认后继续 */
     async runActionQueue(queue, customRival = null) {
       const s = this.state;
       const seq = this.matchSeq;
+      if (Array.isArray(queue) && queue.length > 0 && VoiceEngine.isSpeaking) {
+        VoiceEngine.fadeOutAndStopPlayback(100);
+        VoiceEngine.lastSpeakEndAt = 0;
+      }
       for (let i = 0; i < queue.length; i++) {
         if (seq !== this.matchSeq || s.gameOver || s.currentPlayer !== "player") break;
         const act = queue[i];
@@ -6408,6 +6437,7 @@
             TableUI.setReferee(fallback.ja, fallback.zh);
             VoiceEngine.speak({ ja: fallback.ja, zh: fallback.zh }, "referee", { priority: "low", interruptible: true });
           } else {
+            VoiceEngine.unduckPlayback(180);
             TableUI.setReferee(prevRefJa, prevRefZh);
           }
           return;
@@ -6477,6 +6507,7 @@
             }
           }
           VoiceEngine.clearQueuedOnly(false);
+          if (VoiceEngine.isSpeaking) VoiceEngine.unduckPlayback(180);
           VoiceEngine.speak({ ja, zh }, "referee", { priority: "low", interruptible: true });
           if (result.rival_ja || result.rival_zh) VoiceEngine.speak({ ja: result.rival_ja, zh: result.rival_zh }, "rival", { priority: "low", interruptible: true });
           return;
@@ -6487,6 +6518,7 @@
           if (result.rival_ja || result.rival_zh) TableUI.setRival(result.rival_ja || "", result.rival_zh || "");
           TableUI.appendLog(result.reply_ja || result.transcript, result.reply_zh || result.transcript);
           this.pushHistory("referee", result.reply_ja || "");
+          if (VoiceEngine.isSpeaking) VoiceEngine.fadeOutAndStopPlayback(100);
           VoiceEngine.clearQueuedOnly(false);
           VoiceEngine.speak({ ja: result.reply_ja, zh: result.reply_zh }, "referee", { priority: "high" });
           if (result.rival_ja || result.rival_zh) VoiceEngine.speak({ ja: result.rival_ja, zh: result.rival_zh }, "rival", { priority: "normal" });
@@ -6508,6 +6540,7 @@
               { labelJa: "いいえ（続行）", labelZh: "继续对战", reply: "いいえ" }
             ]
           });
+          if (VoiceEngine.isSpeaking) VoiceEngine.fadeOutAndStopPlayback(100);
           VoiceEngine.clearQueuedOnly(false);
           VoiceEngine.speak({ ja, zh }, "referee", { priority: "high" });
           return;
@@ -6515,6 +6548,7 @@
 
         const queue = Array.isArray(result.actions) ? result.actions : [];
         if (queue.length === 0) {
+          VoiceEngine.unduckPlayback(180);
           const fallback = NLUEngine.pickClarifyPhrase();
           TableUI.setReferee(result.reply_ja || fallback.ja, result.reply_zh || fallback.zh);
           return;
@@ -6592,6 +6626,7 @@
         }
 
         if (safeQueue.length === 0) {
+          VoiceEngine.unduckPlayback(180);
           if (isVoiceInput && !isManualVoice && NLUEngine.isMeaninglessTranscript(rawUtter)) {
             TableUI.setReferee(prevRefJa, prevRefZh);
             return;
@@ -6627,6 +6662,7 @@
             ]
           });
           TableUI.openEndTurnConfirmModal(opps, true);
+          if (VoiceEngine.isSpeaking) VoiceEngine.fadeOutAndStopPlayback(100);
           VoiceEngine.clearQueuedOnly(false);
           VoiceEngine.speak({ ja, zh }, "referee", { priority: "high" });
           return;

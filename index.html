@@ -3918,20 +3918,86 @@
   /* ---------- 手机竖屏：保持原有单列上下布局（牌桌在上 → 横向手牌在中 → 语音/日志在下），适配新版统一卡牌与动画 ---------- */
   @media (max-width: 820px) and (orientation: portrait) {
     :root {
-      --card-w: 214px;
-      --card-h: 114px;
-      --slot-pad-top: 16px;
+      --card-w: 196px;
+      --card-h: 108px;
+      --slot-pad-top: 15px;
+      --slot-pad-x: 4px;
+      --slot-pad-b: 4px;
+      --slot-w: calc(var(--card-w) + 10px);
     }
     html, body { height: auto; min-height: 100dvh; overflow-y: auto; overflow-x: hidden; }
-    .app-shell { height: auto; min-height: 100dvh; overflow: visible; }
-    .topbar { padding: 7px 10px; gap: 6px; flex-wrap: wrap; }
-    .brand { flex: 1 1 100%; justify-content: space-between; flex-wrap: wrap; }
-    .brand-logo-svg { width: 24px; height: 24px; }
-    .turn-pill { padding: 3px 9px; min-width: 0; }
-    .top-actions { width: 100%; flex-wrap: wrap; gap: 5px; justify-content: flex-start; }
-    .top-btn { min-height: 30px; padding: 4px 9px; }
-    .lang-pill { padding: 3px 8px; min-width: 0; }
-    .lang-badge-svg { width: 15px; height: 15px; }
+    .app-shell {
+      height: auto;
+      min-height: 100dvh;
+      overflow: visible;
+      padding-bottom: calc(68px + env(safe-area-inset-bottom));
+    }
+    .topbar { padding: 7px 9px; gap: 7px; flex-wrap: wrap; }
+    .brand {
+      flex: 1 1 100%;
+      justify-content: flex-start;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: nowrap;
+      min-width: 0;
+    }
+    .brand-logo-svg { width: 24px; height: 24px; flex-shrink: 0; }
+    .brand-title { font-size: 16px; white-space: nowrap; flex-shrink: 0; }
+    .turn-pill {
+      margin-left: auto;
+      padding: 3px 9px;
+      min-width: 0;
+      font-size: 11.5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    /* 竖屏顶栏按钮严格 2 行 5 列满宽对称排布，绝不折成 3 行出现孤儿按钮 */
+    .top-actions {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 5px;
+      align-items: stretch;
+    }
+    .top-actions .lang-switch {
+      grid-column: 1 / 4;
+      grid-row: 1;
+      width: 100%;
+      display: flex;
+      padding: 2px;
+    }
+    body.is-mobile .top-actions .lang-switch {
+      grid-column: 1 / 3;
+    }
+    .top-actions .lang-pill {
+      flex: 1 1 0;
+      justify-content: center;
+      padding: 3px 4px;
+      min-width: 0;
+      font-size: 11px;
+      gap: 3px;
+    }
+    .lang-badge-svg { width: 13px; height: 13px; }
+    .top-btn {
+      width: 100%;
+      min-width: 0;
+      min-height: 29px;
+      padding: 4px 3px;
+      font-size: 11px;
+      gap: 3px;
+      justify-content: center;
+      white-space: nowrap;
+      border-radius: 7px;
+    }
+    .top-btn .btn-icon { width: 12px; height: 12px; }
+    #btnFullscreen { grid-column: 3 / 4; grid-row: 1; }
+    #btnGuideMode { grid-column: 4 / 6; grid-row: 1; }
+    #btnToggleLog { grid-column: 1 / 2; grid-row: 2; }
+    #btnResetMatch { grid-column: 2 / 3; grid-row: 2; }
+    #btnOpenCodex { grid-column: 3 / 4; grid-row: 2; }
+    #btnOpenRules { grid-column: 4 / 5; grid-row: 2; }
+    #btnOpenSettings { grid-column: 5 / 6; grid-row: 2; }
 
     .arena-grid {
       display: flex;
@@ -3945,30 +4011,38 @@
       order: 1;
       height: auto;
       overflow: visible;
-      padding: 8px;
-      gap: 8px;
+      padding: 7px 8px;
+      gap: 6px;
     }
     .guide-float {
       position: relative;
       top: auto;
       right: auto;
       width: 100%;
-      transform: translateY(-6px);
+      transform: translateY(-4px);
     }
     .guide-float.show {
       transform: translateY(0);
     }
+    .guide-card {
+      padding: 7px 10px;
+    }
+    .guide-ja,
+    .guide-zh {
+      font-size: 12.5px;
+      line-height: 1.38;
+    }
     .side-half {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 5px;
     }
-    /* 竖屏下奖赏卡与牌库置于主战区上方同一紧凑条，主战卡槽居中，备战区横向滑动 */
+    /* 竖屏紧凑桌游状态条：奖赏卡 + 牌库/弃牌单行呈现绝不断字，空槽紧凑省空间、有卡自动舒展 */
     .active-band {
       display: grid;
       grid-template-columns: minmax(0, 1fr) auto;
       grid-template-rows: auto auto;
-      gap: 6px;
+      gap: 5px 6px;
       align-items: center;
     }
     .active-band > .zone-col:first-child {
@@ -3977,9 +4051,26 @@
       justify-self: start;
       padding-right: 0;
       flex-direction: row;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
+      min-width: 0;
+    }
+    .active-band .zone-label {
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .active-band .prize-stack { gap: 3px; }
+    .active-band .prize-card {
+      width: 19px;
+      height: 27px;
+      font-size: 10px;
+      border-radius: 4px;
+    }
+    .active-band .prize-count-pill {
+      font-size: 10.5px;
+      padding: 1.5px 6px;
+      white-space: nowrap;
     }
     .active-band > .pile-col {
       grid-column: 2;
@@ -3987,24 +4078,44 @@
       justify-self: end;
       padding-left: 0;
       flex-direction: row;
-      gap: 5px;
+      gap: 4px;
     }
+    .pile-box {
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      width: auto;
+      min-width: 0;
+      padding: 3.5px 7px;
+      gap: 4px;
+      border-radius: 7px;
+      white-space: nowrap;
+    }
+    .pile-box strong { font-size: 12.5px; line-height: 1; }
+    .pile-box .pile-ja,
+    .pile-box .pile-zh { font-size: 10.5px; line-height: 1; white-space: nowrap; }
     .active-band > .slot-box.active-slot {
       grid-column: 1 / -1;
       grid-row: 2;
       justify-self: center;
-      width: var(--slot-w);
-      min-width: var(--slot-w);
-      max-width: var(--slot-w);
-      height: var(--slot-h);
-      min-height: var(--slot-h);
+      width: min(100%, 236px);
+      min-width: 206px;
+      max-width: 236px;
+      height: auto;
+      min-height: 76px;
+    }
+    .active-band > .slot-box.active-slot:has(.card) {
+      min-height: 118px;
+    }
+    .active-band > .slot-box.active-slot .card {
+      width: 100%;
     }
     .bench-row {
       display: flex;
       justify-content: flex-start;
       overflow-x: auto;
-      gap: 8px;
-      padding-bottom: 4px;
+      gap: 7px;
+      padding-bottom: 3px;
       -webkit-overflow-scrolling: touch;
     }
     .bench-row > .slot-box {
@@ -4012,16 +4123,30 @@
       width: var(--slot-w);
       min-width: var(--slot-w);
       max-width: var(--slot-w);
-      height: var(--slot-h);
-      min-height: var(--slot-h);
+      height: auto;
+      min-height: 54px;
+    }
+    .bench-row > .slot-box:has(.card) {
+      min-height: 116px;
+    }
+    .bench-row > .slot-box .card {
+      width: var(--card-w);
     }
 
-    /* 竖屏手牌回归传统手机端横向滑动模式，放在牌桌正下方、语音面板正上方 */
+    /* 竖屏手牌回归传统手机端横向滑动模式，放在牌桌正下方（必须重置 flex: 0 0 auto，防止 WebKit 下 flex-basis:0 把手牌压扁为 0px） */
     .hand-rail {
       order: 2;
+      flex: 0 0 auto;
       height: auto;
+      min-height: 0;
       overflow: visible;
-      padding: 8px 10px;
+      padding: 8px 10px 9px;
+    }
+    .hand-section {
+      flex: 0 0 auto;
+      height: auto;
+      min-height: 0;
+      gap: 5px;
     }
     .hand-header {
       flex-direction: row;
@@ -4029,19 +4154,38 @@
       align-items: center;
       flex-wrap: wrap;
       gap: 4px 8px;
+      padding-bottom: 6px;
+      margin-bottom: 0;
+      border-bottom: 1.5px solid var(--dk-border-soft);
+    }
+    .hand-body {
+      flex: 0 0 auto;
+      height: auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
     }
     .hand-cards {
       flex: 0 0 auto;
+      width: 100%;
+      height: auto;
+      min-height: 124px;
       flex-direction: row;
-      align-items: center;
+      align-items: stretch;
       overflow-x: auto;
-      overflow-y: hidden;
-      padding: 12px 2px 6px;
+      overflow-y: visible;
+      padding: 11px 6px 6px;
+      gap: 8px;
       -webkit-overflow-scrolling: touch;
     }
     .hand-card,
     .hand-drop-placeholder {
       flex: 0 0 var(--card-w);
+      width: var(--card-w);
+      min-width: var(--card-w);
+      height: auto;
+      min-height: var(--card-h);
     }
     .hand-card:hover {
       transform: translateY(-7px) scale(1.02);
@@ -4059,22 +4203,73 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
-      padding: 7px 0 2px;
+      padding: 6px 0 0;
     }
-    .hand-actions .btn-sm { padding: 9px 10px; min-height: 40px; }
+    .hand-actions .btn-sm { padding: 8px 10px; min-height: 38px; }
 
+    /* 竖屏语音与日志区：精炼排列在手牌下方，语音通话与文字输入框升级为贴底常驻「大拇指操控坞」 */
     .side-panel {
       order: 3;
       width: 100%;
-      padding: 10px;
-      gap: 8px;
+      padding: 9px 10px;
+      gap: 7px;
       height: auto;
       overflow: visible;
     }
-    .notepad-log { max-height: 180px; }
+    .voice-dock {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 55;
+      order: 0;
+      margin: 0;
+      padding: 7px 10px calc(7px + env(safe-area-inset-bottom));
+      border-top: 1.5px solid #8f7958;
+      border-bottom: none;
+      background: rgba(54, 46, 39, 0.95);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 -4px 16px rgba(18, 12, 6, 0.36);
+    }
+    .voice-controls-grid {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 6px;
+      align-items: center;
+    }
+    .voice-controls-grid .btn-voice {
+      grid-column: auto;
+      width: auto;
+      min-height: 36px;
+      padding: 0 11px;
+      font-size: 12px;
+      border-radius: 9px;
+      white-space: nowrap;
+      gap: 4px;
+    }
+    .voice-controls-grid input {
+      min-height: 36px;
+      padding: 6px 10px;
+      font-size: 13px;
+      border-radius: 9px;
+    }
+    .voice-controls-grid .btn-sm.primary {
+      min-height: 36px;
+      padding: 0 12px;
+      font-size: 12.5px;
+      border-radius: 9px;
+      white-space: nowrap;
+    }
+    .notepad-log { max-height: 150px; }
     .turn-banner { position: fixed; top: 44%; max-width: 90vw; }
     .prize-toast { position: fixed; top: max(12px, env(safe-area-inset-top)); max-width: 92vw; }
-    .voice-hud { position: fixed; bottom: 14px; max-width: calc(100vw - 24px); padding: 7px 14px; }
+    .voice-hud {
+      position: fixed;
+      bottom: calc(60px + env(safe-area-inset-bottom));
+      max-width: calc(100vw - 24px);
+      padding: 6px 13px;
+    }
     #rulesModal .modal-box { width: calc(100vw - 16px); max-height: 92dvh; padding: 14px; }
     #settingsModal .modal-box { width: calc(100vw - 16px); height: min(88dvh, 680px); }
     .cfg-grid { grid-template-columns: minmax(0, 1fr) !important; gap: 6px; }
@@ -4448,6 +4643,27 @@
     .card.hand-card.setup-pick { transform: translateY(-6px); }
     .card.hand-card.setup-pick:hover { transform: translateY(-9px) scale(1.03); }
     .card.hand-card.selected { transform: translateY(-9px); }
+    #btnLiveCall {
+      grid-column: auto;
+      width: auto;
+      min-height: 36px;
+      padding: 0 11px;
+      font-size: 12px;
+      border-radius: 9px;
+      white-space: nowrap;
+      gap: 4px;
+    }
+    .voice-dock {
+      border-top: 1.5px solid #8f7958;
+    }
+    .turn-banner {
+      padding: 7px 18px;
+    }
+    .turn-banner .tb-ja,
+    .turn-banner .tb-zh {
+      font-size: 16px;
+      white-space: nowrap;
+    }
   }
 
   .guide-card {
