@@ -1571,6 +1571,9 @@
 
     /* 持续通话与监听状态（单流 VAD 全双工监听 + SenseTime Nia 流式 ASR + 浏览器 ASR 降级） */
     callActive: false,
+    callStarting: false,
+    autoCallAttempted: false,
+    userStoppedCall: false,
     callMode: "vad",
     callMicStream: null,
     callRec: null,
@@ -3126,11 +3129,25 @@
       }
     },
 
+    hasLiveMicStream() {
+      if (!this.callMicStream) return false;
+      const tracks = typeof this.callMicStream.getAudioTracks === "function"
+        ? this.callMicStream.getAudioTracks()
+        : (typeof this.callMicStream.getTracks === "function" ? this.callMicStream.getTracks() : []);
+      if (!tracks || tracks.length === 0) return false;
+      const alive = tracks.some((tr) => !tr.readyState || tr.readyState === "live");
+      if (!alive) this.callMicStream = null;
+      return alive;
+    },
+
     async toggleCall(onUtterance) {
       if (this.callActive) {
+        this.userStoppedCall = true;
         this.stopCall(false);
         return;
       }
+      if (this.callStarting) return;
+      this.userStoppedCall = false;
       this.stopPlayback();
       this.callCallback = onUtterance;
       await this.startContinuousAsrCall();
@@ -4134,6 +4151,7 @@
           DebugLog.add("ERR", `Chrome ASR 错误: ${ev.error}`);
         }
         if (ev.error === "not-allowed" || ev.error === "service-not-allowed") {
+          this.userStoppedCall = true;
           TableUI.setReferee(
             "マイクの使用が許可されていません。ブラウザの権限をご確認ください。",
             "未获得麦克风权限，请在浏览器地址栏允许麦克风访问。"
@@ -4355,72 +4373,88 @@
     },
 
     async startContinuousAsrCall(quiet = false) {
-      const cfg = ConfigManager.data;
-      if (this.apiAsrBlocked && this.apiAsrBlockedAt && Date.now() - this.apiAsrBlockedAt >= 5000 && !/(401|403|API_KEY_INVALID)/i.test(String(this.apiAsrBlockReason || ""))) {
-        this.apiAsrBlocked = false;
-        this.apiAsrBlockReason = "";
-        this.apiAsrRetryAttempt = 0;
-      }
-      const canUseNiaVad = cfg.asrMode === "nia_asr" && !this.apiAsrBlocked && ConfigManager.hasNiaCredentials() && typeof WebSocket !== "undefined";
-      const canUseGeminiVad = Boolean(window.MediaRecorder) && cfg.asrMode === "gemini_audio" && !this.apiAsrBlocked && String(cfg.apiKey || "").trim().length > 0;
-      const canUseVad = canUseNiaVad || canUseGeminiVad;
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-      if (!canUseVad && !SR) {
-        if (!quiet) {
-          TableUI.setReferee(
-            "このブラウザは継続音声認識に未対応です。Chromeをご利用ください。",
-            "当前浏览器不支持持续语音识别，请使用 Chrome 或文字输入。"
-          );
-        }
-        return;
-      }
-
-      /* 全程仅在开始通话时申请一次麦克风流，挂断前绝不释放，杜绝浏览器反复弹窗 */
+      if (this.callActive || this.callStarting) return;
+      this.callStarting = true;
       try {
-        if (!this.callMicStream && navigator.mediaDevices?.getUserMedia) {
-          this.callMicStream = await navigator.mediaDevices.getUserMedia({
-            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 }
-          });
+        const cfg = ConfigManager.data;
+        if (this.apiAsrBlocked && this.apiAsrBlockedAt && Date.now() - this.apiAsrBlockedAt >= 5000 && !/(401|403|API_KEY_INVALID)/i.test(String(this.apiAsrBlockReason || ""))) {
+          this.apiAsrBlocked = false;
+          this.apiAsrBlockReason = "";
+          this.apiAsrRetryAttempt = 0;
         }
-      } catch (_) {
-        if (!quiet) {
-          TableUI.setReferee(
-            "マイクの使用が許可されていません。ブラウザの権限をご確認ください。",
-            "未获得麦克风权限，请在浏览器地址栏允许麦克风访问。"
-          );
-        }
-        return;
-      }
+        const canUseNiaVad = cfg.asrMode === "nia_asr" && !this.apiAsrBlocked && ConfigManager.hasNiaCredentials() && typeof WebSocket !== "undefined";
+        const canUseGeminiVad = Boolean(window.MediaRecorder) && cfg.asrMode === "gemini_audio" && !this.apiAsrBlocked && String(cfg.apiKey || "").trim().length > 0;
+        const canUseVad = canUseNiaVad || canUseGeminiVad;
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-      this.callActive = true;
-      this.callMode = canUseVad ? "vad" : "chrome_asr";
-      this.recRetryDelay = 300;
-      this.updateCallButtonUI("listen");
-      if (ConfigManager.data.asrMode === "nia_asr") {
-        ConfigManager.generateNiaJwt().catch(() => {});
-      }
-
-      if (this.callMode === "vad") {
-        this.startVadMonitor();
-      } else {
-        this.spawnContinuousRec();
-        clearInterval(this.recWatchdogTimer);
-        this.recWatchdogTimer = setInterval(() => {
-          if (this.callActive && this.callMode === "chrome_asr" && !this.recRunning && !this.recStarting) {
-            this.spawnContinuousRec();
+        if (!canUseVad && !SR) {
+          if (!quiet) {
+            TableUI.setReferee(
+              "このブラウザは継続音声認識に未対応です。Chromeをご利用ください。",
+              "当前浏览器不支持持续语音识别，请使用 Chrome 或文字输入。"
+            );
           }
-        }, 3000);
-      }
+          return;
+        }
 
-      if (!quiet) {
-        TableUI.setReferee("通話を開始しました。そのまま話しかけてください。", "已开启持续语音通话，请直接说出指令。");
-        await this.speak("通話を開始しました。そのまま話しかけてください。", "referee");
+        if (quiet && navigator.permissions && typeof navigator.permissions.query === "function") {
+          try {
+            const perm = await navigator.permissions.query({ name: "microphone" });
+            if (perm && perm.state === "denied") return;
+          } catch (_) {}
+        }
+
+        /* 仅在 VAD 模式需要采集 PCM 时申请且复用常驻麦克风流，纯 Chrome ASR 模式避免双重申请麦克风弹窗 */
+        if (canUseVad) {
+          try {
+            if (!this.hasLiveMicStream() && navigator.mediaDevices?.getUserMedia) {
+              this.callMicStream = await navigator.mediaDevices.getUserMedia({
+                audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 }
+              });
+            }
+          } catch (_) {
+            if (!quiet) {
+              TableUI.setReferee(
+                "マイクの使用が許可されていません。ブラウザの権限をご確認ください。",
+                "未获得麦克风权限，请在浏览器地址栏允许麦克风访问。"
+              );
+            }
+            return;
+          }
+        }
+
+        this.callActive = true;
+        this.callMode = canUseVad ? "vad" : "chrome_asr";
+        this.recRetryDelay = 300;
+        this.updateCallButtonUI("listen");
+        if (ConfigManager.data.asrMode === "nia_asr") {
+          ConfigManager.generateNiaJwt().catch(() => {});
+        }
+
+        if (this.callMode === "vad") {
+          this.startVadMonitor();
+        } else {
+          this.spawnContinuousRec();
+          clearInterval(this.recWatchdogTimer);
+          this.recWatchdogTimer = setInterval(() => {
+            if (this.callActive && this.callMode === "chrome_asr" && !this.recRunning && !this.recStarting) {
+              this.spawnContinuousRec();
+            }
+          }, 3000);
+        }
+
+        if (!quiet) {
+          TableUI.setReferee("通話を開始しました。そのまま話しかけてください。", "已开启持续语音通话，请直接说出指令。");
+          await this.speak("通話を開始しました。そのまま話しかけてください。", "referee");
+        }
+        BattleEngine.resetIdleTimer();
+      } finally {
+        this.callStarting = false;
       }
-      BattleEngine.resetIdleTimer();
     },
 
-    stopCall(silent = false) {
+    stopCall(silent = false, opts = {}) {
+      const keepMicStream = Boolean(opts && opts.keepMicStream);
       this.callActive = false;
       this.clearApiAsrReconnectTimer();
       clearInterval(this.vadTimer);
@@ -4453,7 +4487,7 @@
         try { this.callRec.onend = null; this.callRec.abort(); } catch (_) {}
         this.callRec = null;
       }
-      if (this.callMicStream) {
+      if (!keepMicStream && this.callMicStream) {
         try { this.callMicStream.getTracks().forEach((t) => t.stop()); } catch (_) {}
         this.callMicStream = null;
       }
@@ -9087,9 +9121,41 @@
       `;
     },
 
+    /** 判断当前手牌在当前阶段与回合条件下是否可点击选择/使用 */
+    isHandCardPlayable(cardId) {
+      const s = BattleEngine.state;
+      if (!s || s.gameOver) return false;
+      const mon = SpecEngine.getMonster(cardId);
+      if (s.phase === "setup") return Boolean(mon);
+      if (s.phase !== "battle" || s.currentPlayer !== "player" || s.pending) return false;
+      if (mon) return s.player.bench.some((b) => b === null);
+      const it = SpecEngine.getItem(cardId);
+      if (!it) return false;
+      if (it.category === "energy") {
+        return !s.energyUsedThisTurn && Boolean(s.player.active || s.player.bench.some(Boolean));
+      }
+      if (it.category === "supporter" && s.supporterUsedThisTurn) return false;
+      const fx = String(it.effect_type || "");
+      if (/^heal_ally_\d+$/.test(fx)) {
+        const units = [s.player.active, ...s.player.bench].filter(Boolean);
+        return units.some((u) => {
+          const d = SpecEngine.getMonster(u.id);
+          return d && u.hp < d.hp;
+        });
+      }
+      if (fx === "switch_enemy_bench") return BattleEngine.getBenchEntries("enemy").length > 0;
+      if (/^draw_\d+$/.test(fx)) return s.player.deck.length > 0;
+      if (/^boost_\d+$/.test(fx)) return s.turn > 1;
+      if (fx === "recover_energy") {
+        return s.player.trash.some((id) => id.startsWith("energy_")) || s.player.deck.some((id) => id.startsWith("energy_"));
+      }
+      return true;
+    },
+
     renderHandCard(cardId, idx) {
       const s = BattleEngine.state;
       const selected = s.selectedHandIndex === idx;
+      const playable = this.isHandCardPlayable(cardId);
       const mon = SpecEngine.getMonster(cardId);
       if (mon) {
         const isSetup = s.phase === "setup";
@@ -9101,7 +9167,7 @@
           ? ` title="${escapeHtml(t("クリックまたは名前を言って先発に出す", "点击或说出名字作为首发上场"))}"`
           : ` title="${escapeHtml(t("クリックまたは音声でベンチに出せます", "可直接点击或语音放入备战区"))}"`;
         return `
-          <div class="card ${escapeHtml(mon.element)} ${mon.is_ex ? "is-ex" : ""} hand-card ${selected ? "selected" : ""} ${isSetup ? "setup-pick" : ""}" data-hand-idx="${idx}" draggable="true"${monTitle}>
+          <div class="card ${escapeHtml(mon.element)} ${mon.is_ex ? "is-ex" : ""} hand-card ${selected ? "selected" : ""} ${isSetup ? "setup-pick" : (playable ? "playable" : "")}" data-hand-idx="${idx}" draggable="true"${monTitle}>
             <div class="card-head">
               <div class="card-head-left">
                 ${CARD_ART[mon.id] ? `<span class="card-art">${CARD_ART[mon.id]}</span>` : `<span class="pip ${escapeHtml(mon.element)} filled">${SVG_ICONS[mon.element] || SVG_ICONS.any}</span>`}
@@ -9149,7 +9215,7 @@
         ? `<span class="energy-watermark ${escapeHtml(cls)}" aria-hidden="true">${SVG_ICONS[it.element]}</span>`
         : "";
       return `
-        <div class="card ${escapeHtml(cls)} hand-card util-card ${isEnergy ? "energy-card" : ""} ${selected ? "selected" : ""} ${supUsed ? "supporter-used" : ""}" data-hand-idx="${idx}" draggable="true">
+        <div class="card ${escapeHtml(cls)} hand-card util-card ${isEnergy ? "energy-card" : ""} ${selected ? "selected" : ""} ${playable ? "playable" : ""} ${supUsed ? "supporter-used" : ""}" data-hand-idx="${idx}" draggable="true">
           <div class="card-head">
             <div class="card-head-left">
               ${CARD_ART[it.id] ? `<span class="card-art">${CARD_ART[it.id]}</span>` : ""}
@@ -10383,7 +10449,8 @@
     $("btnOpenRules").addEventListener("click", () => $("rulesModal").classList.add("open"));
     const closeRulesAndGuide = async () => {
       $("rulesModal").classList.remove("open");
-      if (!VoiceEngine.callActive) {
+      if (!VoiceEngine.callActive && !VoiceEngine.callStarting && !VoiceEngine.autoCallAttempted && !VoiceEngine.userStoppedCall) {
+        VoiceEngine.autoCallAttempted = true;
         VoiceEngine.callCallback = (payload) => BattleEngine.handleUserInput(payload);
         await VoiceEngine.startContinuousAsrCall(true);
         if (!VoiceEngine.callActive) {
@@ -10520,7 +10587,8 @@
         || prevNiaAk !== ConfigManager.data.niaAk
         || prevNiaSk !== ConfigManager.data.niaSk;
       if (VoiceEngine.callActive && asrChanged) {
-        VoiceEngine.stopCall(true);
+        const nextUsesVad = ConfigManager.data.asrMode === "nia_asr" || ConfigManager.data.asrMode === "gemini_audio";
+        VoiceEngine.stopCall(true, { keepMicStream: nextUsesVad });
         VoiceEngine.startContinuousAsrCall(true);
       } else if (VoiceEngine.callActive && prevAsrLang !== ConfigManager.data.asrLang) {
         VoiceEngine.restartChromeAsrIfNeeded();
