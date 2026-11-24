@@ -4078,6 +4078,419 @@
     .rules-list li { margin-bottom: 8px; }
     .rules-head-right { width: 100%; justify-content: space-between; }
   }
+
+  /* =========================================================================
+     10. 全站统一「暗胡桃木 & 古铜金」深色外壳主题（衬托中央羊皮纸牌桌与象牙实体卡牌）
+     ========================================================================= */
+  :root {
+    --dk-bg-0: #1e140c;
+    --dk-bg-1: #2a1c12;
+    --dk-bg-2: #362417;
+    --dk-bg-3: #452f1e;
+    --dk-inset: #21160e;
+    --dk-border: #8d6c3d;
+    --dk-border-soft: rgba(196, 154, 86, 0.34);
+    --dk-ink: #f7ebd3;
+    --dk-ink-sub: #c9b594;
+    --dk-ink-muted: #a48e6c;
+    --dk-gold-text: #f3d285;
+    --dk-ok-text: #7be0a5;
+    --dk-danger-text: #f39a8e;
+  }
+
+  body {
+    background:
+      radial-gradient(circle at 50% 24%, rgba(212, 166, 76, 0.1), transparent 56%),
+      linear-gradient(160deg, #332215 0%, #1d130b 100%);
+  }
+
+  /* 顶部栏：与左右暗胡桃木侧栏融为一体 */
+  .topbar {
+    background: linear-gradient(180deg, #3a2719 0%, #281a10 100%);
+    border-color: var(--dk-border);
+    box-shadow: 0 4px 14px rgba(14, 8, 3, 0.45), inset 0 1px 0 rgba(255, 232, 186, 0.14);
+  }
+  .top-btn {
+    background: linear-gradient(180deg, #4b3422 0%, #372517 100%);
+    border-color: #8f6e3f;
+    color: var(--dk-ink);
+    box-shadow: 0 2px 5px rgba(12, 7, 3, 0.36), inset 0 1px 0 rgba(255, 236, 196, 0.16);
+  }
+  .top-btn:hover {
+    background: linear-gradient(180deg, #593e28 0%, #432d1c 100%);
+    border-color: #c29855;
+    color: #fff8e8;
+  }
+  .top-btn.guide-on {
+    background: linear-gradient(180deg, #35835a 0%, #256242 100%);
+    border-color: #63b588;
+    color: #fffdf8;
+  }
+  .top-btn.log-on {
+    background: linear-gradient(180deg, #c78f30 0%, #9c6c1b 100%);
+    border-color: #e4bd6d;
+    color: #fffdf8;
+  }
+
+  /* 中央羊皮纸对战垫：温润沙石焦糖底，作为全屏绝对视觉主角 */
+  .playmat {
+    background:
+      radial-gradient(ellipse at 50% 46%, #e8d5ae 0%, #d8bf91 60%, #c6a876 100%);
+    border: 2px solid #9f7c46;
+    box-shadow:
+      0 12px 30px rgba(12, 7, 3, 0.48),
+      inset 0 0 0 2px rgba(255, 245, 220, 0.28),
+      inset 0 0 38px rgba(102, 70, 32, 0.24);
+  }
+
+  /* 左右双侧栏（语音/日志栏 + 纵向手牌栏）：统一暗胡桃木底色，彻底不与牌桌喧宾夺主 */
+  .side-panel,
+  .hand-rail {
+    background: linear-gradient(180deg, #352316 0%, #261910 100%);
+    border: 2px solid var(--dk-border);
+    box-shadow: 0 10px 28px rgba(12, 7, 3, 0.44), inset 0 1px 0 rgba(255, 232, 186, 0.12);
+    color: var(--dk-ink);
+  }
+  .panel-title,
+  .hand-header {
+    color: var(--dk-gold-text);
+    border-bottom-color: var(--dk-border-soft);
+  }
+  .hand-header .zone-label:first-child { color: var(--dk-gold-text); }
+  #handSelectionHint { color: var(--dk-ink-sub); }
+
+  .call-state-badge {
+    background: rgba(255, 236, 198, 0.1);
+    color: var(--dk-ink-sub);
+    border-color: var(--dk-border-soft);
+  }
+  .call-state-badge.live {
+    background: rgba(184, 69, 58, 0.26);
+    color: #ffd4ce;
+    border-color: rgba(236, 128, 114, 0.56);
+  }
+
+  /* 左侧对手/裁判气泡、追问条、对局日志、语音区与 Tips */
+  .bubble {
+    background: linear-gradient(180deg, #2d1e13 0%, #23170e 100%);
+    border: 1px solid var(--dk-border-soft);
+    border-left: 3.5px solid #6499b5;
+    box-shadow: 0 2px 8px rgba(10, 5, 2, 0.28), inset 0 1px 0 rgba(255, 236, 198, 0.06);
+  }
+  .bubble.rival {
+    background: linear-gradient(180deg, #311f16 0%, #251710 100%);
+    border-left-color: #d66a5b;
+  }
+  .bubble-role { color: #8fc0da; }
+  .bubble.rival .bubble-role { color: #f09588; }
+  .bubble-ja, .bubble-zh { color: var(--dk-ink); }
+
+  .pending-bar {
+    background: linear-gradient(180deg, #453017 0%, #342310 100%);
+    border-color: #cfa049;
+    box-shadow: 0 4px 12px rgba(10, 5, 2, 0.34), inset 0 1px 0 rgba(255, 236, 192, 0.16);
+  }
+  .pending-ja, .pending-zh { color: #ffefc8; }
+
+  .log-bar { color: var(--dk-ink-sub); }
+  .notepad-log {
+    background: var(--dk-inset);
+    border-color: var(--dk-border-soft);
+    color: var(--dk-ink);
+    box-shadow: inset 0 2px 6px rgba(8, 4, 1, 0.42);
+  }
+  .log-entry { border-bottom-color: rgba(196, 154, 86, 0.18); }
+  .log-ja, .log-zh { color: #eadbc0; }
+
+  .voice-dock,
+  .hand-actions {
+    border-top-color: var(--dk-border-soft);
+  }
+  .voice-controls-grid input {
+    background: var(--dk-inset);
+    border-color: #826338;
+    color: var(--dk-ink);
+    box-shadow: inset 0 1px 4px rgba(8, 4, 1, 0.45);
+  }
+  .voice-controls-grid input::placeholder { color: var(--dk-ink-muted); }
+  .voice-controls-grid input:focus {
+    border-color: #d9a84c;
+    box-shadow: inset 0 1px 4px rgba(8, 4, 1, 0.4), 0 0 0 2.5px rgba(217, 168, 76, 0.25);
+  }
+
+  /* 暗底通用按钮（单次、防御、弹窗取消/次要按钮等） */
+  .btn-sm,
+  .btn-ptt {
+    background: linear-gradient(180deg, #4a3320 0%, #372516 100%);
+    border-color: #8c6b3d;
+    color: var(--dk-ink);
+    box-shadow: 0 2px 5px rgba(12, 7, 3, 0.34), inset 0 1px 0 rgba(255, 236, 196, 0.15);
+  }
+  .btn-sm:hover:where(:not(:disabled)),
+  .btn-ptt:hover {
+    background: linear-gradient(180deg, #5a3f28 0%, #442e1c 100%);
+    border-color: #c79c56;
+    color: #fff9ec;
+  }
+  .btn-sm .btn-zh, .btn-ptt .btn-zh { color: var(--dk-ink-sub); }
+  .hand-actions .btn-sm.btn-defend {
+    background: linear-gradient(180deg, #32575c 0%, #244045 100%);
+    border-color: #5b8e94;
+    color: #e6f7f8;
+    box-shadow: 0 2px 6px rgba(10, 20, 22, 0.38), inset 0 1px 0 rgba(215, 245, 248, 0.18);
+  }
+  .hand-actions .btn-sm.btn-defend:hover {
+    background: linear-gradient(180deg, #3b656b 0%, #2b4c52 100%);
+    border-color: #77aeb4;
+  }
+
+  .live-tip-box {
+    background: linear-gradient(180deg, #2d1f14 0%, #23170e 100%);
+    border: 1px solid var(--dk-border-soft);
+    border-left: 3.5px solid #48a672;
+    box-shadow: 0 2px 8px rgba(10, 5, 2, 0.28);
+  }
+  .live-tip-label { color: var(--dk-ok-text); }
+  .live-tip-ja, .live-tip-zh { color: var(--dk-ink); }
+
+  /* 右侧暗木手牌栏中的空槽占位符与滚动条 */
+  .hand-drop-placeholder {
+    border-color: #d9a84c;
+    background: rgba(217, 168, 76, 0.14);
+  }
+  .hand-drop-placeholder .drop-slot-ja { color: var(--dk-gold-text); }
+  .hand-drop-placeholder .drop-slot-zh { color: var(--dk-ink-sub); }
+
+  /* 左侧调试日志抽屉：深色胡桃木统一风格 */
+  .debug-log-drawer {
+    background: linear-gradient(180deg, #332215 0%, #23170e 100%);
+    color: var(--dk-ink);
+  }
+  .dlog-head {
+    color: var(--dk-gold-text);
+    border-bottom-color: var(--dk-border-soft);
+  }
+  .dlog-chip {
+    background: linear-gradient(180deg, #47311f 0%, #352315 100%);
+    border-color: #826338;
+    color: var(--dk-ink-sub);
+    box-shadow: none;
+  }
+  .dlog-chip.active {
+    background: linear-gradient(180deg, #c78f30 0%, #9c6c1b 100%);
+    border-color: #e4bd6d;
+    color: #fffdf8;
+  }
+  .dlog-list {
+    background: var(--dk-inset);
+    border-color: var(--dk-border-soft);
+  }
+  .dlog-item {
+    background: #2f2014;
+    border-color: rgba(196, 154, 86, 0.24);
+    color: var(--dk-ink);
+  }
+  .dlog-item.cat-ERR {
+    background: rgba(184, 69, 58, 0.18);
+    border-left-color: #e26458;
+  }
+  .dlog-meta { color: var(--dk-ink-sub); }
+  .dlog-msg { color: var(--dk-ink); }
+  .dlog-detail { color: #c7b495; }
+  .dlog-foot { border-top-color: var(--dk-border-soft); }
+
+  /* 牌桌内浮层（引导卡 / 手动弹出菜单 / 奖赏提示）：统一暗胡桃木磨砂质感 */
+  .guide-card {
+    background: rgba(38, 25, 15, 0.92);
+    border: 1.5px solid #a88348;
+    border-left: 4px solid #48a672;
+    box-shadow: 0 12px 28px rgba(12, 7, 3, 0.45);
+    color: var(--dk-ink);
+  }
+  .guide-tag { color: var(--dk-ok-text); }
+  .guide-ja, .guide-zh { color: var(--dk-ink); }
+  .guide-close {
+    background: rgba(255, 236, 198, 0.12);
+    border-color: var(--dk-border-soft);
+    color: var(--dk-ink-sub);
+  }
+  .guide-close:hover { background: rgba(255, 236, 198, 0.22); color: #fff; border-color: #cfa049; }
+
+  .action-popover {
+    background: linear-gradient(180deg, #3a2719 0%, #271a10 100%);
+    border-color: #a88348;
+    color: var(--dk-ink);
+    box-shadow: 0 14px 34px rgba(12, 7, 3, 0.52), inset 0 1px 0 rgba(255, 236, 196, 0.14);
+  }
+
+  .prize-toast {
+    background: linear-gradient(180deg, #3c2919 0%, #2a1c11 100%);
+    border-color: #d4a64c;
+    box-shadow: 0 12px 28px rgba(12, 7, 3, 0.48);
+  }
+  .prize-toast .pt-ja, .prize-toast .pt-zh { color: #fdf0d2; }
+  .prize-toast .toast-icon { color: #f0c25c; }
+  .prize-toast.enemy {
+    background: linear-gradient(180deg, #4b231e 0%, #341713 100%);
+    border-color: #d4695c;
+  }
+  .prize-toast.enemy .pt-ja, .prize-toast.enemy .pt-zh { color: #ffe0db; }
+  .prize-toast.enemy .toast-icon { color: #f3887b; }
+
+  /* 全局所有弹窗（规则 / 设置 / 图鉴 / 弃牌堆 / 确认 / 胜负 / 数据加载）：统一暗胡桃木配色 */
+  .modal-backdrop { background: rgba(16, 10, 5, 0.68); backdrop-filter: blur(3.5px); }
+  .modal-box {
+    background: linear-gradient(180deg, #382618 0%, #261910 100%);
+    border: 2px solid #a68044;
+    color: var(--dk-ink);
+    box-shadow: 0 24px 60px rgba(8, 4, 1, 0.62), inset 0 1px 0 rgba(255, 236, 196, 0.16);
+  }
+  .modal-head { border-bottom-color: var(--dk-border-soft); }
+  .modal-head h2 { color: var(--dk-gold-text); }
+
+  /* 规则弹窗 & 难度选择器 & 语言开关 */
+  .lang-switch.light {
+    background: rgba(24, 15, 8, 0.6);
+    border-color: var(--dk-border);
+    box-shadow: inset 0 1px 3px rgba(8, 4, 1, 0.45);
+  }
+  .lang-switch.light .lang-pill { color: var(--dk-ink-sub); }
+  .lang-switch.light .lang-pill:hover:not(.active) { background: rgba(255, 236, 198, 0.12); color: #fff; }
+  .rules-block {
+    background: linear-gradient(180deg, #2d1e13 0%, #24180f 100%);
+    border-color: var(--dk-border-soft);
+    box-shadow: inset 0 1px 4px rgba(8, 4, 1, 0.35);
+  }
+  .rules-block h3 { color: var(--dk-gold-text); }
+  .rules-list { color: var(--dk-ink); }
+  .rules-footer { border-top-color: var(--dk-border-soft); }
+  .diff-picker { color: var(--dk-ink); }
+  .diff-seg {
+    background: var(--dk-inset);
+    border-color: var(--dk-border);
+    box-shadow: inset 0 1px 3px rgba(8, 4, 1, 0.45);
+  }
+  .diff-btn { color: var(--dk-ink-sub); }
+  .diff-btn:hover:not(.active) { background: rgba(255, 236, 198, 0.1); color: #fff; }
+
+  /* 设置弹窗 */
+  .cfg-footer {
+    border-top-color: var(--dk-border-soft);
+    background: linear-gradient(180deg, #2e1f14 0%, #23170e 100%);
+  }
+  .cfg-section {
+    background: linear-gradient(180deg, #2f2014 0%, #271a10 100%);
+    border-color: var(--dk-border-soft);
+    box-shadow: inset 0 1px 0 rgba(255, 236, 196, 0.08);
+  }
+  .cfg-section-head { border-bottom-color: var(--dk-border-soft); }
+  .cfg-section-title { color: var(--dk-gold-text); }
+  .cfg-section-badge {
+    background: rgba(217, 168, 76, 0.16);
+    border-color: rgba(217, 168, 76, 0.42);
+    color: var(--dk-gold-text);
+  }
+  .cfg-sub-box {
+    background: rgba(24, 15, 8, 0.48);
+    border-color: var(--dk-border-soft);
+  }
+  .cfg-sub-label { color: var(--dk-ink-sub); }
+  .cfg-field label { color: var(--dk-ink); }
+  .cfg-field input, .cfg-field select {
+    background: var(--dk-inset);
+    border-color: #826338;
+    color: var(--dk-ink);
+    box-shadow: inset 0 1px 4px rgba(8, 4, 1, 0.45);
+  }
+  .cfg-field select option { background: #261910; color: var(--dk-ink); }
+  .cfg-hint-pill {
+    background: rgba(24, 15, 8, 0.45);
+    border-color: var(--dk-border-soft);
+    color: var(--dk-ink-sub);
+  }
+  .cfg-toggle-inline { color: var(--dk-ink); }
+  .cfg-voice-tag { color: var(--dk-gold-text); }
+  .dropzone {
+    background: rgba(24, 15, 8, 0.45);
+    border-color: #8f6e3f;
+    color: var(--dk-ink-sub);
+  }
+  .dropzone.dragover { border-color: #5cc489; background: rgba(47, 122, 83, 0.22); color: #fff; }
+
+  /* 确认弹窗 / 胜负弹窗 / 弃牌堆弹窗 / 图鉴弹窗 */
+  .reset-confirm-icon { fill: #e0b354; }
+  .mobile-fs-title-ja, .mobile-fs-title-zh { color: var(--dk-gold-text) !important; }
+  .mobile-fs-desc-ja, .mobile-fs-desc-zh { color: var(--dk-ink) !important; }
+  .endturn-hints-list {
+    background: var(--dk-inset);
+    border-color: var(--dk-border-soft);
+  }
+  .endturn-hints-list li::before { color: #e0b354; }
+  .endturn-hint-ja, .endturn-hint-zh { color: var(--dk-ink) !important; }
+  .reset-confirm-actions { border-top-color: var(--dk-border-soft); }
+
+  .codex-legend {
+    background: var(--dk-inset);
+    border-color: var(--dk-border-soft);
+    color: var(--dk-ink-sub);
+  }
+  .codex-card { color: var(--ink); }
+  .pile-modal-banner {
+    background: var(--dk-inset);
+    border-color: var(--dk-border-soft);
+    color: var(--dk-gold-text);
+  }
+  .pile-modal-banner.recycle {
+    background: rgba(47, 122, 83, 0.22);
+    border-color: rgba(92, 196, 137, 0.5);
+    color: var(--dk-ok-text);
+  }
+  .pile-section-title {
+    color: var(--dk-gold-text);
+    border-bottom-color: var(--dk-border-soft);
+  }
+  .pile-chip {
+    background: #2f2014;
+    border-color: var(--dk-border-soft);
+    color: var(--dk-ink);
+  }
+  .pile-chip-name { color: var(--dk-ink); }
+  .pile-chip-zh { color: var(--dk-ink-sub); }
+  .pile-chip-qty { background: #493320; color: var(--dk-gold-text); }
+  .pile-empty {
+    background: var(--dk-inset);
+    border-color: var(--dk-border-soft);
+    color: var(--dk-ink-sub);
+  }
+
+  /* 统一暗木细滚动条 */
+  .hand-cards::-webkit-scrollbar,
+  .notepad-log::-webkit-scrollbar,
+  .dlog-list::-webkit-scrollbar,
+  .cfg-scroll-body::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .hand-cards::-webkit-scrollbar-track,
+  .notepad-log::-webkit-scrollbar-track,
+  .dlog-list::-webkit-scrollbar-track,
+  .cfg-scroll-body::-webkit-scrollbar-track {
+    background: rgba(18, 11, 6, 0.35);
+    border-radius: 999px;
+  }
+  .hand-cards::-webkit-scrollbar-thumb,
+  .notepad-log::-webkit-scrollbar-thumb,
+  .dlog-list::-webkit-scrollbar-thumb,
+  .cfg-scroll-body::-webkit-scrollbar-thumb {
+    background: rgba(182, 141, 76, 0.45);
+    border-radius: 999px;
+  }
+  .hand-cards::-webkit-scrollbar-thumb:hover,
+  .notepad-log::-webkit-scrollbar-thumb:hover,
+  .dlog-list::-webkit-scrollbar-thumb:hover,
+  .cfg-scroll-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(212, 166, 86, 0.72);
+  }
 </style>
 </head>
 <body data-lang="ja">
@@ -4372,7 +4785,7 @@
         <!-- 实时战术建议（本地即时刷新 + 按需 AI 深度分析） -->
         <div class="live-tip-box" id="liveTipBox">
           <div class="live-tip-label" style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
-            <span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21h6v-1H9v1zm3-19a7 7 0 0 0-4 12.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26A7 7 0 0 0 12 2z"/></svg>Tips<span id="liveTipAiTag" style="display:none;margin-left:5px;font-size:11px;padding:0 5px;border-radius:4px;background:rgba(46,107,71,0.14);color:var(--ok);">AI</span></span>
+            <span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21h6v-1H9v1zm3-19a7 7 0 0 0-4 12.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26A7 7 0 0 0 12 2z"/></svg>Tips<span id="liveTipAiTag" style="display:none;margin-left:5px;font-size:11px;padding:0 5px;border-radius:4px;background:rgba(72,166,114,0.22);color:var(--dk-ok-text);">AI</span></span>
             <button class="btn-sm" id="btnAiTip" style="padding:2px 8px;font-size:11.5px;"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/></svg><span class="lang-ja">AI戦術</span><span class="lang-zh">AI战术</span></button>
           </div>
           <div class="live-tip-ja" id="liveTipJa"></div>
@@ -4616,7 +5029,7 @@
       <div class="cfg-sub-box" id="niaCredsBlock">
         <div class="cfg-sub-label">
           <span><span class="lang-ja">SenseTime Nia 認証キー（ASR・TTS 共用）</span><span class="lang-zh">SenseTime Nia 认证密钥（ASR・TTS 共用）</span></span>
-          <span style="font-size:11px;color:var(--ink-sub);white-space:nowrap;flex-shrink:0;">HS256 JWT</span>
+          <span style="font-size:11px;color:var(--dk-ink-sub);white-space:nowrap;flex-shrink:0;">HS256 JWT</span>
         </div>
         <div class="cfg-grid">
           <div class="cfg-field">
@@ -4673,7 +5086,7 @@
         </div>
       </div>
 
-      <div id="voiceEngineStatus" style="font-size:12px;color:var(--ink-sub);margin:2px 0 4px;"></div>
+      <div id="voiceEngineStatus" style="font-size:12px;color:var(--dk-ink-sub);margin:2px 0 4px;"></div>
     </div>
 
     <!-- 4. 对局设置与外部数据热更新 -->
@@ -4701,7 +5114,7 @@
       <div class="dropzone" id="mdDropzone" style="margin-top:2px;margin-bottom:4px;">
         <span class="lang-ja">外部 <strong>gamedata.json</strong> をドロップ、または</span>
         <span class="lang-zh">拖入外部 <strong>gamedata.json</strong>，或</span>
-        <label style="color:var(--water);text-decoration:underline;cursor:pointer;">
+        <label style="color:#85c1eb;text-decoration:underline;cursor:pointer;">
           <span class="lang-ja">ファイル選択</span><span class="lang-zh">选择文件</span>
           <input type="file" id="mdFileInput" accept=".json,.md,.txt" style="display:none;" />
         </label>
@@ -4726,11 +5139,11 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
       <div style="font-size:17px;font-weight:900;"><span class="lang-ja">gamedata.json を読み込む</span><span class="lang-zh">加载游戏数据文件（gamedata.json）</span></div>
     </div>
-    <p class="lang-ja" style="font-size:13.5px;line-height:1.65;color:var(--ink);margin:0 0 12px;">
+    <p class="lang-ja" style="font-size:13.5px;line-height:1.65;color:var(--dk-ink);margin:0 0 12px;">
       ブラウザのセキュリティ制限（<code>file://</code>）により、ローカルの <strong>gamedata.json</strong> を自動読込できませんでした。<br/>
       下のボタンから同フォルダ内の <strong>gamedata.json</strong> を選択してください（次回からは自動読込されます）。
     </p>
-    <p class="lang-zh" lang="zh-CN" style="font-size:13.5px;line-height:1.65;color:var(--ink);margin:0 0 12px;">
+    <p class="lang-zh" lang="zh-CN" style="font-size:13.5px;line-height:1.65;color:var(--dk-ink);margin:0 0 12px;">
       由于浏览器本地 <code>file://</code> 安全限制，无法自动读取同目录的 <strong>gamedata.json</strong>。请点击下方选择同目录的 <strong>gamedata.json</strong>（选择一次后会缓存），或直接运行 <code>start.command</code> / <code>start.bat</code> 自动启动。
     </p>
     <div class="dropzone" id="dataLoadDropzone" style="padding:14px;">
@@ -4738,7 +5151,7 @@
         <span class="lang-ja">gamedata.json を選択</span><span class="lang-zh">选择 gamedata.json</span>
         <input type="file" id="dataLoadFileInput" accept=".json" style="display:none;" />
       </label>
-      <div style="margin-top:6px;font-size:12px;color:var(--ink-sub);"><span class="lang-ja">またはここにファイルをドロップ</span><span class="lang-zh">或直接拖拽至此</span></div>
+      <div style="margin-top:6px;font-size:12px;color:var(--dk-ink-sub);"><span class="lang-ja">またはここにファイルをドロップ</span><span class="lang-zh">或直接拖拽至此</span></div>
     </div>
   </div>
 </div>
