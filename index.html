@@ -4413,6 +4413,21 @@
     border: 2px solid #c49a45;
     box-shadow: inset 0 1px 5px rgba(132, 98, 42, 0.12), 0 2px 8px rgba(74, 62, 48, 0.1);
   }
+  /* 目标选择高亮边框优先级高于 active-slot 默认金框，确保主战区与备战区同步清晰高亮 */
+  .slot-box.highlight-ally,
+  .slot-box.active-slot.highlight-ally {
+    border: 2.5px solid #3ea86f;
+    background: rgba(62, 168, 111, 0.18);
+    box-shadow: 0 0 0 3px rgba(62, 168, 111, 0.34), 0 4px 14px rgba(40, 118, 76, 0.22);
+    cursor: pointer;
+  }
+  .slot-box.highlight-enemy,
+  .slot-box.active-slot.highlight-enemy {
+    border: 2.5px solid #cf4f43;
+    background: rgba(207, 79, 67, 0.18);
+    box-shadow: 0 0 0 3px rgba(207, 79, 67, 0.32), 0 4px 14px rgba(154, 48, 38, 0.22);
+    cursor: pointer;
+  }
   .slot-tag { color: #5b4c3c; }
   .slot-empty { color: rgba(88, 74, 58, 0.62); }
 

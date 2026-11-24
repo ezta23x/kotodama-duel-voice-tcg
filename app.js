@@ -1,14 +1,24 @@
 /**
  * ============================================================================
  * 言霊デュエル（言灵对决）— 主程序逻辑
+ *
+ * 架构与语言解耦约定：
+ *   - 界面语言（uiLang）、播报语言（ttsLang）、识别语言（niaAsrLang）三轴独立配置，
+ *     默认组合为「中文界面 + 日语 TTS + 中日自动双语 ASR」，顶栏切换语言仅切换界面文字。
+ *   - 语音与文本指令采用 Local-First（本地确定性规则优先 + 云端多模态 LLM 兜底）并经
+ *     BattleEngine 全盘面护栏校验后执行，确保零规则越界与零闲聊漂移。
+ *
  * 模块结构：
- *   1. ConfigManager  ：Gemini LLM 与SenseTime Nia ASR/TTS 配置持久化及 HS256 JWT 签发
- *   2. SpecEngine     ：三级 MD/JSON 规则与卡牌数据热加载 + 卡牌/技能模糊匹配引擎
- *   3. VoiceEngine    ：全双工持续通话 + SenseTime Nia 流式 ASR/TTS + Vertex / 浏览器语音降级
- *   4. NLUEngine      ：Vertex Gemini 中日语解析 + 追问记忆 + 本地解析
- *   5. BattleEngine   ：完整对战状态机、贴能解锁、奖赏抽牌与对手 AI
- *   6. TableUI        ：全屏牌桌渲染、双语换行日志与实时战术建议
- *   7. Init & Events  ：设置弹窗同步、外部 MD 导入与全局事件绑定
+ *   0. DebugLog              ：前端运行日志抽屉（按 ASR/TTS/NLU/AEC/ERR 分类过滤、复制与导出）
+ *   0.5 GuideEngine          ：非遮断式浮动教学引导气泡（首次关键操作触发，可随时开关）
+ *   1. ConfigManager         ：三轴语言、Vertex LLM/TTS 与 SenseTime Nia 配置持久化及 HS256 JWT 签发
+ *   2. SpecEngine            ：三级 JSON/MD 规则与卡组热加载 + 中日音素模糊匹配与纠错词典引擎
+ *   3. VoiceEngine           ：全双工持续通话（AEC3 闪避压音）+ Nia 流式 ASR/TTS + Vertex / 浏览器降级
+ *   4. NLUEngine             ：中日语连招切分、槽位/能量/交换/开局解析、语气词前置过滤与云端混合解析
+ *   5. BattleEngine          ：完整对战状态机（24 张单 ex 卡组、开局组合部署、追问记忆与对手 AI「莲」）
+ *   6. TableUI               ：全屏响应式牌桌渲染、高亮选择、手牌拖拽、双语日志与战术建议
+ *   7. MobileViewportManager ：移动端横屏全屏适配、状态栏同步与原生手势安全区管理
+ *   8. Init & Events         ：设置弹窗同步、外部数据导入、触控手势与全局事件绑定
  * ============================================================================
  */
 (() => {
@@ -180,11 +190,13 @@
     isOpen: false,
     maxEntries: 200,
 
+    /** 将 Date 格式化为 HH:MM:SS.mmm 毫秒级时间戳，供日志抽屉显示 */
     formatTime(d) {
       const pad = (n, w = 2) => String(n).padStart(w, "0");
       return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(d.getMilliseconds(), 3)}`;
     },
 
+    /** 将单条日志对象转义并渲染为带分类标签与详情折叠区的 HTML 片段 */
     formatItemHtml(e) {
       return `
         <div class="dlog-item cat-${escapeHtml(e.cat)}">
@@ -195,6 +207,7 @@
       `;
     },
 
+    /** 记录一条分类运行日志（超出容量自动淘汰最早记录），并同步刷新日志面板与控制台 */
     add(cat, msg, detail = null) {
       const now = new Date();
       let rawDetail = detail == null ? null : (typeof detail === "string" ? detail : JSON.stringify(detail));
@@ -222,6 +235,7 @@
       }
     },
 
+    /** 切换日志抽屉的分类筛选条件并立即重绘列表 */
     setFilter(cat) {
       this.filter = cat || "ALL";
       const box = $("dlogFilters");
@@ -233,6 +247,7 @@
       this.render();
     },
 
+    /** 展开、收起或按布尔值强制切换运行日志抽屉的可见状态 */
     toggle(force) {
       this.isOpen = typeof force === "boolean" ? force : !this.isOpen;
       const drawer = $("debugLogDrawer");
@@ -246,6 +261,7 @@
       }
     },
 
+    /** 清空当前内存中的全部运行日志并刷新面板 */
     clear() {
       this.entries = [];
       const dot = $("logErrDot");
@@ -253,6 +269,7 @@
       this.render();
     },
 
+    /** 汇总当前时间戳、设备 UA、脱敏后的配置快照与全部日志，生成导出/复制载荷 */
     buildPayload() {
       const cfg = ConfigManager.data;
       return {
@@ -274,6 +291,7 @@
       };
     },
 
+    /** 将格式化后的运行日志 JSON 复制到剪贴板并给出双语 Toast 反馈 */
     async copy() {
       const text = JSON.stringify(this.buildPayload(), null, 2);
       try {
@@ -286,6 +304,7 @@
       TableUI.showToast("コピーに失敗しました（log.json出力をご利用ください）", "复制失败，请点击导出 log.json");
     },
 
+    /** 将当前运行日志快照打包为带时间戳的 .json 文件触发浏览器下载 */
     exportJson() {
       try {
         const text = JSON.stringify(this.buildPayload(), null, 2);
@@ -307,6 +326,7 @@
       }
     },
 
+    /** 按当前筛选条件重绘日志抽屉列表并自动滚动到最新一条 */
     render() {
       const list = $("debugLogList");
       if (!list) return;
@@ -327,16 +347,19 @@
     _pendingTimer: null,
     _hideUntil: 0,
 
+    /** 返回当前是否已启用顶部非遮断式教学引导模式 */
     isEnabled() {
       return Boolean(ConfigManager.data.guideMode);
     },
 
+    /** 重置本局已触发过的教学引导记录并隐藏当前引导浮卡 */
     reset() {
       this.shown.clear();
       this.lastGuideKey = null;
       this.hide(true);
     },
 
+    /** 将顶部「引导」按钮的选中态与无障碍属性同步到当前配置 */
     syncButton() {
       const btn = $("btnGuideMode");
       if (!btn) return;
@@ -365,6 +388,7 @@
       return "first_turn_energy";
     },
 
+    /** 切换教学引导开关并持久化配置；开启时立即按当前局面展示对应引导 */
     toggle() {
       const next = !this.isEnabled();
       ConfigManager.save({ guideMode: next });
@@ -383,6 +407,7 @@
       }
     },
 
+    /** 隐藏当前教学引导气泡（支持立即关闭或平滑退场，并清理计时器） */
     hide(immediate = false) {
       clearTimeout(this._hideTimer);
       clearTimeout(this._pendingTimer);
@@ -428,6 +453,7 @@
       }
     },
 
+    /** 渲染并展示指定教学引导卡片，必要时同步播报可随时打断的低优引导语音 */
     _showCard(msg, speakVoice, key = "") {
       const box = $("guideFloat");
       if (box) {
@@ -545,6 +571,7 @@
       return out;
     },
 
+    /** 从 localStorage 读取并清洗用户配置（缺省或版本变更时回落到默认三轴语言配置） */
     load() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY_CFG);
@@ -556,12 +583,14 @@
       return this.data;
     },
 
+    /** 合并局部配置改动，经 sanitize 规范化后持久化到 localStorage */
     save(partial) {
       this.data = this.sanitize({ ...this.data, ...partial });
       this._niaJwtCache = null;
       try { localStorage.setItem(STORAGE_KEY_CFG, JSON.stringify(this.data)); } catch (e) {}
     },
 
+    /** 恢复默认配置（清空自定义密钥并回到中文 UI + 日语 TTS + 双语 ASR） */
     reset() {
       try { localStorage.removeItem(STORAGE_KEY_CFG); } catch (e) {}
       try { localStorage.removeItem(STORAGE_KEY_DATA); } catch (e) {}
@@ -570,6 +599,7 @@
       this._niaJwtCache = null;
     },
 
+    /** 检查当前配置是否同时具备有效的 SenseTime Nia AK 与 SK 凭据 */
     hasNiaCredentials() {
       return Boolean(String(this.data.niaAk || "").trim() && String(this.data.niaSk || "").trim());
     },
@@ -634,6 +664,7 @@
       return out;
     },
 
+    /** 纯 JS 实现的 HMAC-SHA256 兜底函数（用于非 HTTPS 安全上下文无法使用 WebCrypto 时签发 JWT） */
     _hmacSha256Fallback(keyBytes, dataBytes) {
       let k = keyBytes;
       if (k.length > 64) k = this._sha256Fallback(k);
@@ -799,10 +830,12 @@
     fuzzyIndex: { monsters: [], skills: [], items: [] },
     sourceLabel: "",
 
+    /** 去除规则文本中的 HTML 标签并规范化空白字符 */
     stripHtmlTags(val) {
       return String(val == null ? "" : val).replace(/<[^>]*>/g, "").trim();
     },
 
+    /** 将 Markdown 列表行中的粗体语法安全转为带转义的 HTML 片段 */
     parseBulletHtml(raw) {
       const lines = Array.isArray(raw)
         ? raw.map((l) => String(l || "").trim())
@@ -828,6 +861,7 @@
       return fx;
     },
 
+    /** 规范化单条技能配置对象（统一费用数组、目标类型、特效列表与双语名称） */
     normalizeSkillObj(s) {
       if (!s) return null;
       if (typeof s === "string") return this.parseSkill(s);
@@ -1021,12 +1055,14 @@
       return true;
     },
 
+    /** 从旧版 Markdown 规则文档中提取指定二级标题区块正文 */
     extractSection(md, name) {
       const re = new RegExp(`<!--\\s*@section:${name}\\s*-->([\\s\\S]*?)<!--\\s*@endsection\\s*-->`);
       const m = md.match(re);
       return m ? m[1].trim() : "";
     },
 
+    /** 解析 Markdown 表格区块为按表头键映射的对象数组 */
     parseTable(md, name) {
       const re = new RegExp(`<!--\\s*@table:${name}\\s*-->([\\s\\S]*?)<!--\\s*@endtable\\s*-->`);
       const m = md.match(re);
@@ -1046,6 +1082,7 @@
       return rows;
     },
 
+    /** 解析旧版 Markdown 技能字符串（名称/费用/伤害/目标/特效）为结构化技能对象 */
     parseSkill(str) {
       if (!str) return null;
       const parts = str.split(/\s*[｜/]\s*/).map((s) => s.trim());
@@ -1064,6 +1101,7 @@
       };
     },
 
+    /** 按卡牌 ID 查询怪兽静态定义，未命中返回 null */
     getMonster(id) { return this.monsters.find((m) => m.id === id) || null; },
     getItem(id) { return this.items.find((it) => it.id === id) || null; },
     /** 获取对手台词（同一事件配置多条时自动轮换，避免连续重复） */
@@ -1088,6 +1126,7 @@
         .replace(/[\s　「」『』（）()【】\[\]、，。.,！!？?・\-ー]/g, "");
     },
 
+    /** 计算两个归一化字符串之间的 Levenshtein 编辑距离，用于模糊纠偏打分 */
     levenshtein(a, b) {
       const m = a.length;
       const n = b.length;
@@ -1181,6 +1220,7 @@
       return /(出|放|派|上|下|备战|贴|能|打|攻|用|换|撤|拉|奶|回血|治疗|技能|招|前排|后排|战斗区|左|中|右|防御|ベンチ|エネ|攻撃|交代|回復|使う|出す|貼|付)/.test(String(rawText || ""));
     },
 
+    /** 计算输入文本与标准别名的综合模糊相似度（0~1，兼顾包含匹配与编辑距离） */
     fuzzyScore(inputNorm, aliasNorm) {
       if (!inputNorm || !aliasNorm) return 0;
       if (inputNorm.includes(aliasNorm)) return 1.0;
@@ -1214,6 +1254,7 @@
       return best;
     },
 
+    /** 为卡牌或技能收集标准名、缩写及 ASR 误识别词典变体，构建去重别名集合 */
     collectAliasesFor(baseNames) {
       const set = new Set();
       const bases = baseNames.filter(Boolean);
@@ -1234,6 +1275,7 @@
       return Array.from(set);
     },
 
+    /** 预构建怪兽、技能与道具的多语种模糊检索索引（含中文拼音音素与日语假名音素） */
     buildFuzzyIndex() {
       const makeZhPhonetics = (names) => {
         const res = [];
@@ -1273,6 +1315,7 @@
       this.buildTypoMatcher();
     },
 
+    /** 编译最长优先的单次扫描正则纠错表，将常见 ASR 同音/近音误识别归一化为标准术语 */
     buildTypoMatcher() {
       const builtinFixes = [
         ["防御", ["防禦", "ぼうぎょ"]],
@@ -1312,6 +1355,7 @@
         : null;
     },
 
+    /** 收集当前对战手牌、己方与对手场上的活跃卡牌 ID 集合，用于同音词优先加权 */
     getActiveCardIdSet() {
       const set = new Set();
       const s = (typeof BattleEngine !== "undefined") ? BattleEngine.state : null;
@@ -1324,6 +1368,7 @@
       return set;
     },
 
+    /** 在指定模糊索引中按文本字面、日语清浊音归一及中文音素匹配得分最高的条目 */
     matchFromIndex(entries, rawText, minScore = 0.78, preferIds = null) {
       const fixed = this.applyLocalTypoFix(rawText);
       const norm = this.normalizeText(fixed);
@@ -1361,6 +1406,7 @@
       return best;
     },
 
+    /** 从自然语言文本中匹配得分最高的一只怪兽（可按 player/opponent 阵营过滤） */
     matchMonster(rawText, filterSide = null) {
       const list = filterSide
         ? this.fuzzyIndex.monsters.filter((e) => e.item.side === filterSide)
@@ -1432,6 +1478,7 @@
       return found.map((f) => f.item);
     },
 
+    /** 从自然语言文本中匹配得分最高的一个技能（可限定在当前怪兽技能列表内） */
     matchSkill(rawText, allowedSkills = null) {
       const list = allowedSkills
         ? this.fuzzyIndex.skills.filter((e) => allowedSkills.some((s) => s.name_ja === e.item.name_ja))
@@ -1440,6 +1487,7 @@
       return res ? res.item : null;
     },
 
+    /** 从自然语言文本中匹配得分最高的一张道具、支援卡或能量卡 */
     matchItem(rawText) {
       const res = this.matchFromIndex(this.fuzzyIndex.items, rawText, 0.78);
       return res ? res.item : null;
@@ -1458,6 +1506,7 @@
       return hints;
     },
 
+    /** 对输入或转写文本执行本地确定性 ASR 误识别词典纠偏 */
     applyLocalTypoFix(text) {
       const fixed = String(text || "");
       if (!fixed) return fixed;
@@ -1466,6 +1515,7 @@
       return fixed.replace(this._typoRegex, (m) => this._typoMap.get(m.toLowerCase()) || m);
     },
 
+    /** 基于当前加载的卡池、规则与纠错词典动态拼装发往云端 LLM 的系统提示词 */
     buildSystemPrompt() {
       const monsterDict = this.monsters.map((m) =>
         `- ${m.name_ja}(${m.name_zh}, id:${m.id}, ${m.side}, HP:${m.hp}): ` +
@@ -1728,6 +1778,7 @@
       return (val === "ja-JP" || val === "zh-CN") ? val : "zh-CN";
     },
 
+    /** 获取或懒初始化共享 WebAudio AudioContext 实例 */
     getAudioCtx() {
       if (!this.audioCtx) {
         const Ctx = window.AudioContext || window.webkitAudioContext;
@@ -1898,6 +1949,7 @@
       return true;
     },
 
+    /** 彻底中止当前播报、清空语音队列并关闭持续语音通话与录音器 */
     stopAll() {
       this.stopPlayback();
       if (this.singleNiaSession) {
@@ -1920,12 +1972,14 @@
       if (this.callActive) this.stopCall(true);
     },
 
+    /** 更新设置面板与顶部状态条的当前语音引擎/音色提示文本 */
     setVoiceStatus(msg, zhHint = "") {
       const el = $("voiceEngineStatus");
       if (!el) return;
       el.textContent = getUiLang() === "zh" ? (zhHint || msg || "") : (msg || "");
     },
 
+    /** 更新顶部语音通话状态徽章的样式类名与双语提示文案 */
     setCallBadge(text, isLive = false) {
       const el = $("callStateBadge");
       if (!el) return;
@@ -1947,6 +2001,7 @@
       ];
     },
 
+    /** 枚举浏览器内置 SpeechSynthesis 音色列表并同步填充设置页下拉框 */
     populateChromeVoices() {
       if ($("ttsEngine")?.value === "chrome_tts" && typeof populateVoiceSelectsForEngine === "function") {
         populateVoiceSelectsForEngine("chrome_tts");
@@ -1991,10 +2046,12 @@
       return s;
     },
 
+    /** 兼容别名：按当前 TTS 播报语言提取可朗读的纯正台词文本 */
     extractJapaneseOnly(text) {
       return this.extractSpokenText(text, "ja");
     },
 
+    /** 将云端 TTS 返回的 WAV/MP3/PCM 音频字节解码为 WebAudio AudioBuffer */
     async decodeApiAudioToBuffer(ctx, base64) {
       const bin = atob(base64);
       const bytes = new Uint8Array(bin.length);
@@ -2941,6 +2998,7 @@
       return merged.length > 0 ? merged : [s];
     },
 
+    /** 将双语台词按优先级（critical/high/normal/low）排入播报队列，负责淡出抢占、队列折算与首句预取 */
     speak(textOrPair, role = "referee", opts = {}) {
       const cfg = ConfigManager.data;
       const lang = opts.lang || getTtsLang();
@@ -3010,6 +3068,7 @@
       });
     },
 
+    /** 按当前 ttsEngine 配置执行单个子句的音频播报，并在鉴权/网络异常时自动降级到浏览器语音 */
     async _speakSingleChunk(chunkText, role, myToken, lang) {
       const cfg = ConfigManager.data;
       const hasKey = String(cfg.apiKey || "").trim().length > 0;
@@ -3069,6 +3128,7 @@
       }
     },
 
+    /** 串行消费 speakQueue：逐子句预取并无缝连播，支持子句边界优雅让位与播毕后恢复监听 */
     async drainSpeakQueue() {
       if (this.isDrainingQueue) return;
       const myDrainId = ++this._drainId;
@@ -3183,6 +3243,7 @@
       }
     },
 
+    /** 检查当前是否持有处于 live 活跃状态的麦克风 MediaStream 轨道 */
     hasLiveMicStream() {
       if (!this.callMicStream) return false;
       const tracks = typeof this.callMicStream.getAudioTracks === "function"
@@ -3194,6 +3255,7 @@
       return alive;
     },
 
+    /** 切换全双工持续语音通话的开启/关闭状态 */
     async toggleCall(onUtterance) {
       if (this.callActive) {
         this.userStoppedCall = true;
@@ -3824,7 +3886,8 @@
                   lang: this.getEffectiveNiaAsrLang(),
                   onPartial: (txt, isFinal) => {
                     const cleaned = this.stripSpokenEcho(txt);
-                    if (!cleaned || NLUEngine.isMeaninglessTranscript(cleaned) || this.isLikelySelfEcho(cleaned)) return;
+                    const isConfirmPending = typeof BattleEngine !== "undefined" && Boolean(BattleEngine.isConfirmPending && BattleEngine.isConfirmPending());
+                    if (!cleaned || NLUEngine.isMeaninglessTranscript(cleaned) || (!isConfirmPending && NLUEngine.isFillerUtterance(cleaned)) || this.isLikelySelfEcho(cleaned)) return;
                     if (normAsrKey(cleaned) !== normAsrKey(this.vadLastAsrText)) {
                       this.vadLastAsrChangeAt = Date.now();
                     }
@@ -4083,8 +4146,10 @@
                 niaSession.finish().then((transcript) => {
                   const rawClean = String(transcript || capturedAsrHint || "").trim();
                   const clean = wasSimultaneous ? this.stripSpokenEcho(rawClean) : rawClean;
-                  if (!clean || (wasSimultaneous && (NLUEngine.isMeaninglessTranscript(clean) || this.isLikelySelfEcho(clean)))) {
-                    const canAudioRescue = !wasSimultaneous && loudFrames >= 6 && durCaptured >= 450 && Boolean(ConfigManager.buildRestUrl(ConfigManager.data.llmModel));
+                  const isConfirmPending = typeof BattleEngine !== "undefined" && Boolean(BattleEngine.isConfirmPending && BattleEngine.isConfirmPending());
+                  const isPureFiller = Boolean(clean && !isConfirmPending && NLUEngine.isFillerUtterance(clean));
+                  if (!clean || isPureFiller || NLUEngine.isMeaninglessTranscript(clean) || (wasSimultaneous && this.isLikelySelfEcho(clean))) {
+                    const canAudioRescue = !wasSimultaneous && !isPureFiller && !clean && loudFrames >= 6 && durCaptured >= 450 && Boolean(ConfigManager.buildRestUrl(ConfigManager.data.llmModel));
                     const rescueWav = canAudioRescue ? getFallbackWavBase64() : "";
                     if (rescueWav && this.callActive && this.callCallback) {
                       DebugLog.add("ASR", `Nia 转写为空 (${durCaptured}ms)，启用原始音频多模态兜底`, `frames=${loudFrames}, peak=${peak.toFixed(3)}`);
@@ -4094,7 +4159,7 @@
                     }
                     this.unduckPlayback(180);
                     TableUI.hideVoiceHud();
-                    DebugLog.add(wasSimultaneous ? "AEC" : "ASR", wasSimultaneous ? `边播边识别忽略回声/杂音 (${durCaptured}ms)` : `SenseTime Nia 流式识别结果为空 (${durCaptured}ms)`, rawClean || `frames=${loudFrames}, peak=${peak.toFixed(3)}`);
+                    DebugLog.add(wasSimultaneous ? "AEC" : "ASR", isPureFiller ? `忽略无意义语气词 (${durCaptured}ms)` : (wasSimultaneous ? `边播边识别忽略回声/杂音 (${durCaptured}ms)` : `SenseTime Nia 流式识别结果为空 (${durCaptured}ms)`), rawClean || `frames=${loudFrames}, peak=${peak.toFixed(3)}`);
                     return;
                   }
                   if (wasSimultaneous) {
@@ -4362,6 +4427,7 @@
       this.apiAsrRetryTimer = setTimeout(() => { this.probeOnlineAsrRecovery(); }, waitMs);
     },
 
+    /** 后台单次探测在线语音识别服务（Nia WS / Gemini）是否恢复可用，恢复后自动切回 */
     async probeOnlineAsrRecovery() {
       this.apiAsrRetryTimer = null;
       const cfg = ConfigManager.data;
@@ -4485,6 +4551,7 @@
       return true;
     },
 
+    /** 启动持续语音通话主流程：优先建立全双工 VAD + Nia 流式识别，失败时回落到 Chrome 连续识别 */
     async startContinuousAsrCall(quiet = false) {
       if (this.callActive || this.callStarting) return;
       this.callStarting = true;
@@ -4566,6 +4633,7 @@
       }
     },
 
+    /** 关闭持续语音通话：释放麦克风轨道、销毁 VAD 定时循环、中止活跃 ASR 会话并重置 UI */
     stopCall(silent = false, opts = {}) {
       const keepMicStream = Boolean(opts && opts.keepMicStream);
       this.callActive = false;
@@ -4948,6 +5016,7 @@
   const NLUEngine = {
     lastClarifyIdx: -1,
 
+    /** 轮换抽取一条不与上次重复的礼貌追问兜底提示语 */
     pickClarifyPhrase() {
       let idx = Math.floor(Math.random() * CLARIFY_PHRASES.length);
       if (idx === this.lastClarifyIdx) idx = (idx + 1) % CLARIFY_PHRASES.length;
@@ -4955,6 +5024,7 @@
       return CLARIFY_PHRASES[idx];
     },
 
+    /** 剥离 LLM 输出中可能包裹的 Markdown 代码块围栏并安全解析 JSON 对象 */
     safeParseJson(text) {
       const cleaned = String(text || "").replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
       const s = cleaned.indexOf("{");
@@ -5118,16 +5188,17 @@
       }
     },
 
-    /** 从文本中解析目标槽位（支持模糊怪兽名匹配 + 同名多体消歧 + 位置/最低血量指代） */
-    resolveSlotFromText(clause, side, board) {
+    /** 从文本中解析目标槽位（支持模糊怪兽名匹配 + 同名多体消歧 + 位置/最低血量指代；opts.benchOnly=true 时仅匹配备战区） */
+    resolveSlotFromText(clause, side, board, opts = null) {
+      const benchOnly = Boolean(opts && opts.benchOnly);
       const pool = side === "enemy"
         ? [
-            board.enemy.active ? { slot: "enemy_active", inst: board.enemy.active } : null,
-            ...board.enemy.bench.map((inst, i) => inst ? { slot: `enemy_bench_${i}`, inst } : null)
+            !benchOnly && board?.enemy?.active ? { slot: "enemy_active", inst: board.enemy.active } : null,
+            ...(board?.enemy?.bench || []).map((inst, i) => inst ? { slot: `enemy_bench_${i}`, inst } : null)
           ].filter(Boolean)
         : [
-            board.player.active ? { slot: "player_active", inst: board.player.active } : null,
-            ...board.player.bench.map((inst, i) => inst ? { slot: `player_bench_${i}`, inst } : null)
+            !benchOnly && board?.player?.active ? { slot: "player_active", inst: board.player.active } : null,
+            ...(board?.player?.bench || []).map((inst, i) => inst ? { slot: `player_bench_${i}`, inst } : null)
           ].filter(Boolean);
 
       const pickByHint = (candidates) => {
@@ -5143,11 +5214,11 @@
           const h = candidates.find((u) => u.slot === `${side}_bench_2`);
           if (h) return h.slot;
         }
-        if (/前|バトル場|前排|战斗区/.test(clause)) {
+        if (!benchOnly && /前|バトル場|先発|メイン|前排|战斗区|战斗场|主战|主怪|出战位|首发位/.test(clause)) {
           const h = candidates.find((u) => u.slot === `${side}_active`);
           if (h) return h.slot;
         }
-        if (/後ろ|控え|ベンチ|后排|备战/.test(clause)) {
+        if (/後ろ|控え|ベンチ|后排|备战|替补/.test(clause)) {
           const benchCands = candidates.filter((u) => u.slot.includes("_bench_"));
           if (benchCands.length === 1) return benchCands[0].slot;
         }
@@ -5176,9 +5247,10 @@
       if (exactMatches.length === 1) return exactMatches[0].slot;
       if (exactMatches.length > 1) return pickByHint(exactMatches);
 
-      const fuzzyMon = SpecEngine.matchMonster(clause, side === "enemy" ? "opponent" : "player");
-      if (fuzzyMon) {
-        const fuzzyMatches = pool.filter((u) => u.inst.id === fuzzyMon.id);
+      const fuzzyMons = SpecEngine.matchAllMonsters(clause, side === "enemy" ? "opponent" : "player");
+      if (fuzzyMons.length > 0) {
+        const fuzzyIds = new Set(fuzzyMons.map((m) => m.id));
+        const fuzzyMatches = pool.filter((u) => fuzzyIds.has(u.inst.id));
         if (fuzzyMatches.length === 1) return fuzzyMatches[0].slot;
         if (fuzzyMatches.length > 1) return pickByHint(fuzzyMatches);
       }
@@ -5186,7 +5258,11 @@
       if (/左/.test(clause)) return `${side}_bench_0`;
       if (/中央|真ん中|中间|中位|备战中|(?:^|[\s・,，、])中(?:$|[\s・,，、])/.test(clause)) return `${side}_bench_1`;
       if (/右/.test(clause)) return `${side}_bench_2`;
-      if (/前|バトル場|前排|战斗区/.test(clause)) return `${side}_active`;
+      if (!benchOnly && /前|バトル場|先発|メイン|前排|战斗区|战斗场|主战|主怪|出战位|首发位/.test(clause)) return `${side}_active`;
+      if (/後ろ|控え|ベンチ|后排|备战|替补/.test(clause)) {
+        const benchPool = pool.filter((u) => u.slot.includes("_bench_"));
+        if (benchPool.length === 1) return benchPool[0].slot;
+      }
       if (/一番HPが低|一番弱|HPが低|弱ってる|血最少|残血|最弱|受伤/.test(clause) && pool.length) {
         const sorted = [...pool].sort((a, b) => a.inst.hp - b.inst.hp);
         return sorted[0].slot;
@@ -5337,19 +5413,34 @@
           continue;
         }
         if (/(よびだし笛|呼び出し笛|ふえ|引っ張り|引きずり出|強制交代|前に引き|召唤笛|呼叫笛|笛子|吹笛|吹口?哨|哨子|强拉|强迫.{0,4}换|强行.{0,4}换|拖.{0,4}(?:对手|对方|对面|敌方|后排)|拉.{0,4}(?:对手|对方|对面)|拉上来|拉出来|拉上场|拽.{0,4}(?:上来|出来)|逼.{0,3}(?:对手|对面|对方)换|(?:对手|对面|对方).{0,4}换(?:怪物?|怪兽|精灵|人|卡)|把(?:对手|对面|对方).{0,8}(?:拉|拖|拽|换))/.test(c) || (fuzzyItem && fuzzyItem.id === "item_flute")) {
-          actions.push({ type: "USE_ITEM", card_id: "item_flute", target: this.resolveSlotFromText(c, "enemy", board), _clause: c });
+          actions.push({ type: "USE_ITEM", card_id: "item_flute", target: this.resolveSlotFromText(c, "enemy", board, { benchOnly: true }), _clause: c, _clauseIdx: ci });
+          continue;
+        }
+        /* 先判定己方撤退/主战与备战交换（中/日双语），防止“把备战区的炎龙ex和主战交换 / ベンチの炎龍exとバトル場を交換”被误判为从手牌下怪（PLAY_BENCH） */
+        if (/(交代|こうたい|交換|こうかん|入れ替|いれかえ|下げて|さげて|逃げて|にげる|撤退|てったい|チェンジ|スイッチ|バトン|ベンチに戻|前と交代|先発と交代|バトル場と(?:交代|交換)|换人|换上|换下|退回|下场|撤下去|拉回后排|拉回来|切回|切换|交换|互换|对换|替换|调换|换位|换个位置|换一换|换过来|换上去|换下来|顶上来|(?:和|跟|与).{0,8}换|把.{0,8}换(?:到|上|下|成|为|出)|换.{0,6}(?:上|下|成|为|出))/.test(c)
+          && !/(?:对手|对面|对方|敌方|相手)/.test(c)) {
+          const target = this.resolveSlotFromText(c, "player", board, { benchOnly: true });
+          actions.push({ type: "RETREAT", target, _clause: c, _clauseIdx: ci });
           continue;
         }
         const matchedSkillEarly = SpecEngine.matchSkill(c) || this.resolveColloquialSkillFromClause(c, board);
         const allMatchedPlayerMons = SpecEngine.matchAllMonsters(c, "player");
         const matchedPlayerMon = allMatchedPlayerMons[0] || SpecEngine.matchMonster(c, "player");
-        const isSummonClause = /(ベンチに出|ベンチに置|ベンチに入|べんちに出|後ろに出|後ろに置|場に出|召喚|しょうかん|を出す|を出して|をだす|をだして|を置く|を置いて|备战区|放到?备战|放上备战|下怪|放上场|放到场上|放到后排|派上后排|派上场|上场|出战|召唤|^(?:出して|置いて|放下去|放上去)$)/.test(c)
+        const isSummonClause = /(ベンチに出|ベンチに置|ベンチに入|べんちに出|後ろに出|後ろに置|場に出|召喚|しょうかん|を出す|を出して|をだす|をだして|を置く|を置いて|(?:放到?|放上|移到?|排到?|下到?|派到?|出到?|送[到进]|扔[到进]|上到?|置[于到])备战区?|下怪|放上场|放到场上|放到后排|派上后排|派上场|上场|出战|召唤|^(?:出して|置いて|放下去|放上去)$)/.test(c)
           && !matchedSkillEarly && !this.hasExplicitDefendIntent(c)
-          && !/(狙撃|狙击|点杀|交代|こうたい|撤退|てったい|换人|换上|换下|撤下去|きずぐすり|回復|かいふく|伤药|上药|回血|奶|对手|对面|对方|拖|强拉|吹笛)/.test(c);
+          && !/(狙撃|狙击|点杀|交代|こうたい|交換|こうかん|入れ替|いれかえ|撤退|てったい|チェンジ|スイッチ|换人|换上|换下|交换|互换|对换|替换|调换|换位|切换|切回|撤下去|きずぐすり|回復|かいふく|伤药|上药|回血|奶|对手|对面|对方|相手|拖|强拉|吹笛)/.test(c);
         const isShortMonDeploy = Boolean(matchedPlayerMon) && !matchedSkillEarly && !this.hasExplicitDefendIntent(c)
           && /(出|放|派|上|下|置)/.test(c)
-          && !/(攻撃|こうげき|攻击|战斗|技|招|能量|エネ|きずぐすり|回復|かいふく|伤药|上药|奶|交代|こうたい|撤退|てったい|换|撤下去|拉回)/.test(c);
+          && !/(攻撃|こうげき|攻击|战斗|技|招|能量|エネ|きずぐすり|回復|かいふく|伤药|上药|奶|交代|こうたい|交換|こうかん|入れ替|いれかえ|撤退|てったい|チェンジ|スイッチ|换|交换|互换|替换|调换|切换|撤下去|拉回)/.test(c);
         if (isSummonClause || isShortMonDeploy) {
+          /* 盘面感知纠偏（中/日双语）：若玩家只点名 1 只怪兽且它不在手牌中、却已在己方备战区，说“让炎龙ex上场 / カエンリュウexをバトル場に出して”意图是换它上主战（RETREAT） */
+          if (matchedPlayerMon && allMatchedPlayerMons.length === 1 && !handMonIds.includes(matchedPlayerMon.id)) {
+            const benchSlot = this.resolveSlotFromText(c, "player", board, { benchOnly: true });
+            if (benchSlot && /(上场|出战|主战|战斗|前排|上来|顶上|登场|バトル場|前[にへ]|出陣|先発|交代|交換|こうかん|入れ替)/.test(c)) {
+              actions.push({ type: "RETREAT", target: benchSlot, _clause: c, _clauseIdx: ci });
+              continue;
+            }
+          }
           const hasPluralAll = /(全部|所有|全都|统统|一起|能放的|全員|ぜんぶ|すべて|まとめて|みんな|(?<![不别没])都(?:放|出|派|上|下|置))/.test(c);
           const explicitCount = /(三[张只个回枚体]|3[张只个回枚体]|３[枚体])/.test(c) ? 3 : (/(两[张只个回枚体]|二[张只个回枚体]|2[张只个回枚体]|２[枚体])/.test(c) ? 2 : 0);
           if (allMatchedPlayerMons.length >= 2) {
@@ -5387,7 +5478,7 @@
           const handCnt = liveHand.filter((id) => id === "item_potion").length;
           const repeat = parsePluralCount(c, handCnt || 1);
           const target = this.resolveSlotFromText(c, "player", board);
-          for (let r = 0; r < repeat; r++) actions.push({ type: "USE_ITEM", card_id: "item_potion", target, _clause: c });
+          for (let r = 0; r < repeat; r++) actions.push({ type: "USE_ITEM", card_id: "item_potion", target, _clause: c, _clauseIdx: ci });
           continue;
         }
         if (/(補給バッグ|ほきゅう|ドロー|2枚引|カードを引|补给包|抽牌|抽两张|抽2张|摸两张|摸2张|摸牌|过牌|补牌)/.test(c) || (fuzzyItem && fuzzyItem.id === "item_bag")) {
@@ -5402,13 +5493,6 @@
         }
         if (/^(?:使う|使って|つかう|つかって|用一下|使用道具|用道具)$/.test(c) && uniqueHandTools.length === 1) {
           actions.push({ type: "USE_ITEM", card_id: uniqueHandTools[0], target: null, _clause: c });
-          continue;
-        }
-        if (/(交代|こうたい|入れ替|いれかえ|下げて|さげて|逃げて|にげる|撤退|てったい|チェンジ|スイッチ|ベンチに戻|换人|换上|换下|退回|下场|撤下去|拉回后排|切回|切换|把.{0,8}换(?:到|上|下|成|为|出)|换.{0,6}(?:上|下|成|为|出))/.test(c)
-          && !/(?:对手|对面|对方|敌方)/.test(c)) {
-          let target = this.resolveSlotFromText(c, "player", board);
-          if (target === "player_active") target = null;
-          actions.push({ type: "RETREAT", target, _clause: c });
           continue;
         }
         if (this.hasExplicitDefendIntent(c)) {
@@ -5430,11 +5514,44 @@
         }
         if (!isFillerClause(c)) unmatchedEntries.push({ text: c, idx: ci });
       }
-      /* 合并相邻能量属性补充子句（如“我要加能量，火的”“火能量，贴给炎狐”），再按单一手牌能量兜底 */
+      /* 合并相邻补充子句（如“我备战区有炎龙ex，想和主战交换”“我要加能量，火的”“炎狐，用伤药”），再按单一手牌能量兜底 */
       const consumedUnmatched = new Set();
       for (let i = 0; i < actions.length; i++) {
         const a = actions[i];
-        if (!a || a.type !== "ATTACH_ENERGY") continue;
+        if (!a) continue;
+        if (a.type === "RETREAT" && !a.target && typeof a._clauseIdx === "number") {
+          for (const ue of unmatchedEntries) {
+            if (consumedUnmatched.has(ue.idx)) continue;
+            if (ue.idx === a._clauseIdx + 1 || ue.idx === a._clauseIdx - 1) {
+              const rTarget = this.resolveSlotFromText(ue.text, "player", board, { benchOnly: true });
+              if (rTarget) {
+                a.target = rTarget;
+                a._clause = ue.idx < a._clauseIdx ? `${ue.text} ${a._clause}` : `${a._clause} ${ue.text}`;
+                consumedUnmatched.add(ue.idx);
+                break;
+              }
+            }
+          }
+          continue;
+        }
+        if (a.type === "USE_ITEM" && (a.card_id === "item_potion" || a.card_id === "item_flute") && !a.target && typeof a._clauseIdx === "number") {
+          const targetSide = a.card_id === "item_flute" ? "enemy" : "player";
+          const targetOpts = a.card_id === "item_flute" ? { benchOnly: true } : null;
+          for (const ue of unmatchedEntries) {
+            if (consumedUnmatched.has(ue.idx)) continue;
+            if (ue.idx === a._clauseIdx + 1 || ue.idx === a._clauseIdx - 1) {
+              const iTarget = this.resolveSlotFromText(ue.text, targetSide, board, targetOpts);
+              if (iTarget) {
+                a.target = iTarget;
+                a._clause = ue.idx < a._clauseIdx ? `${ue.text} ${a._clause}` : `${a._clause} ${ue.text}`;
+                consumedUnmatched.add(ue.idx);
+                break;
+              }
+            }
+          }
+          continue;
+        }
+        if (a.type !== "ATTACH_ENERGY") continue;
         if (!a.card_id || !a.target) {
           for (const ue of unmatchedEntries) {
             if (consumedUnmatched.has(ue.idx)) continue;
@@ -5515,6 +5632,15 @@
       if (/^[（(\[【]?(音声|無音|雑音|silence|noise|inaudible|music|blank_audio)[）)\]】]?$/i.test(raw)) return true;
       const core = raw.replace(/[\s　「」『』（）()【】\[\]、，。.,！!？?・\-ー…~～]/g, "");
       return core.length === 0;
+    },
+
+    /** 判断语音转写是否仅为无意义语气词/叹词（如“嗯”“呃”“啊”“えっと”等），避免白白触发“AI解析中”和云端调用 */
+    isFillerUtterance(text) {
+      const raw = String(text || "").trim();
+      if (!raw) return true;
+      const core = raw.replace(/[\s　「」『』（）()【】\[\]、，。.,！!？?・\-ー…~～]/g, "");
+      if (!core) return true;
+      return /^(?:[嗯呃额啊哦喔唔哎唉诶欸哈哼咳啧喂]+|嗯哼|嗯嗯|啊啊|哦哦|呃呃|唔唔|哈哈|嘿嘿|咳咳|あ+|え+|う+|お+|ん+|うん+|うーん|んー|んと|えっと|えーっと|ええと|えーと|あの+|あのね|まあ|ふーん|へー|はあ|うわ|うっ|あっ|おっ|えっ)$/.test(core);
     },
 
     /** 严格判定结束回合意图：语音模式自动过滤裁判播报回声与2字环境残音，仅匹配明确结束回合短语 */
@@ -5603,6 +5729,15 @@
     nluSeq: 0,
     activeAbortCtrl: null,
     idleTimer: null,
+
+    /** 判断当前是否处于确认型追问态（允许“嗯/うん”作为肯定回复） */
+    isConfirmPending() {
+      const p = this.state?.pending;
+      if (!p) return false;
+      return p.type === "confirm_end_turn"
+        || p.type === "confirm_surrender"
+        || (p.type === "choose_skill" && Array.isArray(p.context?.usable) && p.context.usable.length === 1);
+    },
 
     /** 安全取消正在飞行中的云端 LLM 解析请求，确保手动点卡/新语音/重开绝不被旧响应反噬 */
     cancelPendingNlu() {
@@ -5816,6 +5951,7 @@
       if (role === "player") this.lastPlayerUtterance = clean;
     },
 
+    /** 汇总当前追问态、最近发言与简短对话历史，作为多轮语义消歧上下文 */
     getConversationContext() {
       const p = this.state?.pending;
       return {
@@ -5829,6 +5965,7 @@
       };
     },
 
+    /** 清除当前玩家回合的静默催促计时器 */
     clearIdleTimer() {
       if (this.idleTimer) {
         clearTimeout(this.idleTimer);
@@ -5836,6 +5973,7 @@
       }
     },
 
+    /** 重新启动玩家回合静默催促计时器（可选同步清零催促次数） */
     resetIdleTimer(resetCount = true) {
       this.clearIdleTimer();
       if (resetCount) this.idleNudgeCount = 0;
@@ -5853,6 +5991,7 @@
       this.idleTimer = setTimeout(() => this.triggerIdleNudge(), waitMs);
     },
 
+    /** 玩家长时间无操作且通话静默时，由对手「莲」播报可随时打断的低优战术催促台词 */
     async triggerIdleNudge() {
       const s = this.state;
       const sec = Number(ConfigManager.data.idlePromptSec) || 0;
@@ -5917,6 +6056,7 @@
       }, 350);
     },
 
+    /** 开启一局新对战：递增对局版本号、中止飞行中请求、重洗双方 24 张卡组并回到选首发阶段 */
     reset(triggerGuideVoice = false) {
       this.matchSeq += 1;
       this.cancelPendingNlu();
@@ -6069,8 +6209,106 @@
       };
     },
 
-    /** 开局阶段：玩家选定首发怪兽后，双方亮牌并抽取第 1 回合的 1 张牌正式开战 */
-    selectStartingMonster(handIdx) {
+    /**
+     * 解析开局选首发阶段的单步或组合部署指令（中/日双语）。
+     * 支持同时指定主战区首发怪兽与备战区怪兽（如“把炎狐放到主战区，其他怪放到备战区” / “ヒノキツネをバトル場に出して、他のモンスターはベンチに出して”），
+     * 以及“先说备战区再说主战区”的语序。
+     * @param {string} rawText 玩家原始文本或 ASR 转写文本
+     * @returns {{ starterIdx: number, benchIds: string[] } | null}
+     */
+    parseSetupDeployment(rawText) {
+      const s = this.state;
+      if (!s || s.phase !== "setup") return null;
+      const fixed = SpecEngine.applyLocalTypoFix(rawText || "").trim();
+      if (!fixed) return null;
+
+      /* 若一句话同时包含“主战区/バトル場”与“备战区/ベンチ”，补充在并列连词（和/与/跟/と/並）处切分 */
+      const rawClauses = NLUEngine.splitComboClauses(fixed);
+      const clauses = [];
+      const activeZoneRe = /(主战区?|主怪|战斗区|战斗场|前排|首发位?|先発|バトル場|メイン|出战位|(?<![后後])前(?:に|へ|に出|に置|で|$))/;
+      const benchZoneRe = /(备战区?|后排|替补|ベンチ|控え|後ろ)/;
+      for (const seg of rawClauses) {
+        if (activeZoneRe.test(seg) && benchZoneRe.test(seg)) {
+          const splitByConj = seg.split(/(?:(?<=主战区?|战斗区|战斗场|前排|首发|先発|バトル場|备战区?|后排|ベンチ|控え|後ろ)\s*(?:和|与|跟|以及|并将|并把|并|把|と|あと)\s*)/).map((x) => x.trim()).filter(Boolean);
+          if (splitByConj.length > 1) {
+            clauses.push(...splitByConj);
+            continue;
+          }
+        }
+        clauses.push(seg);
+      }
+
+      const activeClauses = [];
+      const benchClauses = [];
+      const neutralClauses = [];
+      for (const c of clauses) {
+        const hasAct = activeZoneRe.test(c);
+        const hasBen = benchZoneRe.test(c);
+        if (hasAct && !hasBen) activeClauses.push(c);
+        else if (hasBen && !hasAct) benchClauses.push(c);
+        else neutralClauses.push(c);
+      }
+
+      /* 1. 优先从明确指向主战/首发的子句解析首发怪兽索引，防止“雷狮放备战区，炎狐放主战区”被备战怪兽截胡 */
+      let starterIdx = -1;
+      for (const ac of activeClauses) {
+        starterIdx = this.resolveStarterHandIndex(ac);
+        if (starterIdx !== -1) break;
+      }
+      if (starterIdx === -1) {
+        for (const nc of neutralClauses) {
+          starterIdx = this.resolveStarterHandIndex(nc);
+          if (starterIdx !== -1) break;
+        }
+      }
+      if (starterIdx === -1 && benchClauses.length === 0) {
+        starterIdx = this.resolveStarterHandIndex(fixed);
+      }
+      if (starterIdx === -1) return null;
+
+      /* 2. 解析同一句话中附带的备战区部署计划（仅从开局抽牌前的当前手牌选取，避免误放第 1 回合新抽到的牌） */
+      const benchIds = [];
+      if (benchClauses.length > 0) {
+        const remainingHandMons = [];
+        for (let i = 0; i < s.player.hand.length; i++) {
+          if (i === starterIdx) continue;
+          const cid = s.player.hand[i];
+          if (SpecEngine.getMonster(cid)) remainingHandMons.push(cid);
+        }
+        const benchText = benchClauses.join(" ");
+        const wantAllOthers = /(其他|其它|其余|剩下|剩余|别的|全部|所有|全都|统统|都(?:放|出|派|上|下|置)|他|ほか|残り|のこり|あと|全部|ぜんぶ|すべて|みんな|残った)/.test(benchText);
+        if (wantAllOthers) {
+          for (const cid of remainingHandMons) {
+            if (benchIds.length >= 3) break;
+            benchIds.push(cid);
+          }
+        } else {
+          const namedMons = SpecEngine.matchAllMonsters(benchText, "player");
+          const pool = remainingHandMons.slice();
+          for (const m of namedMons) {
+            if (benchIds.length >= 3) break;
+            const pIdx = pool.indexOf(m.id);
+            if (pIdx !== -1) {
+              pool.splice(pIdx, 1);
+              benchIds.push(m.id);
+            }
+          }
+          /* 若备战子句未点名具体怪兽但手牌仅剩 1 只其他怪兽（如“炎狐放主战，备战区也放一只”），自动补放 */
+          if (benchIds.length === 0 && namedMons.length === 0 && remainingHandMons.length === 1) {
+            benchIds.push(remainingHandMons[0]);
+          }
+        }
+      }
+      return { starterIdx, benchIds };
+    },
+
+    /**
+     * 开局阶段：玩家选定首发怪兽（可选附带同步展开的备战怪兽）后，双方亮牌并抽取第 1 回合的 1 张牌正式开战。
+     * @param {number} handIdx 首发怪兽在玩家当前手牌中的索引
+     * @param {string[]} [extraBenchIds=[]] 玩家同句指定同步放入备战区的怪兽卡 ID 列表
+     * @returns {boolean} 是否成功完成开局部署
+     */
+    selectStartingMonster(handIdx, extraBenchIds = []) {
       const s = this.state;
       if (!s || s.phase !== "setup") return false;
       const monId = s.player.hand[handIdx];
@@ -6080,6 +6318,21 @@
       GuideEngine.hide();
       s.player.hand.splice(handIdx, 1);
       s.player.active = { id: monId, hp: def.hp, energies: [], guard: 0 };
+
+      /* 若玩家开局同句指定了“其他怪/指定怪放备战区”，先于第 1 回合抽牌完成备战展开 */
+      const deployedBenchDefs = [];
+      if (Array.isArray(extraBenchIds) && extraBenchIds.length > 0) {
+        for (const bid of extraBenchIds) {
+          const emptyIdx = s.player.bench.findIndex((b) => b === null);
+          if (emptyIdx === -1) break;
+          const bHandIdx = s.player.hand.indexOf(bid);
+          const bDef = SpecEngine.getMonster(bid);
+          if (bHandIdx === -1 || !bDef) continue;
+          s.player.hand.splice(bHandIdx, 1);
+          s.player.bench[emptyIdx] = { id: bid, hp: bDef.hp, energies: [], guard: 0 };
+          deployedBenchDefs.push({ slot: `player_bench_${emptyIdx}`, def: bDef });
+        }
+      }
 
       /* 对手从起手手牌挑选最优首发（普通优先有对应能量的普通怪；困难模式兼顾与玩家首发的属性克制） */
       const eMonIndices = s.enemy.hand
@@ -6121,19 +6374,30 @@
       const firstDraw = this.drawCard("player", 1);
       const drawJa = firstDraw[0] ? `1ターン目のドローで「${firstDraw[0].ja}」を引きました。` : "";
       const drawZh = firstDraw[0] ? `第 1 回合抽到了「${firstDraw[0].zh}」。` : "";
-      const startVoiceJa = `バトル開始！自分は${def.name_ja}、相手は${eStarterDef ? eStarterDef.name_ja : "モンスター"}でスタート！`;
+      const benchNoteJa = deployedBenchDefs.length
+        ? `、ベンチに${deployedBenchDefs.map((x) => x.def.name_ja).join("・")}を展開`
+        : "";
+      const benchNoteZh = deployedBenchDefs.length
+        ? `、备战区同步展开${deployedBenchDefs.map((x) => x.def.name_zh).join("、")}`
+        : "";
+      const startVoiceJa = `バトル開始！自分は${def.name_ja}${benchNoteJa}、相手は${eStarterDef ? eStarterDef.name_ja : "モンスター"}でスタート！`;
       const ja = `${startVoiceJa}${drawJa}`;
-      const zh = `对战正式开始！己方首发${def.name_zh}，对手派出${eStarterDef ? eStarterDef.name_zh : "怪兽"}！${drawZh}`;
+      const startVoiceZh = `对战正式开始！己方首发${def.name_zh}${benchNoteZh}，对手派出${eStarterDef ? eStarterDef.name_zh : "怪兽"}！`;
+      const zh = `${startVoiceZh}${drawZh}`;
       TableUI.renderAll();
       SoundFX.play("tap");
       TableUI.flashAnim("player_active", "anim-enter");
       TableUI.flashAnim("enemy_active", "anim-enter");
-      const startVoiceZh = `对战正式开始！己方首发${def.name_zh}，对手派出${eStarterDef ? eStarterDef.name_zh : "怪兽"}！`;
+      for (const bItem of deployedBenchDefs) {
+        TableUI.flashAnim(bItem.slot, "anim-enter");
+        TableUI.spawnFloatText(bItem.slot, bItem.def.is_ex ? t("ex登場！", "ex 登场！") : t("登場！", "登场！"), "energy", bItem.def.is_ex ? "prizeStar" : null);
+      }
       TableUI.showTurnBanner("ターン 1：あなたの番", "第 1 回合：你的回合", false);
       /* 选定首发后平滑淡出已过时的“请选择首发”引导语音，并切换为裁判开幕 + 对手开场第一句话 */
       VoiceEngine.fadeOutAndStopPlayback(100);
-      this.announceAndReact(ja, zh, def.is_ex ? "play_ex" : "start", null, { priority: "high", interruptible: true, speakJa: startVoiceJa, speakZh: startVoiceZh });
-      if (def.is_ex) GuideEngine.trigger("first_ex_card", false);
+      const hasAnyEx = def.is_ex || deployedBenchDefs.some((x) => x.def.is_ex);
+      this.announceAndReact(ja, zh, hasAnyEx ? "play_ex" : "start", null, { priority: "high", interruptible: true, speakJa: startVoiceJa, speakZh: startVoiceZh });
+      if (hasAnyEx) GuideEngine.trigger("first_ex_card", false);
       else GuideEngine.trigger("first_turn_energy", false);
       this.resetIdleTimer(true);
       return true;
@@ -6159,6 +6423,7 @@
       return taken;
     },
 
+    /** 生成当前双方血量、能量、手牌、奖赏卡与回合限制标记的轻量只读盘面快照 */
     getSnapshot() {
       const s = this.state;
       const fmtUnit = (u, slot) => {
@@ -6190,6 +6455,7 @@
       };
     },
 
+    /** 判断怪兽已附着的能量数组是否满足指定技能的属性与无色费用要求 */
     canPayCost(energies, costArr) {
       if (!costArr || costArr.length === 0) return true;
       const pool = [...(energies || [])];
@@ -6311,6 +6577,7 @@
       return slots;
     },
 
+    /** 按槽位标识（如 player_active / enemy_bench_0）获取对应怪兽实例，空位返回 null */
     getSlotUnit(slot) {
       const s = this.state;
       if (slot === "player_active") return s.player.active;
@@ -6322,12 +6589,14 @@
       return null;
     },
 
+    /** 返回指定阵营当前非空备战槽位的完整条目列表（含 slot、idx、unit 与静态定义 def） */
     getBenchEntries(side) {
       return this.state[side].bench
         .map((u, idx) => (u ? { slot: `${side}_bench_${idx}`, idx, unit: u, def: SpecEngine.getMonster(u.id) } : null))
         .filter(Boolean);
     },
 
+    /** 返回指定阵营主战区与备战区全部存活怪兽的完整条目列表 */
     getAllEntries(side) {
       const list = [];
       const act = this.state[side].active;
@@ -6335,6 +6604,7 @@
       return list.concat(this.getBenchEntries(side));
     },
 
+    /** 从指定阵营牌库顶抽取 count 张牌加入手牌（玩家侧自动排序）并返回抽牌双语名称列表 */
     drawCard(side, count) {
       const drawn = [];
       const st = this.state[side];
@@ -6353,6 +6623,7 @@
       return drawn;
     },
 
+    /** 进入追问/选择待定状态（记录原发言与候选项），写入裁判历史并刷新高亮视图 */
     setPending(pendingObj) {
       this.state.pending = {
         ...pendingObj,
@@ -6362,8 +6633,10 @@
       TableUI.renderAll();
     },
 
+    /** 清除当前追问态、手牌预选高亮与结束回合确认弹窗，并刷新牌桌视图 */
     clearPending() {
       this.state.pending = null;
+      this.state.selectedHandIndex = null;
       TableUI.closeEndTurnConfirmModal();
       TableUI.renderAll();
     },
@@ -6479,6 +6752,7 @@
       }
     },
 
+    /** 玩家文本/语音指令统一入口：依次处理开局组合部署、追问回复、语气词前置拦截、Local-First 混合解析与全动作盘面护栏校验 */
     async handleUserInput(payload) {
       const s = this.state;
       this.clearIdleTimer();
@@ -6497,19 +6771,19 @@
         return;
       }
 
-      /* 开局选首发阶段：0ms 直配手牌怪兽；支持局势/手牌/推荐/提前指令问答并紧扣打牌引回选首发，不闲聊；若语音误转写且配置云端 LLM 则放行多模态音频复核 */
+      /* 开局选首发阶段：0ms 直配手牌首发（支持同时指定其他/特定怪兽放备战区）；支持局势/手牌/推荐/提前指令问答并紧扣打牌引回选首发，不闲聊 */
       if (s.phase === "setup" && payload.text) {
         const isVoiceSetup = Boolean(payload.fromVoice);
         const setupText = isVoiceSetup ? VoiceEngine.stripSpokenEcho(payload.text) : payload.text;
-        const idx = this.resolveStarterHandIndex(setupText);
-        if (idx !== -1) {
+        const plan = this.parseSetupDeployment(setupText);
+        if (plan && plan.starterIdx !== -1) {
           if (isVoiceSetup) TableUI.showVoiceHud("fast", setupText);
           else TableUI.hideVoiceHud();
           if ($("cmdInput")) $("cmdInput").value = "";
-          this.selectStartingMonster(idx);
+          this.selectStartingMonster(plan.starterIdx, plan.benchIds);
           return;
         }
-        if (isVoiceSetup && (!setupText || NLUEngine.isMeaninglessTranscript(setupText) || VoiceEngine.isLikelySelfEcho(setupText))) {
+        if (isVoiceSetup && (!setupText || NLUEngine.isMeaninglessTranscript(setupText) || NLUEngine.isFillerUtterance(setupText) || VoiceEngine.isLikelySelfEcho(setupText))) {
           VoiceEngine.unduckPlayback(180);
           TableUI.hideVoiceHud();
           if ($("cmdInput")) $("cmdInput").value = "";
@@ -6566,6 +6840,24 @@
             this.resetIdleTimer(true);
             return;
           }
+        }
+      }
+
+      /* 语音输入前置拦截：无意义语气词（嗯/啊/呃/えっと等）与扬声器自回声绝不触发“正在解析指令/AI解析中”或云端请求 */
+      const isVoiceEarly = Boolean(payload.audioBase64 || payload.fromVoice);
+      const isManualVoiceEarly = Boolean(payload.manualVoice);
+      if (isVoiceEarly && !isManualVoiceEarly && payload.text && !payload.audioBase64) {
+        const cleanedEarly = VoiceEngine.stripSpokenEcho(String(payload.text || "").trim());
+        const ignoreEarly = !cleanedEarly
+          || NLUEngine.isMeaninglessTranscript(cleanedEarly)
+          || (!this.isConfirmPending() && NLUEngine.isFillerUtterance(cleanedEarly))
+          || VoiceEngine.isLikelySelfEcho(cleanedEarly);
+        if (ignoreEarly) {
+          DebugLog.add("ASR", "前置拦截无意义语气词/回声（跳过 AI 解析）", payload.text || "(empty)");
+          VoiceEngine.unduckPlayback(180);
+          TableUI.hideVoiceHud();
+          if ($("cmdInput")) $("cmdInput").value = "";
+          return;
         }
       }
 
@@ -6819,12 +7111,25 @@
           if (a.type === "ATTACK") {
             if (!explicitSkill && !NLUEngine.hasExplicitAttackIntent(rawUtter) && !/(打|撃|うって|撃って|殴|なぐ|やれ|いけ|行け|使って|つかって|発動|はつどう|技|わざ|ワザ|倒せ|たおせ)/.test(rawUtter)) continue;
             if (!explicitSkill) a.skill_name = null;
-            if (a.target && !keepComboTarget && !NLUEngine.resolveSlotFromText(actClause, "enemy", snapNow)) a.target = null;
+            const atkTarget = NLUEngine.resolveSlotFromText(actClause, "enemy", snapNow)
+              || (queue.length === 1 ? NLUEngine.resolveSlotFromText(rawUtter, "enemy", snapNow) : null);
+            if (atkTarget) a.target = atkTarget;
+            else if (a.target && !keepComboTarget) a.target = null;
           }
           if (a.type === "ATTACH_ENERGY") {
             if (isVoiceInput && !/(エネルギー|えねるぎー|エネ|えね|能量|贴|充能|上能|上火|上水|上雷|加|电|闪电|雷电|红|蓝|黄|给|炎|火|ほのお|水|みず|雷|かみなり|でんき|貼|張|付|つけ|はる|はっ|あげ|渡|チャージ|装)/.test(rawUtter) && !(explicitItem && explicitItem.category === "energy")) continue;
-            if (!keepComboTarget && !NLUEngine.resolveSlotFromText(actClause, "player", snapNow)) a.target = null;
-            const explicitEnergyCard = NLUEngine.resolveEnergyCardFromText(actClause);
+            const resolvedOnSnap = NLUEngine.resolveSlotFromText(actClause, "player", snapNow)
+              || (queue.length === 1 ? NLUEngine.resolveSlotFromText(rawUtter, "player", snapNow) : null);
+            const hasPlayBenchBefore = queue.some((prev, pIdx) => pIdx < queue.indexOf(a) && prev && prev.type === "PLAY_BENCH");
+            const clauseNamesMon = Boolean(SpecEngine.matchMonster(actClause, "player"));
+            if (resolvedOnSnap) {
+              a.target = resolvedOnSnap;
+            } else if (!keepComboTarget && !(hasPlayBenchBefore && clauseNamesMon)) {
+              a.target = null;
+            }
+            if (queue.length === 1 && !a._clause) a._clause = rawUtter;
+            const explicitEnergyCard = NLUEngine.resolveEnergyCardFromText(actClause)
+              || (queue.length === 1 ? NLUEngine.resolveEnergyCardFromText(rawUtter) : null);
             if (explicitEnergyCard) a.card_id = explicitEnergyCard;
             else a.card_id = null;
           }
@@ -6835,16 +7140,37 @@
               const matchedId = clauseMons.some((m) => m.id === a.card_id) ? a.card_id : (clauseMons[0]?.id || null);
               if (!matchedId) a.card_id = null;
             }
+            /* 盘面纠偏（中/日双语）：若被解析为 PLAY_BENCH 的怪兽不在手牌、却已在备战区，且原话含交换/换人/上场/主战意图，自动纠正为 RETREAT */
+            if (a.card_id && !s.player.hand.includes(a.card_id)) {
+              const benchIdx = s.player.bench.findIndex((u) => u && u.id === a.card_id);
+              if (benchIdx !== -1 && /(交换|互换|对换|替换|调换|换|交代|交換|こうかん|入れ替|いれかえ|撤退|チェンジ|スイッチ|上场|出战|主战|前排|战斗区|バトル場|前[にへ]|出陣|顶上|上来)/.test(rawUtter)) {
+                safeQueue.push({ type: "RETREAT", target: `player_bench_${benchIdx}`, _clause: actClause || rawUtter });
+                continue;
+              }
+            }
           }
           if (a.type === "USE_ITEM") {
             if (isVoiceInput && !/(きずぐすり|回復|かいふく|ヒール|ポーション|体力|傷薬|伤药|上药|吃药|喝药|嗑药|用个?药|贴伤药|回血|补血|治|加血|奶|飲|のむ|笛|ふえ|呼叫笛|哨|呼び出|引っ張り|強制交代|拉|拖|吹|换怪|補給|ほきゅう|ドロー|引|ひく|抽|摸|过牌|补牌|バッジ|ばっじ|パワー|バフ|アップ|力量|加攻|加伤害|增伤|強化|强化|回収|かいしゅう|回収|回收|捞|捡|戻|もど|道具|グッズ|サポート|支援|使|つかう|つかって|用)/.test(rawUtter) && !explicitItem) continue;
-            if (a.card_id === "item_potion" && a.target && !keepComboTarget && !NLUEngine.resolveSlotFromText(actClause, "player", snapNow)) a.target = null;
-            if (a.card_id === "item_flute" && a.target && !keepComboTarget && !NLUEngine.resolveSlotFromText(actClause, "enemy", snapNow)) a.target = null;
+            if (a.card_id === "item_potion") {
+              const pTarget = NLUEngine.resolveSlotFromText(actClause, "player", snapNow)
+                || (queue.length === 1 ? NLUEngine.resolveSlotFromText(rawUtter, "player", snapNow) : null);
+              if (pTarget) a.target = pTarget;
+              else if (a.target && !keepComboTarget) a.target = null;
+            }
+            if (a.card_id === "item_flute") {
+              const fTarget = NLUEngine.resolveSlotFromText(actClause, "enemy", snapNow, { benchOnly: true })
+                || (queue.length === 1 ? NLUEngine.resolveSlotFromText(rawUtter, "enemy", snapNow, { benchOnly: true }) : null);
+              if (fTarget) a.target = fTarget;
+              else if (a.target && !keepComboTarget) a.target = null;
+            }
           }
           if (a.type === "RETREAT") {
-            if (isVoiceInput && !/(交代|こうたい|入れ替|いれかえ|下|さげ|さが|逃げ|にげる|にげ|撤退|てったい|チェン|スイッチ|バトン|戻|もど|引|ひく|换|退|切|下场|撤下去|拉回)/.test(rawUtter)) continue;
-            const rSlot = NLUEngine.resolveSlotFromText(actClause, "player", snapNow);
-            if (!rSlot || rSlot === "player_active") a.target = null;
+            const rSlot = NLUEngine.resolveSlotFromText(actClause, "player", snapNow, { benchOnly: true })
+              || (queue.length === 1 ? NLUEngine.resolveSlotFromText(rawUtter, "player", snapNow, { benchOnly: true }) : null);
+            const hasRetreatWord = /(交代|こうたい|交換|こうかん|入れ替|いれかえ|下|さげ|さが|逃げ|にげる|にげ|撤退|てったい|チェン|スイッチ|バトン|戻|もど|引|ひく|换|退|切|下场|撤下去|拉回|顶上)/.test(rawUtter)
+              || (Boolean(rSlot) && /(上场|出战|主战|前排|战斗区|バトル場|前[にへ]|出陣)/.test(rawUtter));
+            if (isVoiceInput && !hasRetreatWord) continue;
+            a.target = rSlot || null;
           }
           safeQueue.push(a);
         }
@@ -6925,6 +7251,7 @@
       }
     },
 
+    /** 在处于追问/选择待定态（confirm/choose_skill/choose_card/choose_target/promote_bench）时解析并续接执行玩家回复 */
     async handlePendingReply(rawText) {
       const p = this.state.pending;
       if (!p) return false;
@@ -7116,9 +7443,11 @@
       return Promise.resolve();
     },
 
+    /** 执行单条已通过护栏校验的对战动作（贴能、下备战、用道具、撤退交换、防御、攻击、结束回合等）并触发动画与语音反馈 */
     async executeAction(act, customRival = null) {
       const s = this.state;
       if (!act || !act.type) return false;
+      s.selectedHandIndex = null;
       GuideEngine.hide();
       this.clearIdleTimer();
 
@@ -7199,7 +7528,25 @@
             return false;
           }
           let targetSlot = act.target || (act._clause ? NLUEngine.resolveSlotFromText(act._clause, "player", this.getSnapshot()) : null);
+          /* 兼容云端返回怪兽 ID（如 p_fox）或简写槽位名（如 active / bench_0）时的规范化映射 */
+          if (targetSlot && !this.getSlotUnit(targetSlot)) {
+            const normTarget = String(targetSlot).trim();
+            if (/^active$/i.test(normTarget)) targetSlot = "player_active";
+            else if (/^bench_([012])$/i.test(normTarget)) targetSlot = `player_${normTarget.toLowerCase()}`;
+            else {
+              const byId = allAllies.filter((e) => e.unit.id === normTarget);
+              if (byId.length === 1) targetSlot = byId[0].slot;
+              else targetSlot = NLUEngine.resolveSlotFromText(normTarget, "player", this.getSnapshot());
+            }
+          }
           let targetUnit = targetSlot ? this.getSlotUnit(targetSlot) : null;
+          if (!targetUnit && act._clause) {
+            const retrySlot = NLUEngine.resolveSlotFromText(act._clause, "player", this.getSnapshot());
+            if (retrySlot && this.getSlotUnit(retrySlot)) {
+              targetSlot = retrySlot;
+              targetUnit = this.getSlotUnit(retrySlot);
+            }
+          }
           if (!targetUnit) {
             if (allAllies.length === 1) {
               targetSlot = allAllies[0].slot;
@@ -7289,10 +7636,29 @@
           let handIdx = act.card_id ? s.player.hand.indexOf(act.card_id) : -1;
           if (act.card_id && handIdx === -1) {
             const reqMon = SpecEngine.getMonster(act.card_id);
-            const availJa = monTypes.map((cid) => SpecEngine.getMonster(cid)?.name_ja || cid).join("・");
-            const availZh = monTypes.map((cid) => SpecEngine.getMonster(cid)?.name_zh || cid).join("、");
             const reqJa = reqMon ? reqMon.name_ja : act.card_id;
             const reqZh = reqMon ? reqMon.name_zh : act.card_id;
+            const onBenchIdx = s.player.bench.findIndex((u) => u && u.id === act.card_id);
+            if (onBenchIdx !== -1) {
+              TableUI.flashDeny(`player_bench_${onBenchIdx}`, "すでにベンチ", "已在备战区");
+              await this.announceAndReact(
+                `${reqJa}はすでにベンチにいます。バトル場と交代する場合は「交代」または「入れ替え」と伝えてください。`,
+                `${reqZh}已经在备战区了。如果想让它和主战交换上场，请说“撤退”或“和主战交换”。`,
+                null
+              );
+              return false;
+            }
+            if (s.player.active && s.player.active.id === act.card_id) {
+              TableUI.flashDeny("player_active", "すでに出陣中", "已在战斗区");
+              await this.announceAndReact(
+                `${reqJa}はすでにバトル場に出ています。`,
+                `${reqZh}已经在主战区出战了。`,
+                null
+              );
+              return false;
+            }
+            const availJa = monTypes.map((cid) => SpecEngine.getMonster(cid)?.name_ja || cid).join("・");
+            const availZh = monTypes.map((cid) => SpecEngine.getMonster(cid)?.name_zh || cid).join("、");
             TableUI.flashDeny("player_bench_0", "手札に不在", "手牌无此怪");
             await this.announceAndReact(
               `手札に${reqJa}がありません（手札にあるのは${availJa}です）。`,
@@ -7412,8 +7778,15 @@
               await this.announceAndReact("相手のベンチにモンスターがいないため、よびだし笛は使えません。", "对手备战区没有怪兽，无法使用召唤笛。", null);
               return false;
             }
-            let targetSlot = act.target || (act._clause ? NLUEngine.resolveSlotFromText(act._clause, "enemy", this.getSnapshot()) : null);
-            if (targetSlot === "enemy_active") targetSlot = null;
+            let targetSlot = act.target || (act._clause ? NLUEngine.resolveSlotFromText(act._clause, "enemy", this.getSnapshot(), { benchOnly: true }) : null);
+            if (targetSlot && !String(targetSlot).startsWith("enemy_bench_")) {
+              const rawT = String(targetSlot);
+              if (/^bench_[012]$/.test(rawT)) targetSlot = `enemy_${rawT}`;
+              else {
+                const byId = eBench.find((e) => e.unit.id === rawT);
+                targetSlot = byId ? byId.slot : null;
+              }
+            }
             let picked = eBench.find((e) => e.slot === targetSlot);
             if (!picked) {
               if (eBench.length === 1) {
@@ -7582,7 +7955,16 @@
             await this.announceAndReact("交代できるベンチのモンスターがいません。", "备战区没有可替换上场的怪兽。", null);
             return false;
           }
-          let picked = myBench.find((e) => e.slot === act.target);
+          let targetSlot = act.target || (act._clause ? NLUEngine.resolveSlotFromText(act._clause, "player", this.getSnapshot(), { benchOnly: true }) : null);
+          if (targetSlot && !String(targetSlot).startsWith("player_bench_")) {
+            const rawT = String(targetSlot);
+            if (/^bench_[012]$/.test(rawT)) targetSlot = `player_${rawT}`;
+            else {
+              const byId = myBench.find((e) => e.unit.id === rawT);
+              targetSlot = byId ? byId.slot : null;
+            }
+          }
+          let picked = myBench.find((e) => e.slot === targetSlot);
           if (!picked) {
             if (myBench.length === 1) {
               picked = myBench[0];
@@ -7882,6 +8264,7 @@
       return false;
     },
 
+    /** 结算双方怪兽击倒（HP<=0）：发放普通 1 张 / ex 2 张奖赏卡、判定胜负并处理己方/敌方备战补位 */
     async checkKnockOuts() {
       const s = this.state;
       let anyKo = false;
@@ -7984,6 +8367,7 @@
       return anyKo;
     },
 
+    /** 将玩家指定备战槽位怪兽推上主战区补位并刷新盘面 */
     async promotePlayerBench(idx) {
       const unit = this.state.player.bench[idx];
       if (!unit) return;
@@ -7994,6 +8378,7 @@
       TableUI.renderAll();
     },
 
+    /** 终结当前对局：锁定状态、展示胜负结算弹窗并高优播报裁判与对手终局台词 */
     endGame(winner, descJa, descZh) {
       this.clearIdleTimer();
       this.state.gameOver = true;
@@ -8008,6 +8393,7 @@
       TableUI.renderAll();
     },
 
+    /** 结束玩家回合：清理本回合状态标记、推进回合数并移交至对手 AI「莲」执行回合 */
     async finishPlayerTurn(seq = this.matchSeq) {
       const s = this.state;
       if (!s || s.gameOver || seq !== this.matchSeq) return;
@@ -8623,6 +9009,7 @@
       return seq === this.matchSeq && !s.gameOver;
     },
 
+    /** 执行对手 AI「莲」的完整回合决策（普通/困难策略：抽牌、疲劳结算、铺场、支援卡/道具、贴能、撤退与出招） */
     async runEnemyTurn(seq = this.matchSeq) {
       const s = this.state;
       if (!s || s.gameOver || seq !== this.matchSeq) return;
@@ -9102,16 +9489,19 @@
   const TableUI = {
     logEntries: [],
 
+    /** 更新裁判播报栏的双语字幕文案 */
     setReferee(ja, zh) {
       $("refereeJa").textContent = ja || "";
       $("refereeZh").textContent = zh || "";
     },
 
+    /** 更新对手「莲」对话气泡的双语台词文案 */
     setRival(ja, zh) {
       $("rivalJa").textContent = ja ? `「${ja}」` : "";
       $("rivalZh").textContent = zh ? `“${zh}”` : "";
     },
 
+    /** 追加一条双语战报日志到记录面板并滚动至底部 */
     appendLog(ja, zh) {
       this.logEntries.unshift({ ja: ja || "", zh: zh || ja || "" });
       if (this.logEntries.length > 60) this.logEntries.pop();
@@ -9132,6 +9522,7 @@
         .join("");
     },
 
+    /** 按槽位标识查找对应的 DOM 容器元素 */
     getSlotEl(slot) {
       const map = {
         player_active: "#playerActiveSlot",
@@ -9295,11 +9686,13 @@
       }
     },
 
+    /** 隐藏顶部浮动语音识别状态条（Voice HUD） */
     hideVoiceHud() {
       clearTimeout(this._hudTimer);
       $("voiceHud")?.classList.remove("show");
     },
 
+    /** 渲染主战区或备战区单张怪兽卡 HTML（含立绘、血条威胁提示、能量点与可用技能高亮） */
     renderMonsterCard(inst, slot) {
       const def = SpecEngine.getMonster(inst.id);
       if (!def) return "";
@@ -9432,6 +9825,7 @@
       return true;
     },
 
+    /** 渲染玩家手牌区单张卡牌 HTML（区分开局可首发怪兽、普通怪兽、能量卡与支援/道具卡） */
     renderHandCard(cardId, idx) {
       const s = BattleEngine.state;
       const selected = s.selectedHandIndex === idx;
@@ -9512,6 +9906,7 @@
       `;
     },
 
+    /** 将技能附加效果列表（抽牌、狙击、护盾、反伤、溅射等）渲染为简明双语徽章 HTML */
     buildSkillEffectTags(sk) {
       const fx = SpecEngine.parseSkillEffects(sk.effect);
       const gVal = sk.guardVal || fx.guardVal;
@@ -9901,6 +10296,7 @@
       zhEl.textContent = zh;
     },
 
+    /** 全量同步牌桌 UI：双方主战/备战槽位、奖赏卡、牌库/弃牌数、手牌区、目标高亮边框与快捷操作按钮 */
     renderAll() {
       const s = BattleEngine.state;
       if (!s) return;
@@ -10060,10 +10456,12 @@
       this.bindBoardClicks();
     },
 
+    /** 关闭并销毁当前悬浮的牌库/弃牌区详情气泡 */
     closePopover() {
       $("actionPopover").classList.remove("open");
     },
 
+    /** 打开「结束回合二次确认」弹窗并列出本回合尚未执行的建议操作 */
     openEndTurnConfirmModal(opps = [], fromVoice = false) {
       const modal = $("endTurnConfirmModal");
       if (!modal) return;
@@ -10093,6 +10491,7 @@
       modal.classList.add("open");
     },
 
+    /** 关闭「结束回合二次确认」弹窗 */
     closeEndTurnConfirmModal() {
       $("endTurnConfirmModal")?.classList.remove("open");
     },
@@ -10221,6 +10620,7 @@
       }
     },
 
+    /** 为牌桌所有交互元素（手牌点击/拖拽、技能点击、槽位目标选择与待定选项按钮）绑定事件委托 */
     bindBoardClicks() {
       const s = BattleEngine.state;
 
@@ -10347,10 +10747,13 @@
             BattleEngine.performDirectAction({ type: "USE_ITEM", card_id: cardId });
             return;
           }
-          if (cardId.startsWith("energy_") && s.energyUsedThisTurn) {
-            s.selectedHandIndex = null;
-            BattleEngine.performDirectAction({ type: "ATTACH_ENERGY", card_id: cardId, target: "player_active" });
-            return;
+          if (cardId.startsWith("energy_")) {
+            const allies = BattleEngine.getAllEntries("player");
+            if (s.energyUsedThisTurn || allies.length <= 1) {
+              s.selectedHandIndex = null;
+              BattleEngine.performDirectAction({ type: "ATTACH_ENERGY", card_id: cardId, target: allies[0] ? allies[0].slot : "player_active" });
+              return;
+            }
           }
           if (cardId === "item_bag" || cardId === "item_power" || cardId === "item_recycle") {
             s.selectedHandIndex = null;
@@ -11081,10 +11484,12 @@
       return uaMobile || smallTouchScreen;
     },
 
+    /** 检测当前页面是否处于标准或 WebKit 全屏模式 */
     isFullscreen() {
       return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
     },
 
+    /** 按当前屏幕方向与全屏状态同步移动端横屏工具条按钮的显示与文案 */
     syncUi() {
       const mobile = this.isMobile();
       document.body?.classList.toggle("is-mobile", mobile);
@@ -11102,6 +11507,7 @@
         : `${enterSvg}${escapeHtml(t("全画面", "全屏"))}`;
     },
 
+    /** 在移动端尝试请求全屏并锁定横屏方向，提升窄屏牌桌视野 */
     async enterLandscapeFullscreen() {
       const root = document.documentElement;
       let fsOk = false;
@@ -11129,6 +11535,7 @@
       }
     },
 
+    /** 切换进入或退出浏览器全屏模式 */
     async toggleFullscreen() {
       if (this.isFullscreen()) {
         try {
@@ -11144,6 +11551,7 @@
       }
     },
 
+    /** 初始化移动端视口与全屏/转屏事件监听器 */
     init() {
       this.syncUi();
       $("btnFullscreen")?.addEventListener("click", () => this.toggleFullscreen());
