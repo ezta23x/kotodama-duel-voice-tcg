@@ -102,14 +102,14 @@
 
   /* 卡面简洁卡通插画（独立小头像框，高对比轮廓，兼具可爱感与物种辨识度） */
   const CARD_ART = {
-    p_fox: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fde8e1"/><path d="M27,29 Q36,24 35,14 Q32,18 30,17 Q29,12 26,15 Q26,23 23,29 Z" fill="#ff9436" stroke="#c94b24" stroke-width="0.9"/><path d="M33,17 Q34.5,15 34.2,13.5 Q32,15.5 31.8,17.2 Z" fill="#ffe169"/><polygon points="7.5,19 10.5,5.5 19,14" fill="#df552e"/><polygon points="32.5,19 29.5,5.5 21,14" fill="#df552e"/><polygon points="9.8,16.5 11.8,8.8 16.5,14" fill="#fff0d9"/><polygon points="30.2,16.5 28.2,8.8 23.5,14" fill="#fff0d9"/><path d="M7.5,24 L10.5,22 L9,26.5 L13,27 L27,27 L31,26.5 L29.5,22 L32.5,24 Q31,32 20,34.5 Q9,32 7.5,24 Z" fill="#f06d42"/><ellipse cx="20" cy="22.5" rx="11.5" ry="9.5" fill="#f06d42"/><path d="M10.5,24.5 Q20,33.5 29.5,24.5 Q24.5,34.5 20,34.5 Q15.5,34.5 10.5,24.5 Z" fill="#fff6ea"/><path d="M20,9.5 Q23.8,13.5 20,17.2 Q16.2,13.5 20,9.5 Z" fill="#ff9a2e"/><path d="M20,12 Q22,14.5 20,16.8 Q18,14.5 20,12 Z" fill="#ffe169"/><circle cx="15.3" cy="21.8" r="2" fill="#272018"/><circle cx="24.7" cy="21.8" r="2" fill="#272018"/><circle cx="16" cy="21.1" r="0.72" fill="#fff"/><circle cx="25.4" cy="21.1" r="0.72" fill="#fff"/><polygon points="18.3,25.2 21.7,25.2 20,27.3" fill="#272018"/></svg>',
-    p_turtle: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#dff2fc"/><path d="M31.5,23.5 Q37.5,20.5 36.2,14.5 Q33.2,18 32,20 Z" fill="#2c7ab8"/><path d="M34.5,17 Q36,15 35.4,13.5" fill="none" stroke="#8ad5ff" stroke-width="1.3" stroke-linecap="round"/><ellipse cx="17.5" cy="29.5" rx="4.2" ry="3.2" fill="#3a89c9"/><ellipse cx="28" cy="29.5" rx="4.2" ry="3.2" fill="#3a89c9"/><path d="M13,25.5 C12.5,12.5 21,9 28.5,11.5 C34,13.5 35.5,21 33.5,25.5 Z" fill="#2d8c6e" stroke="#1d5f4a" stroke-width="1.1"/><path d="M17.5,12.2 L20.5,18.5 L15,24.5 M25.5,11.5 L24.5,18.5 L29.5,24.5 M20.5,18.5 L24.5,18.5" fill="none" stroke="#7de0be" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M12.2,25.2 Q23.5,28.5 34.4,25.2" fill="none" stroke="#f3e5be" stroke-width="2.6" stroke-linecap="round"/><ellipse cx="10.8" cy="18.2" rx="6.4" ry="5.5" fill="#4da3e3" stroke="#286ca1" stroke-width="1"/><path d="M8,22.5 Q12,24.5 16,22.5" fill="none" stroke="#bde6ff" stroke-width="1.4" stroke-linecap="round"/><circle cx="9.2" cy="16.8" r="1.85" fill="#1e242b"/><circle cx="9.7" cy="16.1" r="0.68" fill="#fff"/><path d="M5.8,19.8 Q8.5,21.8 11.4,20.2" fill="none" stroke="#1e242b" stroke-width="1.25" stroke-linecap="round"/><path d="M10.8,5.8 Q13.2,9 10.8,11.2 Q8.4,9 10.8,5.8 Z" fill="#3288cc"/></svg>',
-    p_lion: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fcf2d4"/><circle cx="20" cy="22" r="14" fill="#cc7a10"/><circle cx="11" cy="14" r="5" fill="#d98a14"/><circle cx="29" cy="14" r="5" fill="#d98a14"/><circle cx="8.5" cy="22" r="5" fill="#d98a14"/><circle cx="31.5" cy="22" r="5" fill="#d98a14"/><circle cx="12" cy="30" r="5" fill="#c4710e"/><circle cx="28" cy="30" r="5" fill="#c4710e"/><circle cx="20" cy="32.5" r="5" fill="#c4710e"/><circle cx="20" cy="11" r="5.5" fill="#e09418"/><circle cx="11.5" cy="11.2" r="4.2" fill="#f7c852" stroke="#b5670c" stroke-width="1.2"/><circle cx="11.5" cy="11.4" r="2.1" fill="#c97228"/><circle cx="28.5" cy="11.2" r="4.2" fill="#f7c852" stroke="#b5670c" stroke-width="1.2"/><circle cx="28.5" cy="11.4" r="2.1" fill="#c97228"/><ellipse cx="20" cy="22.5" rx="9.4" ry="8.6" fill="#ffdc73"/><polygon points="20.6,14.3 18.4,17.3 20.1,17.3 19.2,19.7 21.8,16.6 20.1,16.6" fill="#d9531e"/><ellipse cx="17.2" cy="26.2" rx="3.5" ry="2.6" fill="#fff6db"/><ellipse cx="22.8" cy="26.2" rx="3.5" ry="2.6" fill="#fff6db"/><path d="M13.5,18.7 L17.3,19.6" stroke="#8a4b0f" stroke-width="1.3" stroke-linecap="round"/><path d="M26.5,18.7 L22.7,19.6" stroke="#8a4b0f" stroke-width="1.3" stroke-linecap="round"/><circle cx="15.8" cy="21.4" r="1.9" fill="#272018"/><circle cx="24.2" cy="21.4" r="1.9" fill="#272018"/><circle cx="16.4" cy="20.7" r="0.65" fill="#fff"/><circle cx="24.8" cy="20.7" r="0.65" fill="#fff"/><polygon points="17.8,23.5 22.2,23.5 20,25.8" fill="#7a3e0e"/><path d="M17.2,27.2 Q18.6,28.5 20,27.0 Q21.4,28.5 22.8,27.2" fill="none" stroke="#63380c" stroke-width="1.3" stroke-linecap="round"/><path d="M11.8,25.2 L14.5,25.7 M12.2,27.2 L14.7,26.9 M28.2,25.2 L25.5,25.7 M27.8,27.2 L25.3,26.9" stroke="#8a4b0f" stroke-width="1.05" stroke-linecap="round"/></svg>',
-    p_dragon_ex: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fce0c8"/><polygon points="2.5,12 13,18 11,31 5,25 3,19" fill="#b32d18"/><polygon points="4.5,14.5 12,19 10,27.5 6.5,23" fill="#f29a38"/><polygon points="37.5,12 27,18 29,31 35,25 37,19" fill="#b32d18"/><polygon points="35.5,14.5 28,19 30,27.5 33.5,23" fill="#f29a38"/><path d="M15,12 Q10,6.5 9.5,3.5 Q13.5,5.5 17.8,10.5 Z" fill="#e6aa28" stroke="#9e620b" stroke-width="0.8"/><path d="M25,12 Q30,6.5 30.5,3.5 Q26.5,5.5 22.2,10.5 Z" fill="#e6aa28" stroke="#9e620b" stroke-width="0.8"/><polygon points="20,6 22.2,11 17.8,11" fill="#ff9429"/><polygon points="12.5,13.5 20,10.5 27.5,13.5 29.5,21.5 25.2,32.5 20,35.5 14.8,32.5 10.5,21.5" fill="#d4391f" stroke="#8a1b0c" stroke-width="1"/><polygon points="14.5,27 20,25 25.5,27 24,33 20,35 16,33" fill="#ffd466"/><polygon points="16.2,15 20,13.2 23.8,15 22.4,24.5 20,26 17.6,24.5" fill="#b52612"/><polygon points="12.5,18.2 17.4,19.8 16,22.2 12.2,20.8" fill="#fff07a"/><polygon points="27.5,18.2 22.6,19.8 24,22.2 27.8,20.8" fill="#fff07a"/><polygon points="14.4,18.8 15.6,19.2 14.9,21.8 13.8,21.3" fill="#9e1c0e"/><polygon points="25.6,18.8 24.4,19.2 25.1,21.8 26.2,21.3" fill="#9e1c0e"/><circle cx="18" cy="24.2" r="0.8" fill="#4a1008"/><circle cx="22" cy="24.2" r="0.8" fill="#4a1008"/><path d="M14.5,27.6 Q20,30.2 25.5,27.6" fill="none" stroke="#61180d" stroke-width="1.3"/><polygon points="15.5,27.8 16.8,30.6 18.1,28.1" fill="#fff"/><polygon points="24.5,27.8 23.2,30.6 21.9,28.1" fill="#fff"/></svg>',
-    e_dog: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fae2da"/><polygon points="8,18 6.5,5.5 16.5,12" fill="#4a2b23"/><polygon points="32,18 33.5,5.5 23.5,12" fill="#4a2b23"/><polygon points="9.2,16 8.5,8.2 14.5,12.5" fill="#ff8a30"/><polygon points="30.8,16 31.5,8.2 25.5,12.5" fill="#ff8a30"/><polygon points="7,24 10,16 14,12 20,10.5 26,12 30,16 33,24 28,33.5 20,36 12,33.5" fill="#3d231c"/><path d="M10.5,26 L13.5,28 L12,32 M29.5,26 L26.5,28 L28,32 M20,11 L18.5,14.5 L21.5,14.5 Z" fill="none" stroke="#ff7a29" stroke-width="1.3" stroke-linecap="round"/><polygon points="11.5,16.5 20,13.5 28.5,16.5 27.2,26.5 20,32.5 12.8,26.5" fill="#704034"/><ellipse cx="20" cy="26.5" rx="5.8" ry="4.6" fill="#d97852"/><polygon points="13.2,18.2 17.8,20.2 15.8,22.2 12.8,20.6" fill="#ffe166"/><polygon points="26.8,18.2 22.2,20.2 24.2,22.2 27.2,20.6" fill="#ffe166"/><circle cx="15.3" cy="20.4" r="1" fill="#8f180b"/><circle cx="24.7" cy="20.4" r="1" fill="#8f180b"/><path d="M18,24 L22,24 L20,26.4 Z" fill="#231814"/><path d="M16.2,28.5 Q20,27.2 23.8,28.5" fill="none" stroke="#231814" stroke-width="1.25" stroke-linecap="round"/><polygon points="16.8,28.4 17.9,31 19,28.4" fill="#fff"/><polygon points="23.2,28.4 22.1,31 21,28.4" fill="#fff"/></svg>',
-    e_fish: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#dff1fb"/><circle cx="7.5" cy="11.5" r="2.7" fill="#eef9ff" stroke="#3182bd" stroke-width="1.3"/><circle cx="6.7" cy="10.6" r="0.7" fill="#fff"/><circle cx="5.2" cy="6.8" r="1.6" fill="#eef9ff" stroke="#3182bd" stroke-width="1.2"/><path d="M14,15 Q19,7.5 26,12.5 L23,17.5 Z" fill="#327eb8"/><path d="M18,28.5 Q21,34.5 25.5,31.5 L22.5,27 Z" fill="#327eb8"/><polygon points="27,22 36,13.5 34.2,22 36,30.5" fill="#398bc7" stroke="#246496" stroke-width="0.9" stroke-linejoin="round"/><ellipse cx="18" cy="22" rx="10.8" ry="8.2" fill="#52ace6" stroke="#246496" stroke-width="1"/><path d="M8.8,24 Q18,29.5 27.2,24 Q24,29.8 18,29.8 Q12,29.8 8.8,24 Z" fill="#d9f2ff"/><path d="M19.5,19.5 Q21.5,22 19.5,24.5 M23,19.8 Q24.8,22 23,24.2" fill="none" stroke="#9ad7fa" stroke-width="1.3" stroke-linecap="round"/><circle cx="12.8" cy="20.2" r="2.5" fill="#fff"/><circle cx="12.3" cy="20.2" r="1.35" fill="#182838"/><circle cx="12.9" cy="19.5" r="0.6" fill="#fff"/><ellipse cx="8.2" cy="22.8" rx="1.2" ry="1.5" fill="#235c8c"/></svg>',
-    e_bird: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fbf0cc"/><polygon points="3,17 13,20 12.5,27 5.5,25.5 7,22.5 3.8,21.5" fill="#d68f0e"/><polygon points="37,17 27,20 27.5,27 34.5,25.5 33,22.5 36.2,21.5" fill="#d68f0e"/><polygon points="13.5,13 15.5,5.5 18.8,10 21.5,3.5 23.5,10.2 27.2,5.8 26.5,13.5" fill="#f2b318" stroke="#9e6b06" stroke-width="0.8" stroke-linejoin="round"/><polygon points="15.5,11.5 21,5.8 24.5,11.8" fill="#ffea6b"/><ellipse cx="20" cy="22.5" rx="9.5" ry="9" fill="#f7c936" stroke="#b37b0c" stroke-width="0.9"/><path d="M11.5,19 L17.5,21 L15.5,24 L11,22 Z" fill="#6b4b08"/><path d="M28.5,19 L22.5,21 L24.5,24 L29,22 Z" fill="#6b4b08"/><circle cx="15.2" cy="20.6" r="1.9" fill="#fff"/><circle cx="24.8" cy="20.6" r="1.9" fill="#fff"/><circle cx="15.6" cy="20.7" r="1.05" fill="#1e1810"/><circle cx="24.4" cy="20.7" r="1.05" fill="#1e1810"/><polygon points="16.8,22.8 23.2,22.8 20,29" fill="#e65e10" stroke="#9c3804" stroke-width="0.7" stroke-linejoin="round"/><polygon points="17.6,23.2 22.4,23.2 20,25.2" fill="#ff9036"/></svg>',
-    e_shark_ex: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#d6ecfc"/><path d="M17.5,13.5 C18.5,6.5 22,3.5 25.5,4.2 C23.5,8.2 24.5,11.5 26,13.8 Z" fill="#164b7a" stroke="#0d3152" stroke-width="0.9"/><polygon points="4.5,28 11.5,22 12.5,29.5" fill="#195285"/><polygon points="35.5,28 28.5,22 27.5,29.5" fill="#195285"/><path d="M7.5,23.5 C8,14 13.5,10.5 20,10.5 C26.5,10.5 32,14 32.5,23.5 C32,30.5 26.5,34 20,34 C13.5,34 8,30.5 7.5,23.5 Z" fill="#2569a1" stroke="#133d63" stroke-width="1"/><path d="M9.5,25.5 C12.5,32.5 27.5,32.5 30.5,25.5 C27,28 13,28 9.5,25.5 Z" fill="#eef8ff"/><path d="M9.2,21.5 Q10.4,23.2 9.2,25 M10.9,21.8 Q12,23.3 10.9,24.8" fill="none" stroke="#103457" stroke-width="1.1" stroke-linecap="round"/><path d="M30.8,21.5 Q29.6,23.2 30.8,25 M29.1,21.8 Q28,23.3 29.1,24.8" fill="none" stroke="#103457" stroke-width="1.1" stroke-linecap="round"/><polygon points="11.5,17.2 17,19.4 14.5,21.2 11.5,19.6" fill="#ffd859"/><polygon points="28.5,17.2 23,19.4 25.5,21.2 28.5,19.6" fill="#ffd859"/><circle cx="14.5" cy="19.3" r="0.9" fill="#0f243b"/><circle cx="25.5" cy="19.3" r="0.9" fill="#0f243b"/><path d="M12.5,24.5 Q20,21.5 27.5,24.5 Q27,31.2 20,31.2 Q13,31.2 12.5,24.5 Z" fill="#0f243b"/><polygon points="14,24.2 15.5,27 17,23.7 18.5,26.8 20,23.4 21.5,26.8 23,23.7 24.5,27 26,24.2" fill="#fff"/><polygon points="15,29.6 16.5,27.3 18,29.9 20,27.2 22,29.9 23.5,27.3 25,29.6" fill="#fff"/></svg>',
+    p_fox: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fde8e1"/><text x="20" y="28" font-size="26" text-anchor="middle">🦊</text></svg>',
+    p_turtle: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#dff2fc"/><text x="20" y="28" font-size="26" text-anchor="middle">🐢</text></svg>',
+    p_lion: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fcf2d4"/><text x="20" y="28" font-size="26" text-anchor="middle">🦁</text></svg>',
+    p_dragon_ex: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fce0c8"/><text x="20" y="28" font-size="26" text-anchor="middle">🐉</text></svg>',
+    e_dog: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fae2da"/><text x="20" y="28" font-size="26" text-anchor="middle">🐕</text></svg>',
+    e_fish: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#dff1fb"/><text x="20" y="28" font-size="26" text-anchor="middle">🐟</text></svg>',
+    e_bird: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#fbf0cc"/><text x="20" y="28" font-size="26" text-anchor="middle">🦅</text></svg>',
+    e_shark_ex: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#d6ecfc"/><text x="20" y="28" font-size="26" text-anchor="middle">🦈</text></svg>',
     item_potion: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#e6f4ea"/><rect x="16" y="7" width="8" height="5" rx="1.5" fill="#8c6239"/><path d="M16,12 L24,12 L28,21 A9,9 0 1 1 12,21 Z" fill="#3f9e66"/><rect x="18.5" y="20" width="3" height="9" rx="1" fill="#fff"/><rect x="15.5" y="23" width="9" height="3" rx="1" fill="#fff"/></svg>',
     item_flute: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#f6eedb"/><path d="M9,29 L29,9 L33,13 L13,33 Z" fill="#c28e2b"/><circle cx="18" cy="22" r="1.5" fill="#4a331d"/><circle cx="22" cy="18" r="1.5" fill="#4a331d"/><circle cx="26" cy="14" r="1.5" fill="#4a331d"/><path d="M11,13 Q14,9 17,13" fill="none" stroke="#4e6e58" stroke-width="2" stroke-linecap="round"/></svg>',
     item_bag: '<svg viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="8" fill="#eef5ec"/><path d="M15,14 Q20,7 25,14" fill="none" stroke="#6c4d2e" stroke-width="2.6" stroke-linecap="round"/><rect x="10" y="14" width="20" height="18" rx="5" fill="#5a8266"/><rect x="10" y="14" width="20" height="8" rx="4" fill="#466a51"/><rect x="18" y="20" width="4" height="4" rx="1" fill="#f5d07a"/></svg>',
@@ -435,7 +435,7 @@
       }
       if (speakVoice && !VoiceEngine.isSpeaking) {
         const prio = key === "setup_starter" ? "high" : "low";
-        VoiceEngine.speak({ ja: msg.ja, zh: msg.zh }, "referee", { priority: prio });
+        VoiceEngine.speak({ ja: msg.ja, zh: msg.zh }, "referee", { priority: prio, interruptible: true });
       }
     },
 
@@ -492,8 +492,7 @@
         "male_zichen", "male_haru", "male_shantian", "male_youzhen"
       ]);
       const VALID_NIA_VOICES_ZH = new Set([
-        "female_luna", "female_lingxi", "female_kexin", "female_qinghe", "female_weiyang",
-        "male_xingye", "male_chenlang", "male_lingchuan", "male_yunshen"
+        "child_0001_a", "female_0003_a", "female_0006_a", "female_0018_b", "female_0027_a", "female_0030_e", "female_0036_a", "female_duoduo", "female_kexin", "female_lingling", "female_lingxi", "female_luna", "female_mengmeng", "female_nuannuan", "female_qinghe", "female_ruanruan", "female_ruoyan", "female_ruyan", "female_tangtang", "female_weiyang", "female_xiaocheng", "female_xiaohe", "female_xiaoli", "female_xiaolin", "female_xiaomo", "female_xiaotang", "female_xiaotao", "female_xiaoyou", "female_xiaoyou_v5i", "female_youyou", "female_zengtong", "female_zhinuann", "female_zhirou", "male_ahao", "male_chenlang", "male_cixingnansheng", "male_hexiao", "male_huaijin", "male_jingheng", "male_lingchuan", "male_linzhou", "male_mili", "male_nanfeng", "male_qingmu", "male_tianhe", "male_wanzhou", "male_xiaobei", "male_xiaoyang", "male_xingye", "male_xuanzhao", "male_yian", "male_yunshen", "male_yunzheng"
       ]);
       const VALID_DIFF = new Set(["normal", "hard"]);
       if (VALID_UI_LANG.has(src.uiLang)) out.uiLang = src.uiLang;
@@ -1610,15 +1609,59 @@
         { value: "male_youzhen", label: "悠真" }
       ],
       nia_tts_zh: [
-        { value: "female_luna", label: "Luna" },
-        { value: "female_lingxi", label: "灵汐" },
+        { value: "child_0001_a", label: "乐乐" },
+        { value: "female_0003_a", label: "傲娇少女" },
+        { value: "female_0006_a", label: "温柔御姐" },
+        { value: "female_0018_b", label: "森系少女" },
+        { value: "female_0027_a", label: "魅力姐姐" },
+        { value: "female_0030_e", label: "贴心女人" },
+        { value: "female_0036_a", label: "青春女声" },
+        { value: "female_duoduo", label: "朵朵" },
         { value: "female_kexin", label: "可昕" },
+        { value: "female_lingling", label: "玲玲" },
+        { value: "female_lingxi", label: "灵汐" },
+        { value: "female_luna", label: "luna" },
+        { value: "female_mengmeng", label: "萌萌" },
+        { value: "female_nuannuan", label: "暖暖" },
         { value: "female_qinghe", label: "青禾" },
+        { value: "female_ruanruan", label: "软软" },
+        { value: "female_ruoyan", label: "若颜" },
+        { value: "female_ruyan", label: "如烟" },
+        { value: "female_tangtang", label: "糖糖" },
         { value: "female_weiyang", label: "未央" },
-        { value: "male_xingye", label: "星野" },
+        { value: "female_xiaocheng", label: "小程" },
+        { value: "female_xiaohe", label: "小荷" },
+        { value: "female_xiaoli", label: "小栗" },
+        { value: "female_xiaolin", label: "小琳" },
+        { value: "female_xiaomo", label: "小莫" },
+        { value: "female_xiaotang", label: "小汤" },
+        { value: "female_xiaotao", label: "小桃" },
+        { value: "female_xiaoyou", label: "小柚" },
+        { value: "female_xiaoyou_v5i", label: "小柚" },
+        { value: "female_youyou", label: "悠悠" },
+        { value: "female_zengtong", label: "曾彤" },
+        { value: "female_zhinuann", label: "知暖" },
+        { value: "female_zhirou", label: "知柔" },
+        { value: "male_ahao", label: "阿豪" },
         { value: "male_chenlang", label: "晨朗" },
+        { value: "male_cixingnansheng", label: "磁性男声" },
+        { value: "male_hexiao", label: "何萧" },
+        { value: "male_huaijin", label: "怀瑾" },
+        { value: "male_jingheng", label: "景珩" },
         { value: "male_lingchuan", label: "凌川" },
-        { value: "male_yunshen", label: "云深" }
+        { value: "male_linzhou", label: "林舟" },
+        { value: "male_mili", label: "弥狸" },
+        { value: "male_nanfeng", label: "南风" },
+        { value: "male_qingmu", label: "青木" },
+        { value: "male_tianhe", label: "天何" },
+        { value: "male_wanzhou", label: "晚舟" },
+        { value: "male_xiaobei", label: "小北" },
+        { value: "male_xiaoyang", label: "晓阳" },
+        { value: "male_xingye", label: "星野" },
+        { value: "male_xuanzhao", label: "玄昭" },
+        { value: "male_yian", label: "亦安" },
+        { value: "male_yunshen", label: "云深" },
+        { value: "male_yunzheng", label: "云峥" }
       ],
       vertex_tts: [
         { value: "Kore", label: "Kore" },
@@ -1635,7 +1678,7 @@
     getEffectiveNiaAsrLang() {
       const cfg = ConfigManager.data;
       if (cfg.niaAsrLangManual) return String(cfg.niaAsrLang || "");
-      return "";
+      return getUiLang() === "zh" ? "zh" : "ja";
     },
 
     /** 获取当前生效的 Chrome ASR 语种 */
@@ -2751,11 +2794,19 @@
     isLikelySelfEcho(transcript) {
       const now = Date.now();
       if (!this.isSpeaking && now - this.lastSpeakEndAt > 1400) return false;
+      if (typeof BattleEngine !== "undefined" && BattleEngine.state?.phase === "setup"
+        && BattleEngine.resolveStarterHandIndex(transcript) !== -1) {
+        return false;
+      }
       const tNorm = SpecEngine.normalizeText(transcript);
       if (tNorm.length < 4) return false;
-      const isShortPlayerCmd = tNorm.length < 8 && (
+      const isShortPlayerCmd = tNorm.length < 10 && (
         NLUEngine.hasExplicitDefendIntent(transcript)
         || NLUEngine.hasExplicitAttackIntent(transcript)
+        || Boolean(SpecEngine.matchMonster(transcript, "player"))
+        || Boolean(SpecEngine.matchSkill(transcript))
+        || Boolean(SpecEngine.matchItem(transcript))
+        || Boolean(NLUEngine.resolveEnergyCardFromText(transcript))
       );
       if (isShortPlayerCmd) return false;
       for (const entry of this.recentSpoken) {
@@ -3061,11 +3112,30 @@
         const outLen = Math.max(1, Math.floor(totalLen / ratio));
         samples = new Float32Array(outLen);
         for (let i = 0; i < outLen; i++) {
-          const idx = i * ratio;
-          const i0 = Math.floor(idx);
-          const i1 = Math.min(totalLen - 1, i0 + 1);
-          const frac = idx - i0;
-          samples[i] = merged[i0] * (1 - frac) + merged[i1] * frac;
+          const winStart = i * ratio;
+          const winEnd = winStart + ratio;
+          const idxStart = Math.floor(winStart);
+          const idxEnd = Math.min(totalLen, Math.floor(winEnd));
+          let sum = 0;
+          let wSum = 0;
+          if (idxStart >= idxEnd) {
+            sum = merged[Math.min(totalLen - 1, idxStart)];
+            wSum = 1;
+          } else {
+            const firstWeight = (idxStart + 1) - winStart;
+            sum += merged[idxStart] * firstWeight;
+            wSum += firstWeight;
+            for (let k = idxStart + 1; k < idxEnd; k++) {
+              sum += merged[k];
+              wSum += 1;
+            }
+            const lastWeight = winEnd - idxEnd;
+            if (lastWeight > 1e-6 && idxEnd < totalLen) {
+              sum += merged[idxEnd] * lastWeight;
+              wSum += lastWeight;
+            }
+          }
+          samples[i] = wSum > 0 ? (sum / wSum) : 0;
         }
       }
       const outLen = samples.length;
@@ -3104,12 +3174,12 @@
     createNiaAsrSession(opts = {}) {
       const lang = typeof opts.lang === "string" ? opts.lang : this.getEffectiveNiaAsrLang();
       const onPartial = typeof opts.onPartial === "function" ? opts.onPartial : null;
-      const FRAME_BYTES = 3200; // 16kHz * 2B * 100ms
+      const FRAME_BYTES = 1920; // 16kHz * 2B * 60ms 低延迟实时流式帧
       const frameQueue = [];
       let pendingBuf = new Uint8Array(0);
+      let resampleTail = new Float32Array(0);
       let resamplePhase = 0;
-      let prevSample = 0;
-      let hasPrevSample = false;
+      let envPeak = 0.08;
 
       let ws = null;
       let started = false;
@@ -3180,6 +3250,11 @@
           try { ws.send(pendingBuf); } catch (_) {}
           pendingBuf = new Uint8Array(0);
         }
+        // 追加 96ms（3072B，按 <=1920B 分帧）尾音零填充，让流式 ASR 充分解码最后一音节后再关闭
+        const zeroPad = [new Uint8Array(1920), new Uint8Array(1152)];
+        for (const pad of zeroPad) {
+          try { ws.send(pad); } catch (_) {}
+        }
         endSent = true;
         if (flushTimer) { clearInterval(flushTimer); flushTimer = null; }
         try {
@@ -3189,26 +3264,32 @@
           return;
         }
         const hasTextNow = Boolean(getTranscript());
-        endWaitTimer = setTimeout(() => resolveDone(), hasTextNow ? 650 : 1200);
+        const waitMs = (finalSegments.length > 0 && !lastPartial) ? 350 : (lastPartial ? 900 : (hasTextNow ? 650 : 1200));
+        endWaitTimer = setTimeout(() => resolveDone(), waitMs);
+      };
+
+      const drainFrames = (maxCount = Infinity) => {
+        if (aborted || settled || !started || !ws || ws.readyState !== 1) return false;
+        let sentCount = 0;
+        while (sentCount < maxCount && frameQueue.length > 0) {
+          const frame = frameQueue.shift();
+          try {
+            ws.send(frame);
+            sentCount += 1;
+          } catch (e) {
+            rejectFail(e);
+            return false;
+          }
+        }
+        if (ending && frameQueue.length === 0) trySendEnd();
+        return true;
       };
 
       const startPacer = () => {
         if (flushTimer) return;
         flushTimer = setInterval(() => {
-          if (aborted || settled || !started || !ws || ws.readyState !== 1) return;
-          // 正常按 100ms 节奏发送；若积压预缓冲超过 4 帧，温和追赶避免超时
-          const burst = frameQueue.length > 4 ? 2 : 1;
-          for (let i = 0; i < burst && frameQueue.length > 0; i++) {
-            const frame = frameQueue.shift();
-            try {
-              ws.send(frame);
-            } catch (e) {
-              rejectFail(e);
-              return;
-            }
-          }
-          if (ending && frameQueue.length === 0) trySendEnd();
-        }, 75);
+          drainFrames(4);
+        }, 25);
       };
 
       (async () => {
@@ -3243,6 +3324,7 @@
             if (msg.type === "started") {
               started = true;
               if (connectTimer) { clearTimeout(connectTimer); connectTimer = null; }
+              drainFrames(6);
               startPacer();
               if (ending && frameQueue.length === 0) trySendEnd();
             } else if (msg.type === "partial") {
@@ -3289,37 +3371,72 @@
       })();
 
       return {
-        /** 喂入一段 Float32 单声道音频并连续线性重采样至 16kHz Int16LE */
+        /** 喂入一段 Float32 单声道音频：抗混叠积分降采样至 16kHz Int16LE，并对轻声说话温和自适应增益 */
         pushFloat32(float32Chunk, srcRate = 48000) {
           if (aborted || ending || settled || !float32Chunk || float32Chunk.length === 0) return;
           const rate = srcRate > 0 ? srcRate : 48000;
           const step = rate / 16000;
-          const len = float32Chunk.length;
-          const estOut = Math.ceil((len + 2) / step) + 2;
-          const out = new Int16Array(estOut);
-          let outCount = 0;
-          let pos = resamplePhase;
-          while (pos < len) {
-            let sample;
-            if (pos < 0) {
-              const frac = pos + 1;
-              sample = (hasPrevSample ? prevSample : float32Chunk[0]) * (1 - frac) + float32Chunk[0] * frac;
-            } else {
-              const i0 = Math.floor(pos);
-              const i1 = i0 + 1;
-              if (i1 >= len) break;
-              const frac = pos - i0;
-              sample = float32Chunk[i0] * (1 - frac) + float32Chunk[i1] * frac;
-            }
-            const clamped = Math.max(-1, Math.min(1, sample));
-            out[outCount++] = clamped < 0 ? Math.round(clamped * 0x8000) : Math.round(clamped * 0x7fff);
-            pos += step;
+          let chunkPeak = 0;
+          for (let i = 0; i < float32Chunk.length; i++) {
+            const a = Math.abs(float32Chunk[i]);
+            if (a > chunkPeak) chunkPeak = a;
           }
-          prevSample = float32Chunk[len - 1];
-          hasPrevSample = true;
-          resamplePhase = pos - len;
+          if (chunkPeak > envPeak) envPeak = envPeak * 0.75 + chunkPeak * 0.25;
+          else envPeak = envPeak * 0.96 + chunkPeak * 0.04;
+          const gain = (chunkPeak >= 0.014 && envPeak < 0.36) ? Math.min(2.2, 0.36 / Math.max(envPeak, 0.06)) : 1;
+
+          const tailLen = resampleTail.length;
+          const combined = new Float32Array(tailLen + float32Chunk.length);
+          if (tailLen > 0) combined.set(resampleTail, 0);
+          combined.set(float32Chunk, tailLen);
+          const totalLen = combined.length;
+
+          let pos = resamplePhase;
+          const maxOut = Math.ceil(totalLen / Math.max(step, 0.5)) + 2;
+          const out = new Int16Array(maxOut);
+          let outCount = 0;
+
+          if (step > 1.01) {
+            while (pos + step <= totalLen) {
+              const winStart = pos;
+              const winEnd = pos + step;
+              const idxStart = Math.floor(winStart);
+              const idxEnd = Math.floor(winEnd);
+              let sum = 0;
+              if (idxStart === idxEnd) {
+                sum = combined[idxStart] * step;
+              } else {
+                const firstWeight = (idxStart + 1) - winStart;
+                sum += combined[idxStart] * firstWeight;
+                for (let k = idxStart + 1; k < idxEnd; k++) sum += combined[k];
+                const lastWeight = winEnd - idxEnd;
+                if (lastWeight > 1e-6 && idxEnd < totalLen) sum += combined[idxEnd] * lastWeight;
+              }
+              let sample = (sum / step) * gain;
+              if (gain > 1) sample = sample / (1 + 0.15 * Math.abs(sample));
+              const clamped = Math.max(-1, Math.min(1, sample));
+              out[outCount++] = clamped < 0 ? Math.round(clamped * 0x8000) : Math.round(clamped * 0x7fff);
+              pos += step;
+            }
+          } else {
+            while (pos + 1 < totalLen) {
+              const i0 = Math.floor(pos);
+              const frac = pos - i0;
+              let sample = (combined[i0] * (1 - frac) + combined[i0 + 1] * frac) * gain;
+              if (gain > 1) sample = sample / (1 + 0.15 * Math.abs(sample));
+              const clamped = Math.max(-1, Math.min(1, sample));
+              out[outCount++] = clamped < 0 ? Math.round(clamped * 0x8000) : Math.round(clamped * 0x7fff);
+              pos += step;
+            }
+          }
+
+          const keepFrom = Math.max(0, Math.min(totalLen, Math.floor(pos)));
+          resampleTail = combined.slice(keepFrom);
+          resamplePhase = pos - keepFrom;
+
           if (outCount > 0) {
             appendPcmBytes(new Uint8Array(out.buffer, 0, outCount * 2));
+            if (started) drainFrames(4);
           }
         },
 
@@ -3359,11 +3476,35 @@
       };
     },
 
-    /** 判断当前识别文本结尾是否停在连接词/助词上，避免在玩家连招或思考停顿时过早截断（不匹配 〜て/〜して 完整祈使结尾） */
+    /** 判断当前识别文本结尾是否停在连接词/助词或半截宾语上，避免在玩家连招或思考停顿时过早截断（不匹配 〜て/〜して 完整祈使结尾） */
     isIncompleteTrailingPhrase(text) {
-      const s = String(text || "").trim().replace(/[、，,]+$/, "");
+      const s = String(text || "").trim().replace(/[、，,。.！!？?]+$/, "");
       if (!s) return true;
-      return /(?:然后|接着|之后|并且|而且|但是|不过|顺便|先把|先给|再把|再给|再|把|给|向|对|用|让|派|换|贴|の|を|に|へ|で|と|が|は|も|から|まで|てから|してから|そして|それから|あとで|そのあと)$/.test(s);
+      if (/(?:然后|接着|之后|随后|并且|而且|但是|不过|顺便|接下来|另外|同时|还有|先把|先给|先用|先贴|先上|再把|再给|再用|再贴|再上|先|再|把|给|向|对|用|让|派|将|替|帮|拖|拉|换|贴|の|を|に|へ|で|と|が|は|も|から|まで|てから|してから|そして|それから|あとで|そのあと|つぎに|次に|まず)$/.test(s)) {
+        return true;
+      }
+      if (/(?:然后|接着|之后|随后|顺便|接下来)(?:把|给|对|向|替)?(?:[^，。！？,.!?]{0,6}(?:炎狐|水龟|雷狮|炎龙|熔岩犬|泡沫鱼|电光鸟|沧海鲨|前排|后排|己方|我方|自己|对面|对手|对方|左边|右边|1号|2号|一号|二号))$/.test(s)) {
+        return true;
+      }
+      return false;
+    },
+
+    /** 判断文本末尾是否已到达攻击/技能/防御/结束回合等明确收尾指令 */
+    hasTerminalCommandTail(text) {
+      const s = String(text || "").trim().replace(/[、，,。.！!？?]+$/, "");
+      if (!s) return false;
+      const tail = s.slice(-16);
+      if (/(?:攻撃|こうげき|アタック|防御|ぼうぎょ|ガード|守る|まもる|守って|ターン終了|パス|終わり|攻击|进攻|开打|战斗(?!区)|发动攻击|展开攻击|防守|防御(?!区)|结束回合|过回合|过牌结束)$/.test(tail)) {
+        return true;
+      }
+      return Boolean(typeof SpecEngine !== "undefined" && SpecEngine.matchSkill && SpecEngine.matchSkill(tail));
+    },
+
+    /** 判断当前是否像“伤药/能量/召唤笛/换人”等尚未收尾的连招准备阶段 */
+    looksLikeOngoingCombo(text) {
+      const s = String(text || "").trim();
+      if (!s || this.hasTerminalCommandTail(s)) return false;
+      return /(?:伤药|回血|补血|加血|きずぐすり|能量|エネ|召唤笛|よびだし笛|强拉|换人|撤退|にげる|道具|补给|力量徽章|回收|换怪)/.test(s);
     },
 
     /** 中断当前尚未提交的 VAD 录音切片、Nia 流式会话与 PCM 采集缓冲 */
@@ -3482,11 +3623,17 @@
         if (!this.callActive || !this.vadAnalyser) return;
         const now = Date.now();
         const playerCanSpeak = !BattleEngine.state?.busy && BattleEngine.state?.currentPlayer === "player" && !BattleEngine.state?.gameOver;
-        if (!playerCanSpeak || now < this.sfxPlayingUntil) {
+        if (!playerCanSpeak) {
           this.vadHitStreak = 0;
           this.vadBargeStreak = 0;
           this.vadContStreak = 0;
           if (this.vadRecorder || this.vadCapturing) this.abortVadRecorder();
+          this.updateVoiceWave(0, 0.02, false);
+          return;
+        }
+        if (now < this.sfxPlayingUntil && !this.vadCapturing && !this.vadRecorder) {
+          this.vadHitStreak = 0;
+          this.vadBargeStreak = 0;
           this.updateVoiceWave(0, 0.02, false);
           return;
         }
@@ -3505,7 +3652,8 @@
         /* 全双工边播边识别（Nia 模式）：TTS 播放期间同步开启流式 ASR 试听，确认非回声有效人声后再平滑淡出打断 TTS */
         if (this.isSpeaking) {
           const isLowInterruptible = Boolean(this.currentSpeakItem && this.currentSpeakItem.interruptible);
-          if (!this.vadCapturing && !isLowInterruptible && this.bargeInGuardUntil && now < this.bargeInGuardUntil) {
+          const allowEasyBarge = isLowInterruptible || (typeof BattleEngine !== "undefined" && BattleEngine.state?.phase === "setup");
+          if (!this.vadCapturing && !allowEasyBarge && this.bargeInGuardUntil && now < this.bargeInGuardUntil) {
             this.vadBargeStreak = 0;
             this.vadLoudBargeStreak = 0;
             this.updateVoiceWave(rms * 0.2, 0.08, false);
@@ -3513,8 +3661,12 @@
           }
           const useFullDuplexNia = Boolean(this.vadProcessor && ConfigManager.data.asrMode === "nia_asr");
           if (useFullDuplexNia) {
-            const probeThresh = Math.max(0.022, this.vadNoiseFloor * 2.4 + 0.005);
-            const strongBargeThresh = Math.max(0.068, this.vadNoiseFloor * 4.8);
+            const probeThresh = allowEasyBarge
+              ? Math.max(0.015, this.vadNoiseFloor * 1.9 + 0.004)
+              : Math.max(0.022, this.vadNoiseFloor * 2.4 + 0.005);
+            const strongBargeThresh = allowEasyBarge
+              ? Math.max(0.028, this.vadNoiseFloor * 2.6 + 0.006)
+              : Math.max(0.052, this.vadNoiseFloor * 3.8);
             if (!this.vadCapturing) {
               if (rms > probeThresh) {
                 this.vadBargeStreak += 1;
@@ -3527,7 +3679,7 @@
                 this.vadBargeStreak = 0;
                 this.vadLoudBargeStreak = rms > strongBargeThresh ? 1 : 0;
                 this.vadContStreak = 0;
-                this.vadSimultaneousMode = true;
+                this.vadSimultaneousMode = !allowEasyBarge;
                 this.vadLastAsrText = "";
                 this.vadLastAsrChangeAt = 0;
                 this.vadGotFinal = false;
@@ -3535,9 +3687,18 @@
                 this.vadLastLoud = now;
                 this.vadPeakRms = rms;
                 this.vadLoudFrames = 2;
-                this.vadCaptureChunks = [...this.vadPreRoll];
+                const keepPreChunks = Math.max(2, Math.ceil(((ctx.sampleRate || 48000) * 0.26) / 2048));
+                this.vadCaptureChunks = this.vadPreRoll.slice(-keepPreChunks);
                 this.vadPreRoll = [];
                 this.vadCapturing = true;
+                if (allowEasyBarge) {
+                  this.fadeOutAndStopPlayback(70);
+                  this.lastSpeakEndAt = 0;
+                  BattleEngine.resetIdleTimer();
+                  this.updateCallButtonUI("barge");
+                  TableUI.showVoiceHud("listening", "…");
+                  DebugLog.add("AEC", "开局/引导语音快速说话打断", `rms=${rms.toFixed(3)}`);
+                }
                 if (this.vadNiaSession) { try { this.vadNiaSession.abort(); } catch (_) {} }
                 const niaSess = this.createNiaAsrSession({
                   lang: this.getEffectiveNiaAsrLang(),
@@ -3568,11 +3729,11 @@
               }
               return;
             }
-            /* 已在边播边识别试听中：若持续大声插话（防高延迟网络首字偏慢），140ms 后也平滑淡出打断 TTS */
+            /* 已在边播边识别试听中：若持续大声插话（防高延迟网络首字偏慢），约 110ms 后平滑淡出打断 TTS */
             if (this.vadSimultaneousMode) {
               if (rms > strongBargeThresh) {
                 this.vadLoudBargeStreak += 1;
-                if (this.vadLoudBargeStreak >= 4) {
+                if (this.vadLoudBargeStreak >= 3) {
                   this.vadSimultaneousMode = false;
                   this.vadLoudBargeStreak = 0;
                   this.fadeOutAndStopPlayback(100);
@@ -3588,8 +3749,12 @@
             }
             /* 落入下方活跃收音尾音判停逻辑，实现真正的边播边识别 */
           } else {
-            const bargeThresh = Math.max(0.036, this.vadNoiseFloor * 3.0);
-            const strongBargeThresh = Math.max(0.062, this.vadNoiseFloor * 4.5);
+            const bargeThresh = allowEasyBarge
+              ? Math.max(0.018, this.vadNoiseFloor * 2.0 + 0.005)
+              : Math.max(0.036, this.vadNoiseFloor * 3.0);
+            const strongBargeThresh = allowEasyBarge
+              ? Math.max(0.032, this.vadNoiseFloor * 2.8 + 0.006)
+              : Math.max(0.062, this.vadNoiseFloor * 4.5);
             if (rms > bargeThresh) {
               this.vadBargeStreak += 1;
               this.updateVoiceWave(rms, bargeThresh, true);
@@ -3597,7 +3762,7 @@
               this.vadBargeStreak = 0;
               this.updateVoiceWave(rms * 0.3, bargeThresh, false);
             }
-            if (this.vadBargeStreak >= 3 || (rms > strongBargeThresh && this.vadBargeStreak >= 2)) {
+            if ((allowEasyBarge && this.vadBargeStreak >= 2) || this.vadBargeStreak >= 3 || (rms > strongBargeThresh && this.vadBargeStreak >= 2)) {
               this.vadBargeStreak = 0;
               this.fadeOutAndStopPlayback(100);
               this.lastSpeakEndAt = 0;
@@ -3720,18 +3885,30 @@
           }
           const dur = now - this.vadSpeechStart;
           const silence = now - this.vadLastLoud;
-          const incompleteTail = this.vadLastAsrText ? this.isIncompleteTrailingPhrase(this.vadLastAsrText) : false;
-          const tailSilenceMs = incompleteTail ? 1350 : (this.vadGotFinal ? 620 : (dur < 1200 ? 720 : 960));
+          const asrTxt = this.vadLastAsrText || "";
+          const isSetupPhase = typeof BattleEngine !== "undefined" && BattleEngine.state?.phase === "setup";
+          const incompleteTail = asrTxt ? this.isIncompleteTrailingPhrase(asrTxt) : false;
+          const hasTerminalTail = asrTxt ? this.hasTerminalCommandTail(asrTxt) : false;
+          const looksCombo = asrTxt ? this.looksLikeOngoingCombo(asrTxt) : false;
+          const tailSilenceMs = isSetupPhase
+            ? (incompleteTail ? 1800 : 1200)
+            : (incompleteTail
+                ? 2200
+                : (hasTerminalTail
+                    ? (dur < 1200 ? 1100 : 1250)
+                    : (looksCombo ? 1800 : 1600)));
           const asrIdleMs = this.vadLastAsrChangeAt ? (now - this.vadLastAsrChangeAt) : 0;
-          const asrStableLimit = incompleteTail ? 1950 : (this.vadGotFinal ? 900 : 1350);
-          /* 声学静音 + ASR 文本稳定双信号联合判停：连续人声防单帧底噪误清零，放宽环境底噪下文本稳定提交 */
+          const asrStableLimit = isSetupPhase
+            ? (incompleteTail ? 2200 : 1400)
+            : (incompleteTail ? 2800 : (hasTerminalTail ? 1600 : (looksCombo ? 2100 : 1900)));
+          /* 声学静音 + ASR 文本稳定双信号联合判停：长连招中间自然停顿（~1s）不截断，明确终结词或停顿足够久才提交 */
           const asrTextStableDone = Boolean(
-            this.vadLastAsrText
+            asrTxt
             && dur >= 500
             && asrIdleMs >= asrStableLimit
             && rms < Math.max(0.045, this.vadNoiseFloor * 3.2, this.vadPeakRms * 0.55)
           );
-          if ((dur >= 380 && silence >= tailSilenceMs) || asrTextStableDone || dur >= 10000) {
+          if ((dur >= 380 && silence >= tailSilenceMs) || asrTextStableDone || dur >= 18000) {
             if (this.vadProcessor) {
               const wasSimultaneous = Boolean(this.vadSimultaneousMode);
               this.vadCapturing = false;
@@ -3758,10 +3935,29 @@
               if (!wasSimultaneous) SoundFX.play("tap");
               if (niaSession) {
                 const durCaptured = dur;
+                const sampleRateUsed = ctx.sampleRate || 48000;
+                let cachedWavB64 = null;
+                const getFallbackWavBase64 = () => {
+                  if (cachedWavB64 !== null) return cachedWavB64;
+                  if (pcmChunks.length === 0 || durCaptured > 16000) {
+                    cachedWavB64 = "";
+                    return cachedWavB64;
+                  }
+                  cachedWavB64 = this.encodePcmToWavBase64(pcmChunks, sampleRateUsed) || "";
+                  return cachedWavB64;
+                };
                 niaSession.finish().then((transcript) => {
                   const rawClean = String(transcript || "").trim();
                   const clean = wasSimultaneous ? this.stripSpokenEcho(rawClean) : rawClean;
                   if (!clean || (wasSimultaneous && (NLUEngine.isMeaninglessTranscript(clean) || this.isLikelySelfEcho(clean)))) {
+                    const canAudioRescue = !wasSimultaneous && loudFrames >= 6 && durCaptured >= 450 && Boolean(ConfigManager.buildRestUrl(ConfigManager.data.llmModel));
+                    const rescueWav = canAudioRescue ? getFallbackWavBase64() : "";
+                    if (rescueWav && this.callActive && this.callCallback) {
+                      DebugLog.add("ASR", `Nia 转写为空 (${durCaptured}ms)，启用原始音频多模态兜底`, `frames=${loudFrames}, peak=${peak.toFixed(3)}`);
+                      TableUI.showVoiceHud("llm", t("音声再解析中…", "音频复核解析中…"));
+                      this.callCallback({ audioBase64: rescueWav, audioMime: "audio/wav", fromVoice: true });
+                      return;
+                    }
                     DebugLog.add(wasSimultaneous ? "AEC" : "ASR", wasSimultaneous ? `边播边识别忽略回声/杂音 (${durCaptured}ms)` : `SenseTime Nia 流式识别结果为空 (${durCaptured}ms)`, rawClean || `frames=${loudFrames}, peak=${peak.toFixed(3)}`);
                     return;
                   }
@@ -3775,7 +3971,12 @@
                   if ($("cmdInput")) $("cmdInput").value = clean;
                   DebugLog.add("ASR", `SenseTime Nia 流式识别完成 (${durCaptured}ms)`, clean);
                   if (this.callActive && this.callCallback) {
-                    this.callCallback({ text: clean, fromVoice: true });
+                    this.callCallback({
+                      text: clean,
+                      fromVoice: true,
+                      fallbackAudioGetter: getFallbackWavBase64,
+                      fallbackAudioMime: "audio/wav"
+                    });
                   }
                 }).catch((err) => {
                   const reason = err?.code || err?.message || "Nia ASR 接続失敗";
@@ -4140,7 +4341,7 @@
       try {
         if (!this.callMicStream && navigator.mediaDevices?.getUserMedia) {
           this.callMicStream = await navigator.mediaDevices.getUserMedia({
-            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false }
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 }
           });
         }
       } catch (_) {
@@ -4157,6 +4358,9 @@
       this.callMode = canUseVad ? "vad" : "chrome_asr";
       this.recRetryDelay = 300;
       this.updateCallButtonUI("listen");
+      if (ConfigManager.data.asrMode === "nia_asr") {
+        ConfigManager.generateNiaJwt().catch(() => {});
+      }
 
       if (this.callMode === "vad") {
         this.startVadMonitor();
@@ -4254,7 +4458,7 @@
       if (useNiaStream) {
         try {
           const stream = await navigator.mediaDevices.getUserMedia({
-            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: false }
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 }
           });
           const ctx = this.getAudioCtx();
           if (ctx.state === "suspended") { try { await ctx.resume(); } catch (_) {} }
@@ -4271,6 +4475,10 @@
           let singleLastTextAt = 0;
           let singleGotFinal = false;
           let singleAutoTimer = null;
+          const singleRate = ctx.sampleRate || 48000;
+          const maxSingleChunks = Math.ceil((singleRate * 16) / 2048);
+          const singlePcmChunks = [];
+          let singleLoudFrames = 0;
           const session = this.createNiaAsrSession({
             lang: this.getEffectiveNiaAsrLang(),
             onPartial: (txt, isFinal) => {
@@ -4298,10 +4506,12 @@
               const tNow = Date.now();
               if (!singleSpeechAt) singleSpeechAt = tNow;
               singleLastLoudAt = tNow;
+              singleLoudFrames += 1;
             }
             const copy = new Float32Array(input.length);
             copy.set(input);
-            session.pushFloat32(copy, ctx.sampleRate || 48000);
+            if (singlePcmChunks.length < maxSingleChunks) singlePcmChunks.push(copy);
+            session.pushFloat32(copy, singleRate);
           };
           src.connect(proc);
           proc.connect(zeroGain);
@@ -4360,11 +4570,36 @@
               }
             };
             try {
+              let cachedSingleWav = null;
+              const getSingleFallbackWav = () => {
+                if (cachedSingleWav !== null) return cachedSingleWav;
+                if (singlePcmChunks.length === 0) {
+                  cachedSingleWav = "";
+                  return cachedSingleWav;
+                }
+                cachedSingleWav = this.encodePcmToWavBase64(singlePcmChunks, singleRate) || "";
+                return cachedSingleWav;
+              };
               const text = String(await session.finish() || "").trim();
               if (text) {
                 if ($("cmdInput")) $("cmdInput").value = text;
                 DebugLog.add("ASR", "SenseTime Nia 单次识别完成", text);
-                onResult({ text, fromVoice: true, manualVoice: true });
+                onResult({
+                  text,
+                  fromVoice: true,
+                  manualVoice: true,
+                  fallbackAudioGetter: getSingleFallbackWav,
+                  fallbackAudioMime: "audio/wav"
+                });
+              } else if (singleLoudFrames >= 4 && Boolean(ConfigManager.buildRestUrl(ConfigManager.data.llmModel))) {
+                const rescueWav = getSingleFallbackWav();
+                if (rescueWav) {
+                  DebugLog.add("ASR", "Nia 单次转写为空，启用原始音频多模态兜底", `frames=${singleLoudFrames}`);
+                  TableUI.showVoiceHud("llm", t("音声再解析中…", "音频复核解析中…"));
+                  onResult({ audioBase64: rescueWav, audioMime: "audio/wav", fromVoice: true, manualVoice: true });
+                } else {
+                  TableUI.setReferee("音声が認識できませんでした。もう一度お試しください。", "未能识别到有效语音，请再按一次重试。");
+                }
               } else {
                 TableUI.setReferee("音声が認識できませんでした。もう一度お試しください。", "未能识别到有效语音，请再按一次重试。");
               }
@@ -4542,16 +4777,19 @@
       return JSON.parse(cleaned.slice(s, e + 1));
     },
 
-    /** 混合解析：明确文本指令优先本地直出，复杂口语与音频直传交由 Vertex LLM 解析 */
-    async parse({ text = "", audioBase64 = null, audioMime = "audio/webm", fromVoice = false }, boardSnapshot, conversationContext = null) {
+    /** 混合解析：明确文本指令优先本地直出，复杂口语/误识别文本自动附带原始音频由多模态 Gemini 兜底复核 */
+    async parse({ text = "", audioBase64 = null, audioMime = "audio/webm", fromVoice = false, fallbackAudioGetter = null, fallbackAudioMime = "audio/wav" }, boardSnapshot, conversationContext = null) {
       const cfg = ConfigManager.data;
       const url = ConfigManager.buildRestUrl(cfg.llmModel);
       const parseOpts = { isVoice: Boolean(fromVoice || audioBase64) };
 
-      /* 文本/流式识别结果优先走本地 0ms 快通道，命中后在 HUD 闪现已执行反馈 */
+      /* 文本/流式识别结果优先走本地 0ms 快通道：全部子句均命中或离线模式时直出；若含未识别子句且配置了云端 LLM 则交由云端补全 */
       if (!audioBase64 && text) {
         const fast = this.localParse(text, boardSnapshot, conversationContext, parseOpts);
-        if (fast.status === "execute" || fast.status === "confirm" || fast.status === "chat") {
+        const hasUnmatched = Array.isArray(fast._unmatchedClauses) && fast._unmatchedClauses.length > 0;
+        const canShortCircuit = fast.status === "confirm" || fast.status === "chat"
+          || (fast.status === "execute" && (!hasUnmatched || !url || cfg.asrMode === "chrome_local"));
+        if (canShortCircuit) {
           DebugLog.add("NLU", `本地快通道命中 (${fast.status})`, { text, actions: fast.actions });
           if (typeof TableUI !== "undefined" && TableUI.showVoiceHud) {
             TableUI.showVoiceHud("fast", text);
@@ -4600,9 +4838,17 @@
         parts.push({ text: `追問コンテキスト:\n${ctxLines.join("\n")}` });
       }
 
+      const rescueB64 = (!audioBase64 && typeof fallbackAudioGetter === "function") ? fallbackAudioGetter() : "";
+      const usedAudioRescue = Boolean(!audioBase64 && rescueB64);
       if (audioBase64) {
         parts.push({ text: "以下の音声（日本語・中国語どちらでも可）を聞き取り、ゲーム操作JSONを返してください。「防御」「ぼうぎょ」「攻撃」「交代」「撤退」「水」「火」「雷」「左」「はい」「いいえ」などの短い明確なゲーム指示も必ず有効な操作として認識し、ignore にしないでください。「〇〇を召喚」「〇〇を出す」「ベンチに出す」「召唤〇〇」「派〇〇上场」は必ず PLAY_BENCH であり、絶対に END_TURN にしないでください。無音・環境音・効果音・クリック音・ため息・意味のない相槌（えっと/嗯/啊等）のみの場合は、操作を捏造せず {\"transcript\":\"\",\"status\":\"ignore\",\"actions\":[],\"reply_ja\":\"\",\"reply_zh\":\"\",\"rival_ja\":\"\",\"rival_zh\":\"\"} を返してください。" });
         parts.push({ inlineData: { mimeType: audioMime, data: audioBase64 } });
+      } else if (rescueB64) {
+        const fuzzyHints = SpecEngine.extractFuzzyHints(text);
+        const hintLine = fuzzyHints.length ? `\n（候補: ${fuzzyHints.join(" / ")}）` : "";
+        parts.push({ text: `参考ASR文字起こし:「${text}」（誤認識の可能性あり。必ず添付音声の実際の発音を優先して正確に聞き取り、ゲーム操作JSONを返してください）${hintLine}` });
+        parts.push({ inlineData: { mimeType: fallbackAudioMime || "audio/wav", data: rescueB64 } });
+        DebugLog.add("NLU", "Nia 文本未命中本地快通道，附带原始音频多模态复核", text);
       } else {
         const fuzzyHints = SpecEngine.extractFuzzyHints(text);
         const hintLine = fuzzyHints.length ? `\n（候補: ${fuzzyHints.join(" / ")}）` : "";
@@ -4654,6 +4900,7 @@
         });
         if (VoiceEngine.apiAsrBlocked && cfg.asrMode === "gemini_audio") VoiceEngine.onOnlineApiRecovered();
         const parsed = this.safeParseJson(streamRes.text || "");
+        if (usedAudioRescue) parsed._usedAudioRescue = true;
         DebugLog.add("NLU", `Vertex ${cfg.llmModel}${streamRes.streamed ? " [SSE]" : ""} (${Date.now() - t0}ms, ${parsed.status})`, { transcript: parsed.transcript, actions: parsed.actions });
         return parsed;
       } catch (e) {
@@ -4761,22 +5008,22 @@
       return null;
     },
 
-    /** 升级版多步顺序指令切分器：支持标点/连词 + 日语动词て形无标点连读 + 中文无标点连读边界（兼容 typoFix 归一化后的片假名标准词） */
+    /** 升级版多步顺序指令切分器：支持标点/连词 + 日语动词て形无标点连读 + 中文无标点连读边界（不拆散[道具+对象]短语，精准识别上药/上能/召唤笛拖换/战斗） */
     splitComboClauses(fixedText) {
       let s = String(fixedText || "").trim();
       if (!s) return [];
       /* 1. 日语动作动词 て形无标点连读边界（如 〜をベンチに出して〜に炎エネをつけて〜で攻撃） */
       s = s.replace(
-        /(出して|だして|置いて|おいて|入れて|いれて|つけて|付けて|貼って|はって|使って|つかって|飲んで|のんで|引いて|ひいて|回収して|交代して|入れ替えて|引きずり出して|呼び出して)(?=[\u3040-\u30ff\u4e00-\u9fffA-Za-z0-9]{2,})/g,
+        /(出して|だして|置いて|おいて|入れて|いれて|つけて|付けて|貼って|はって|使って|つかって|飲んで|のんで|引いて|ひいて|回収して|回復して|かいふくして|交代して|入れ替えて|引きずり出して|呼び出して|呼んで|よんで|攻撃して|防御して|ぼうぎょして)(?=[\u3040-\u30ff\u4e00-\u9fffA-Za-z0-9]{2,})/g,
         "$1|SPLIT|"
       );
-      /* 2. 中文无标点连读边界（兼容 applyLocalTypoFix 归一化后的 ベンチ/炎エネルギー/補給バッグ 等标准词） */
+      /* 2. 中文无标点连读边界（兼容 applyLocalTypoFix 归一化词，保留“用伤药给炎狐回血”“用召唤笛拖对手换怪物”等动宾完整性） */
       s = s.replace(
-        /(放到?(?:备战区?|ベンチ)|放后排|放上场|下怪|上场|(?:贴|充|加)(?:(?:火|炎|水|雷)?(?:能量?|エネルギー|エネ))?|贴能|充能|(?:用|使|吃|喝|吹)?(?:补给包|補給バッグ|伤药|きずぐすり|力量徽章|パワーバッジ|召唤笛|よびだし笛|能量回收|エネ回収)|抽两?张?牌?|加攻|增伤|撤退|换人)(?=(?:给|把|用|派|贴|拿|发动|放|让|再|打|攻|开|吃|喝|吹|换|撤|防御|结束|使))/g,
+        /(放到?(?:备战区?|ベンチ)|放后排|放上场|下怪|上场|(?:(?:贴|充|上|加|附着?)[个张点]?(?:(?:火|炎|水|雷)?(?:能量?|エネルギー|エネ))|贴能|充能|(?:火|炎|水|雷)能)|(?:(?:给|用|使|吃|喝|嗑)?(?:伤药|きずぐすり)(?:回血|补血|加血|治疗)?|回血|补血|加血)|(?:(?:用|使|吹)?(?:召唤笛|呼叫笛|よびだし笛)(?:(?:把|拖|拉|让|叫|逼)(?:对手|对方|对面)?[^，。！？,.!?]{0,10}(?:换(?:到|成)?(?:怪物|怪兽|精灵|怪|人|卡|前排)?|拉上[来场]?|拖上[来场]?|拽上[来场]?|出来|上来|出战))?|拖(?:对手|对面|对方)换(?:怪物|怪兽|精灵|怪|人)|强制换人)|(?:(?:用|使)?(?:补给包|補給バッグ|力量徽章|パワーバッジ|能量回收|エネ回収)|抽两?张?牌?|加攻|增伤)|撤退|换人)(?=(?:然后|接着|之后|随后|最后|并且|而且|顺便|并|再|去)?(?:给[^，。！？,.!?回补治]{1,4}(?:贴|充|上|加|用|吃|喝|吹|放|换)|把[^，。！？,.!?]{1,5}(?:贴|放|派|换|拉|拖)|用|使|吃|喝|吹|贴|充|上[个张点]?(?:药|伤药|きずぐすり|火|炎(?!狐|龙)|水(?!龟)|雷(?!狮|鸟)|电|能|エネルギー|エネ|场)|加(?:一个?|一?张|一?点|[个张点])?(?:能|火|水|雷|电|攻|血)|补|抽|摸|派|放|发动|召唤笛|呼叫笛|よびだし笛|伤药|きずぐすり|补给包|補給バッグ|力量徽章|パワーバッジ|能量回收|エネ回収|(?:炎|水|雷)?エネルギー|(?:火|炎|水|雷|电)能量?|战斗(?!区)|攻击|进攻|开打|开战|防御(?!区)|防守|守住|撤退|结束回合))/g,
         "$1|SPLIT|"
       );
       return s
-        .split(/(?:\|SPLIT\||してから|てから|そのあと|その後|それから|そして|然后|接着|之后|再用|再(?=[贴用放出派打攻防换抽回拉给把让去上])|、|，|。)/)
+        .split(/(?:\|SPLIT\||してから|てから|そのあと|その後|それから|そして|あとで|次に|然后|接着|之后|随后|并且|而且|顺便|接下来|另外|同时|最后(?=(?:用|使|贴|上|放|出|派|打|攻|防|守|换|撤|抽|回|吹|战|发动))|再用|再(?=[贴上用放出派打攻防守换撤抽回拉吹给把让去开战])|、|，|,|。|！|!)/)
         .map((seg) => seg.trim())
         .filter(Boolean);
     },
@@ -4804,6 +5051,28 @@
       if (/(ある[？?]?$|ありますか|いる[？?]?$|足りる|足りますか|何枚|いくつ|どのくらい|使える[？?]?$|使えますか|倒せる[？?]?$|倒せますか|持ってる[？?]?$|持っていますか)/.test(s)) return true;
       if (/[？?]$/.test(s) && !/(攻撃|攻击|貼|贴|出|使|交代|撤退|終了|结束)/.test(s)) return true;
       return false;
+    },
+
+    /** 从玩家口语或ASR文本中提取明确指定的能量卡ID（剥离怪兽名与技能名后再判断属性/颜色/谐音，防止“给水龟加火能量”被水龟元素误导） */
+    resolveEnergyCardFromText(rawText) {
+      const fixed = SpecEngine.applyLocalTypoFix(rawText || "").trim();
+      if (!fixed) return null;
+      if (/炎エネルギー/.test(fixed)) return "energy_fire";
+      if (/水エネルギー/.test(fixed)) return "energy_water";
+      if (/雷エネルギー/.test(fixed)) return "energy_thunder";
+      const scrubbed = fixed
+        .replace(/(?:カエンリュウ|タイカイザメ)(?:\s*ex)?|ヒノキツネ|ミズガメ|ライジシ|マグマ犬|アワウオ|エレキ鳥|炎龙(?:\s*ex)?|火龙(?:\s*ex)?|沧海鲨(?:\s*ex)?|炎狐|火狐狸?|水龟|小水龟|乌龟|海龟|雷狮|电狮|喷火龙|熔岩犬|泡沫鱼|泡泡鱼|电光鸟|大鲨鱼/gi, " ")
+        .replace(/メテオ炎|かえん弾|みず撃ち|こうら壁|でんき玉|フレア爪|ひのこ|サンダー|火花|炎弹|水击|甲壳壁|电球|落雷|烈焰爪|陨星炎/gi, " ");
+      if (/(?:雷|电|闪电|电气|雷电|黄|かみなり|でんき|電気|きいろ|サンダー|イエロー|\bthunder\b|\belectric\b|\byellow\b|(?:类|累|来|店)(?=(?:的|系)?能))/i.test(scrubbed)) {
+        return "energy_thunder";
+      }
+      if (/(?:水|冰|蓝|青|みず|あお|ウォーター|ブルー|\bwater\b|\bblue\b|(?:谁|税|睡)(?=(?:的|系)?能))/i.test(scrubbed)) {
+        return "energy_water";
+      }
+      if (/(?:炎|火|火焰|烈火|赤|红|ほのお|あか|ファイア|ファイアー|レッド|\bfire\b|\bred\b|(?:活|伙|货)(?=(?:的|系)?能))/i.test(scrubbed)) {
+        return "energy_fire";
+      }
+      return null;
     },
 
     /** 本地双语指令解析（结合盘面上下文 0ms 口语快通道、无标点多步连招拆解与模糊匹配） */
@@ -4860,27 +5129,29 @@
       };
 
       const actions = [];
-      for (const c of clauses) {
+      const unmatchedEntries = [];
+      const isFillerClause = (seg) => {
+        const core = String(seg || "").replace(/[\s　「」『』（）()【】\[\]、，。.,！!？?・\-ー…~～]/g, "");
+        return !core || /^(?:好的|可以|行|嗯|啊|呀|吧|呢|哦|嘛|哈|呐|好吗|行吗|一下|えっと|えー|まあ|あの|はい|うん)$/.test(core);
+      };
+      for (let ci = 0; ci < clauses.length; ci++) {
+        const c = clauses[ci];
         const fuzzyItem = SpecEngine.matchItem(c);
 
         if (/(エネ回収|エネルギー回収|かいしゅう|トラッシュからエネ|捨て札からエネ|能量回收|回收能量|从弃牌区拿能量|捡回能量|捞能量|拿回能量)/.test(c) || (fuzzyItem && fuzzyItem.id === "item_recycle")) {
           const handCnt = liveHand.filter((id) => id === "item_recycle").length;
           const repeat = parsePluralCount(c, handCnt || 1);
-          for (let r = 0; r < repeat; r++) actions.push({ type: "USE_ITEM", card_id: "item_recycle", target: null });
+          for (let r = 0; r < repeat; r++) actions.push({ type: "USE_ITEM", card_id: "item_recycle", target: null, _clause: c, _clauseIdx: ci });
           continue;
         }
-        if (/(エネルギー|えねるぎー|エネ|えね|能量|贴能|火能|水能|雷能|充能|给.{0,6}(?:贴|充|加)(?:能|火|水|雷)|贴[个张]?(?:炎|火|水|雷)|貼って|はって|付けて|つけて|贴上|给它贴)/.test(c) || (fuzzyItem && fuzzyItem.category === "energy")) {
-          let cardId = fuzzyItem && fuzzyItem.category === "energy" ? fuzzyItem.id : null;
-          if (/水|みず/.test(c)) cardId = "energy_water";
-          else if (/雷|かみなり|でんき/.test(c)) cardId = "energy_thunder";
-          else if (/炎|火|ほのお/.test(c)) cardId = "energy_fire";
-          if (!cardId && uniqueHandEnergies.length === 1) cardId = uniqueHandEnergies[0];
+        if (/(エネルギー|えねるぎー|エネ|えね|能量|贴能|火能|水能|雷能|炎能|电能|闪电能量|雷电能量|火焰能量|火系能量|水系能量|雷系能量|电系能量|充能|(?:加|上|贴|充)(?:一个?|一?张|一?点|一?颗|[个张点颗])?(?:电|闪电|红|蓝|黄|火|炎(?!狐|龙)|水(?!龟)|雷(?!狮|鸟))的?(?:能|能量)?|给.{0,6}(?:贴|充|加|上)(?:能|火|水|雷|电)|贴[个张]?(?:炎|火|水|雷|电)|貼って|はって|付けて|つけて|贴上|给它贴)/.test(c) || (fuzzyItem && fuzzyItem.category === "energy")) {
+          const cardId = this.resolveEnergyCardFromText(c) || (fuzzyItem && fuzzyItem.category === "energy" ? fuzzyItem.id : null);
           const target = this.resolveSlotFromText(c, "player", board);
-          actions.push({ type: "ATTACH_ENERGY", card_id: cardId, target });
+          actions.push({ type: "ATTACH_ENERGY", card_id: cardId, target, _clause: c, _clauseIdx: ci });
           continue;
         }
-        if (/(よびだし笛|呼び出し笛|ふえ|引っ張り|引きずり出|強制交代|前に引き|召唤笛|吹笛|强拉|拉上来|拉人|拉对面|拉对手|拉后排|把对面.{0,8}拉)/.test(c) || (fuzzyItem && fuzzyItem.id === "item_flute")) {
-          actions.push({ type: "USE_ITEM", card_id: "item_flute", target: this.resolveSlotFromText(c, "enemy", board) });
+        if (/(よびだし笛|呼び出し笛|ふえ|引っ張り|引きずり出|強制交代|前に引き|召唤笛|呼叫笛|笛子|吹笛|吹口?哨|哨子|强拉|强迫.{0,4}换|强行.{0,4}换|拖.{0,4}(?:对手|对方|对面|敌方|后排)|拉.{0,4}(?:对手|对方|对面)|拉上来|拉出来|拉上场|拽.{0,4}(?:上来|出来)|逼.{0,3}(?:对手|对面|对方)换|(?:对手|对面|对方).{0,4}换(?:怪物?|怪兽|精灵|人|卡)|把(?:对手|对面|对方).{0,8}(?:拉|拖|拽|换))/.test(c) || (fuzzyItem && fuzzyItem.id === "item_flute")) {
+          actions.push({ type: "USE_ITEM", card_id: "item_flute", target: this.resolveSlotFromText(c, "enemy", board), _clause: c });
           continue;
         }
         const matchedSkillEarly = SpecEngine.matchSkill(c) || this.resolveColloquialSkillFromClause(c, board);
@@ -4888,10 +5159,10 @@
         const matchedPlayerMon = allMatchedPlayerMons[0] || SpecEngine.matchMonster(c, "player");
         const isSummonClause = /(ベンチに出|ベンチに置|ベンチに入|べんちに出|後ろに出|後ろに置|場に出|召喚|しょうかん|を出す|を出して|をだす|をだして|を置く|を置いて|备战区|放到?备战|放上备战|下怪|放上场|放到场上|放到后排|派上后排|派上场|上场|出战|召唤|^(?:出して|置いて|放下去|放上去)$)/.test(c)
           && !matchedSkillEarly && !this.hasExplicitDefendIntent(c)
-          && !/(狙撃|狙击|点杀|交代|こうたい|撤退|てったい|换人|换上|换下|撤下去|きずぐすり|回復|かいふく|伤药|回血|奶)/.test(c);
+          && !/(狙撃|狙击|点杀|交代|こうたい|撤退|てったい|换人|换上|换下|撤下去|きずぐすり|回復|かいふく|伤药|上药|回血|奶|对手|对面|对方|拖|强拉|吹笛)/.test(c);
         const isShortMonDeploy = Boolean(matchedPlayerMon) && !matchedSkillEarly && !this.hasExplicitDefendIntent(c)
           && /(出|放|派|上|下|置)/.test(c)
-          && !/(攻撃|こうげき|攻击|技|招|能量|エネ|きずぐすり|回復|かいふく|伤药|奶|交代|こうたい|撤退|てったい|换|撤下去|拉回)/.test(c);
+          && !/(攻撃|こうげき|攻击|战斗|技|招|能量|エネ|きずぐすり|回復|かいふく|伤药|上药|奶|交代|こうたい|撤退|てったい|换|撤下去|拉回)/.test(c);
         if (isSummonClause || isShortMonDeploy) {
           const hasPluralAll = /(全部|所有|全都|统统|一起|能放的|全員|ぜんぶ|すべて|まとめて|みんな|(?<![不别没])都(?:放|出|派|上|下|置))/.test(c);
           const explicitCount = /(三[张只个回枚体]|3[张只个回枚体]|３[枚体])/.test(c) ? 3 : (/(两[张只个回枚体]|二[张只个回枚体]|2[张只个回枚体]|２[枚体])/.test(c) ? 2 : 0);
@@ -4904,72 +5175,118 @@
               const idx = remainingHand.indexOf(m.id);
               if (remainingHand.length === 0 || idx !== -1) {
                 if (idx !== -1) remainingHand.splice(idx, 1);
-                actions.push({ type: "PLAY_BENCH", card_id: m.id, _plural: true });
+                actions.push({ type: "PLAY_BENCH", card_id: m.id, _plural: true, _clause: c });
                 pushed += 1;
               }
             }
-            if (pushed === 0) actions.push({ type: "PLAY_BENCH", card_id: allMatchedPlayerMons[0].id });
+            if (pushed === 0) actions.push({ type: "PLAY_BENCH", card_id: allMatchedPlayerMons[0].id, _clause: c });
           } else if (matchedPlayerMon && (hasPluralAll || explicitCount >= 2)) {
             /* 点名同一种怪兽多只（如“把两只雷狮都放到备战区”） */
             const copiesInHand = handMonIds.filter((id) => id === matchedPlayerMon.id).length;
             const want = hasPluralAll ? (copiesInHand || 1) : Math.min(explicitCount, copiesInHand || explicitCount);
             const cap = emptyBenchCount > 0 ? Math.min(want, emptyBenchCount) : 1;
-            for (let k = 0; k < cap; k++) actions.push({ type: "PLAY_BENCH", card_id: matchedPlayerMon.id, _plural: true });
+            for (let k = 0; k < cap; k++) actions.push({ type: "PLAY_BENCH", card_id: matchedPlayerMon.id, _plural: true, _clause: c });
           } else if (!matchedPlayerMon && (hasPluralAll || explicitCount >= 2) && handMonIds.length > 0) {
             /* 批量将手牌全部或指定数量怪兽放入备战区（如“把所有怪兽放到备战区”“手札のモンスターを全部ベンチに出して”） */
             const want = hasPluralAll ? handMonIds.length : Math.min(explicitCount, handMonIds.length);
             const cap = emptyBenchCount > 0 ? Math.min(want, emptyBenchCount) : 1;
-            for (let k = 0; k < cap; k++) actions.push({ type: "PLAY_BENCH", card_id: handMonIds[k], _plural: true });
+            for (let k = 0; k < cap; k++) actions.push({ type: "PLAY_BENCH", card_id: handMonIds[k], _plural: true, _clause: c });
           } else {
             const deployId = matchedPlayerMon ? matchedPlayerMon.id : (uniqueHandMons.length === 1 ? uniqueHandMons[0] : null);
-            actions.push({ type: "PLAY_BENCH", card_id: deployId });
+            actions.push({ type: "PLAY_BENCH", card_id: deployId, _clause: c });
           }
           continue;
         }
-        if (/(きずぐすり|回復|かいふく|ヒール|ポーション|体力回復|HP回復|伤药|回血|补血|治疗|加血|加点血|奶一口|奶一下|吃药|喝药|飲む|飲んで|のむ|のんで)/.test(c) || (fuzzyItem && fuzzyItem.id === "item_potion")) {
+        if (/(きずぐすり|回復|かいふく|ヒール|ポーション|体力回復|HP回復|伤药|上药|回血|补血|治疗|加血|加点血|奶一口|奶一下|吃药|喝药|嗑药|用个?药|吃瓶?药|喝[口瓶]?药|贴伤药|飲む|飲んで|のむ|のんで)/.test(c) || (fuzzyItem && fuzzyItem.id === "item_potion")) {
           const handCnt = liveHand.filter((id) => id === "item_potion").length;
           const repeat = parsePluralCount(c, handCnt || 1);
           const target = this.resolveSlotFromText(c, "player", board);
-          for (let r = 0; r < repeat; r++) actions.push({ type: "USE_ITEM", card_id: "item_potion", target });
+          for (let r = 0; r < repeat; r++) actions.push({ type: "USE_ITEM", card_id: "item_potion", target, _clause: c });
           continue;
         }
         if (/(補給バッグ|ほきゅう|ドロー|2枚引|カードを引|补给包|抽牌|抽两张|抽2张|摸两张|摸2张|摸牌|过牌|补牌)/.test(c) || (fuzzyItem && fuzzyItem.id === "item_bag")) {
-          actions.push({ type: "USE_ITEM", card_id: "item_bag", target: null });
+          actions.push({ type: "USE_ITEM", card_id: "item_bag", target: null, _clause: c });
           continue;
         }
         if (/(パワーバッジ|ぱわーばっじ|攻撃力アップ|火力アップ|バフ|力量徽章|加攻|加20攻|加伤害|增伤|強化|强化)/.test(c) || (fuzzyItem && fuzzyItem.id === "item_power")) {
           const handCnt = liveHand.filter((id) => id === "item_power").length;
           const repeat = parsePluralCount(c, handCnt || 1);
-          for (let r = 0; r < repeat; r++) actions.push({ type: "USE_ITEM", card_id: "item_power", target: null });
+          for (let r = 0; r < repeat; r++) actions.push({ type: "USE_ITEM", card_id: "item_power", target: null, _clause: c });
           continue;
         }
         if (/^(?:使う|使って|つかう|つかって|用一下|使用道具|用道具)$/.test(c) && uniqueHandTools.length === 1) {
-          actions.push({ type: "USE_ITEM", card_id: uniqueHandTools[0], target: null });
+          actions.push({ type: "USE_ITEM", card_id: uniqueHandTools[0], target: null, _clause: c });
           continue;
         }
-        if (/(交代|こうたい|入れ替|いれかえ|下げて|さげて|逃げて|にげる|撤退|てったい|チェンジ|スイッチ|ベンチに戻|换人|换上|换下|退回|下场|撤下去|拉回后排|切回|切换|把.{0,8}换(?:到|上|下|成|为|出)|换.{0,6}(?:上|下|成|为|出))/.test(c)) {
+        if (/(交代|こうたい|入れ替|いれかえ|下げて|さげて|逃げて|にげる|撤退|てったい|チェンジ|スイッチ|ベンチに戻|换人|换上|换下|退回|下场|撤下去|拉回后排|切回|切换|把.{0,8}换(?:到|上|下|成|为|出)|换.{0,6}(?:上|下|成|为|出))/.test(c)
+          && !/(?:对手|对面|对方|敌方)/.test(c)) {
           let target = this.resolveSlotFromText(c, "player", board);
           if (target === "player_active") target = null;
-          actions.push({ type: "RETREAT", target });
+          actions.push({ type: "RETREAT", target, _clause: c });
           continue;
         }
         if (this.hasExplicitDefendIntent(c)) {
-          actions.push({ type: "DEFEND", target: "player_active" });
+          actions.push({ type: "DEFEND", target: "player_active", _clause: c });
           continue;
         }
 
         if (matchedSkillEarly) {
-          actions.push({ type: "ATTACK", skill_name: matchedSkillEarly.name_ja, target: this.resolveSlotFromText(c, "enemy", board) });
+          actions.push({ type: "ATTACK", skill_name: matchedSkillEarly.name_ja, target: this.resolveSlotFromText(c, "enemy", board), _clause: c });
           continue;
         }
         if (this.hasExplicitAttackIntent(c)) {
-          actions.push({ type: "ATTACK", skill_name: null, target: this.resolveSlotFromText(c, "enemy", board) });
+          actions.push({ type: "ATTACK", skill_name: null, target: this.resolveSlotFromText(c, "enemy", board), _clause: c });
           continue;
         }
         if (this.hasExplicitEndTurnIntent(c, isVoice)) {
-          actions.push({ type: "END_TURN" });
+          actions.push({ type: "END_TURN", _clause: c });
+          continue;
+        }
+        if (!isFillerClause(c)) unmatchedEntries.push({ text: c, idx: ci });
+      }
+      /* 合并相邻能量属性补充子句（如“我要加能量，火的”“火能量，贴给炎狐”），再按单一手牌能量兜底 */
+      const consumedUnmatched = new Set();
+      for (let i = 0; i < actions.length; i++) {
+        const a = actions[i];
+        if (!a || a.type !== "ATTACH_ENERGY") continue;
+        if (!a.card_id || !a.target) {
+          for (const ue of unmatchedEntries) {
+            if (consumedUnmatched.has(ue.idx)) continue;
+            if (ue.idx === a._clauseIdx + 1 || ue.idx === a._clauseIdx - 1) {
+              const eCard = !a.card_id ? this.resolveEnergyCardFromText(ue.text) : null;
+              const eTarget = !a.target ? this.resolveSlotFromText(ue.text, "player", board) : null;
+              if (eCard || eTarget) {
+                if (eCard) a.card_id = eCard;
+                if (eTarget) a.target = eTarget;
+                a._clause = ue.idx < a._clauseIdx ? `${ue.text} ${a._clause}` : `${a._clause} ${ue.text}`;
+                consumedUnmatched.add(ue.idx);
+                if (a.card_id && a.target) break;
+              }
+            }
+          }
+        }
+        const nextAct = actions[i + 1];
+        if (nextAct && nextAct.type === "ATTACH_ENERGY" && nextAct._clauseIdx === a._clauseIdx + 1) {
+          const conflictCard = Boolean(a.card_id && nextAct.card_id && a.card_id !== nextAct.card_id);
+          const conflictTarget = Boolean(a.target && nextAct.target && a.target !== nextAct.target);
+          if (!conflictCard && !conflictTarget) {
+            if (!a.card_id && nextAct.card_id) a.card_id = nextAct.card_id;
+            if (!a.target && nextAct.target) a.target = nextAct.target;
+            a._clause = `${a._clause} ${nextAct._clause}`;
+            actions.splice(i + 1, 1);
+            i -= 1;
+          }
         }
       }
+      for (const a of actions) {
+        if (a && a.type === "ATTACH_ENERGY" && !a.card_id && uniqueHandEnergies.length === 1) {
+          a.card_id = uniqueHandEnergies[0];
+        }
+        if (a && "_clauseIdx" in a) delete a._clauseIdx;
+      }
+      const unmatchedClauses = unmatchedEntries
+        .filter((ue) => !consumedUnmatched.has(ue.idx))
+        .map((ue) => ue.text);
       /* 若同句同时包含防御/攻击与回合结束，去掉多余的 END_TURN（防御与攻击本身即结束回合） */
       if (actions.some((a) => a.type === "DEFEND" || a.type === "ATTACK")) {
         for (let i = actions.length - 1; i >= 0; i--) {
@@ -4996,7 +5313,13 @@
           rival_ja: "", rival_zh: ""
         };
       }
-      return { transcript: fixed, status: "execute", actions, reply_ja: "", reply_zh: "", rival_ja: "", rival_zh: "" };
+      return {
+        transcript: fixed, status: "execute", actions,
+        reply_ja: "", reply_zh: "", rival_ja: "", rival_zh: "",
+        _matchedCount: actions.length,
+        _totalClauses: clauses.length,
+        _unmatchedClauses: unmatchedClauses
+      };
     },
 
     /** 判断语音转写是否为空白、纯标点或无音占位文本 */
@@ -5036,12 +5359,12 @@
       return /^(防|守)$/.test(stripped);
     },
 
-    /** 严格判定攻击意图：覆盖日/中全场景口语与狙击后排，排除“打算/打开/不打/打不过/下回合再打”等非攻击口语 */
+    /** 严格判定攻击意图：覆盖日/中全场景口语、“战斗”与狙击后排，排除“战斗区/打算/打开/不打/打不过/下回合再打”等非攻击口语 */
     hasExplicitAttackIntent(text) {
       const cleaned = String(text || "")
         .replace(/(?:下回合|下一回合|下次|等会|等一下|一会儿|待会|明天|次のターン|あとで|後で)再?[^、，。]*/g, "")
-        .replace(/打算|打开|打不开|打不过|不打|别打|不要打|没打|打断|打字/g, "");
-      return /(攻撃|こうげき|アタック|殴|なぐる|なぐって|撃って|撃つ|うって|うつ|叩く|叩いて|たたいて|狙撃|ベンチを狙|仕掛け|突撃|ぶっ飛ば|倒せ|技|わざ|スキル|大招|必殺技|必杀技|攻击|进攻|出招|技能|狙击|点杀|平a|平A|普攻|出击|上吧|直接打|动手|开火|打一下|打他|打它|打她|打对面|打对手|打前排|打后排|打怪|打死|秒了|秒掉|干掉|击倒|开打|打过去|一击|放招|用招|用技能打)/.test(cleaned);
+        .replace(/(?:[己敌双]方)?战斗区|打算|打开|打不开|打不过|不打|别打|不要打|没打|打断|打字/g, "");
+      return /(攻撃|こうげき|アタック|殴|なぐる|なぐって|撃って|撃つ|うって|うつ|叩く|叩いて|たたいて|狙撃|ベンチを狙|仕掛け|突撃|ぶっ飛ば|倒せ|技|わざ|スキル|大招|必殺技|必杀技|攻击|进攻|战斗(?!区)|去战斗|进战斗|进入战斗|开始战斗|直接战斗|战斗吧|开战|出招|技能|狙击|点杀|平a|平A|普攻|出击|上吧|直接打|动手|开火|打一下|打他|打它|打她|打对面|打对手|打前排|打后排|打怪|打死|秒了|秒掉|干掉|击倒|开打|打过去|一击|放招|用招|用技能打)/.test(cleaned);
     },
 
     /** 判断玩家在追问状态下的新发言是否属于明确的取消改口或全新动作指令（而非对当前追问的回答） */
@@ -5069,12 +5392,14 @@
       const clauses = this.splitComboClauses(fixed);
       if (clauses.length <= 1) return fixed;
       const matchers = {
-        ATTACH_ENERGY: (c) => /(エネルギー|エネ|能量|贴|充能|火能|水能|雷能|貼って|付けて|つけて)/.test(c),
+        ATTACH_ENERGY: (c) => /(エネルギー|エネ|能量|贴|充能|上能|火能|水能|雷能|炎能|电能|闪电能量|雷电能量|上火|上水|上雷|上电|加火|加水|加雷|加电|貼って|付けて|つけて)/.test(c),
         PLAY_BENCH: (c) => /(ベンチ|後ろ|場に出|召喚|出す|出して|置く|置いて|备战|下怪|上场|出战|召唤|后排)/.test(c),
-        USE_ITEM: (c) => cardId === "item_potion" ? /(きずぐすり|回復|ヒール|ポーション|伤药|回血|补血|治|加血|加点血|奶|药|飲む|飲んで)/.test(c)
-          : (cardId === "item_flute" ? /(よびだし笛|呼び出|引っ張り|引きずり|強制交代|召唤笛|吹笛|强拉|拉)/.test(c) : /(道具|グッズ|補給|ドロー|抽|摸|過牌|过牌|バッジ|加攻|バフ|回収|回收|捞|捡|使|用)/.test(c)),
-        RETREAT: (c) => /(交代|入れ替|下げ|逃げ|にげる|撤退|チェンジ|スイッチ|ベンチに戻|换|退|切|撤下去|拉回)/.test(c),
-        ATTACK: (c) => Boolean(SpecEngine.matchSkill(c)) || /(?:1技能|2技能|一技能|二技能|上の技|下の技|大招|必殺技|必杀技)/.test(c) || this.hasExplicitAttackIntent(c)
+        USE_ITEM: (c) => cardId === "item_potion" ? /(きずぐすり|回復|ヒール|ポーション|伤药|上药|回血|补血|治|加血|加点血|奶|药|飲む|飲んで)/.test(c)
+          : (cardId === "item_flute" ? /(よびだし笛|呼び出|引っ張り|引きずり|強制交代|召唤笛|呼叫笛|笛子|吹笛|强拉|拖|换怪|拉)/.test(c) : /(道具|グッズ|補給|ドロー|抽|摸|過牌|过牌|バッジ|加攻|バフ|回収|回收|捞|捡|使|用)/.test(c)),
+        RETREAT: (c) => /(交代|入れ替|下げ|逃げ|にげる|撤退|チェンジ|スイッチ|ベンチに戻|换|退|切|撤下去|拉回)/.test(c) && !/(?:对手|对面|对方)/.test(c),
+        ATTACK: (c) => Boolean(SpecEngine.matchSkill(c)) || /(?:1技能|2技能|一技能|二技能|上の技|下の技|大招|必殺技|必杀技)/.test(c) || this.hasExplicitAttackIntent(c),
+        DEFEND: (c) => this.hasExplicitDefendIntent(c),
+        END_TURN: (c) => this.hasExplicitEndTurnIntent(c, false)
       };
       const fn = matchers[actType];
       if (!fn) return fixed;
@@ -5385,9 +5710,14 @@
       this.openingChallengeSpoken = true;
       const lang = getUiLang();
       const firstChunk = VoiceEngine.splitIntoClauses(t(line.ja, line.zh), lang)[0] || t(line.ja, line.zh);
-      VoiceEngine.bargeInGuardUntil = Math.max(VoiceEngine.bargeInGuardUntil || 0, Date.now() + 700);
-      VoiceEngine.speak({ ja: line.ja, zh: line.zh }, "rival", { priority: "high", lang, deferPrefetch: true });
-      setTimeout(() => { VoiceEngine.prefetch(firstChunk, "rival", lang); }, 350);
+      VoiceEngine.bargeInGuardUntil = 0;
+      VoiceEngine.speak({ ja: line.ja, zh: line.zh }, "rival", { priority: "high", interruptible: true, lang, deferPrefetch: true });
+      const seq = this.matchSeq;
+      const expectedToken = VoiceEngine.speakToken;
+      setTimeout(() => {
+        if (seq !== this.matchSeq || VoiceEngine.speakToken !== expectedToken) return;
+        VoiceEngine.prefetch(firstChunk, "rival", lang);
+      }, 350);
     },
 
     reset(triggerGuideVoice = false) {
@@ -5507,7 +5837,7 @@
       TableUI.showTurnBanner("ターン 1：あなたの番", "第 1 回合：你的回合", false);
       /* 选定首发后立即终止已过时的“请选择首发”引导语音，并以高优播报裁判开幕 + 对手开场第一句话 */
       VoiceEngine.stopPlayback();
-      this.announceAndReact(ja, zh, def.is_ex ? "play_ex" : "start", null, { priority: "high", speakJa: startVoiceJa, speakZh: startVoiceZh });
+      this.announceAndReact(ja, zh, def.is_ex ? "play_ex" : "start", null, { priority: "high", interruptible: true, speakJa: startVoiceJa, speakZh: startVoiceZh });
       if (def.is_ex) GuideEngine.trigger("first_ex_card", false);
       else GuideEngine.trigger("first_turn_energy", false);
       this.resetIdleTimer(true);
@@ -5781,20 +6111,28 @@
       return list;
     },
 
-    /** 顺序执行操作队列；若某一步触发追问，自动保存剩余连招以便确认后继续 */
+    /** 顺序执行操作队列；若某一步触发追问，自动保存剩余连招以便确认后继续；若可跳过的前置步骤因盘面不满足而失败，保留提示后继续执行后续步骤 */
     async runActionQueue(queue, customRival = null) {
       const s = this.state;
       const seq = this.matchSeq;
       for (let i = 0; i < queue.length; i++) {
         if (seq !== this.matchSeq || s.gameOver || s.currentPlayer !== "player") break;
+        const act = queue[i];
         const isLast = i === queue.length - 1;
-        const ok = await this.executeAction(queue[i], isLast ? customRival : null);
+        const ok = await this.executeAction(act, isLast ? customRival : null);
         if (seq !== this.matchSeq) break;
         TableUI.renderAll();
         if (!ok) {
           if (s.pending && i < queue.length - 1) {
             s.pending.remainingActions = queue.slice(i + 1);
             s.pending.customRival = customRival;
+            break;
+          }
+          if (s.pending || s.gameOver || s.currentPlayer !== "player") break;
+          const isTurnOrFatalStep = act?.type === "ATTACK" || act?.type === "DEFEND" || act?.type === "END_TURN";
+          if (!isTurnOrFatalStep && !isLast) {
+            if (!(await this.matchDelay(450, seq))) break;
+            continue;
           }
           break;
         }
@@ -6109,8 +6447,8 @@
           return;
         }
 
-        /* 全动作原文护栏：防幻觉 + 严格子句级目标隔离（未在对应子句明确指定对象/卡牌时清空，多候选必须追问确认） */
-        const rawUtter = payload.text || result.transcript || "";
+        /* 全动作原文护栏：防幻觉 + 严格子句级目标隔离（多模态音频复核纠偏后优先使用纠正后的 transcript，未指定对象/卡牌时清空） */
+        const rawUtter = (result._usedAudioRescue && result.transcript) ? result.transcript : (payload.text || result.transcript || "");
         const snapNow = this.getSnapshot();
         const explicitSkill = SpecEngine.matchSkill(rawUtter);
         const explicitItem = SpecEngine.matchItem(rawUtter);
@@ -6119,9 +6457,15 @@
         const hasSummonIntent = /(召喚|召唤|上场|出战|ベンチに出|ベンチに置|备战区|放到?备战|下怪|を出す|を出して|派上)/.test(rawUtter) && !/(よびだし笛|召唤笛)/.test(rawUtter);
         for (const a of queue) {
           if (!a || !a.type) continue;
-          if (a.type === "END_TURN" && (!NLUEngine.hasExplicitEndTurnIntent(rawUtter, isVoiceInput) || hasSummonIntent || Boolean(explicitMon))) continue;
+          const actClause = (typeof a._clause === "string" && a._clause.trim())
+            ? a._clause
+            : NLUEngine.extractClauseForAction(rawUtter, a.type, a.card_id);
+          a._clause = actClause;
+          if (a.type === "END_TURN" && (
+            !NLUEngine.hasExplicitEndTurnIntent(actClause || rawUtter, isVoiceInput)
+            || ((hasSummonIntent || Boolean(explicitMon)) && !NLUEngine.hasExplicitEndTurnIntent(actClause || rawUtter, true))
+          )) continue;
           if (a.type === "DEFEND" && !NLUEngine.hasExplicitDefendIntent(rawUtter)) continue;
-          const actClause = NLUEngine.extractClauseForAction(rawUtter, a.type, a.card_id);
           const hasPronoun = /(?:它|他|她|这只|那只|刚才那只|それ|こいつ|そいつ|さっきの|そのまま)/.test(actClause);
           const keepComboTarget = queue.length > 1 && hasPronoun && Boolean(a.target);
           if (a.type === "ATTACK") {
@@ -6130,9 +6474,11 @@
             if (a.target && !keepComboTarget && !NLUEngine.resolveSlotFromText(actClause, "enemy", snapNow)) a.target = null;
           }
           if (a.type === "ATTACH_ENERGY") {
-            if (isVoiceInput && !/(エネルギー|えねるぎー|エネ|えね|能量|贴|充能|给|炎|火|ほのお|水|みず|雷|かみなり|でんき|貼|張|付|つけ|はる|はっ|あげ|渡|チャージ|装)/.test(rawUtter) && !(explicitItem && explicitItem.category === "energy")) continue;
+            if (isVoiceInput && !/(エネルギー|えねるぎー|エネ|えね|能量|贴|充能|上能|上火|上水|上雷|加|电|闪电|雷电|红|蓝|黄|给|炎|火|ほのお|水|みず|雷|かみなり|でんき|貼|張|付|つけ|はる|はっ|あげ|渡|チャージ|装)/.test(rawUtter) && !(explicitItem && explicitItem.category === "energy")) continue;
             if (!keepComboTarget && !NLUEngine.resolveSlotFromText(actClause, "player", snapNow)) a.target = null;
-            if (!/(炎|火|ほのお|水|みず|雷|かみなり|でんき)/.test(actClause)) a.card_id = null;
+            const explicitEnergyCard = NLUEngine.resolveEnergyCardFromText(actClause);
+            if (explicitEnergyCard) a.card_id = explicitEnergyCard;
+            else a.card_id = null;
           }
           if (a.type === "PLAY_BENCH") {
             if (isVoiceInput && !/(ベンチ|べんち|後ろ|控え|ひかえ|場に出|召喚|しょうかん|出|だす|だし|置|おく|おい|並|ならべ|呼|よぶ|セット|备战|下怪|上场|出战|后排|放|派|上|召唤)/.test(rawUtter) && !explicitMon) continue;
@@ -6143,7 +6489,7 @@
             }
           }
           if (a.type === "USE_ITEM") {
-            if (isVoiceInput && !/(きずぐすり|回復|かいふく|ヒール|ポーション|体力|傷薬|伤药|回血|补血|治|加血|吃药|喝药|奶|飲|のむ|笛|ふえ|呼び出|引っ張り|強制交代|拉|補給|ほきゅう|ドロー|引|ひく|抽|摸|过牌|补牌|バッジ|ばっじ|パワー|バフ|アップ|力量|加攻|加伤害|增伤|強化|强化|回収|かいしゅう|回収|回收|捞|捡|戻|もど|道具|グッズ|サポート|支援|使|つかう|つかって|用)/.test(rawUtter) && !explicitItem) continue;
+            if (isVoiceInput && !/(きずぐすり|回復|かいふく|ヒール|ポーション|体力|傷薬|伤药|上药|吃药|喝药|嗑药|用个?药|贴伤药|回血|补血|治|加血|奶|飲|のむ|笛|ふえ|呼叫笛|哨|呼び出|引っ張り|強制交代|拉|拖|吹|换怪|補給|ほきゅう|ドロー|引|ひく|抽|摸|过牌|补牌|バッジ|ばっじ|パワー|バフ|アップ|力量|加攻|加伤害|增伤|強化|强化|回収|かいしゅう|回収|回收|捞|捡|戻|もど|道具|グッズ|サポート|支援|使|つかう|つかって|用)/.test(rawUtter) && !explicitItem) continue;
             if (a.card_id === "item_potion" && a.target && !keepComboTarget && !NLUEngine.resolveSlotFromText(actClause, "player", snapNow)) a.target = null;
             if (a.card_id === "item_flute" && a.target && !keepComboTarget && !NLUEngine.resolveSlotFromText(actClause, "enemy", snapNow)) a.target = null;
           }
@@ -6165,7 +6511,8 @@
           if (localRetry.status === "execute" && Array.isArray(localRetry.actions) && localRetry.actions.length > 0) {
             safeQueue = localRetry.actions.filter((a) => {
               if (!a || !a.type) return false;
-              if (a.type === "END_TURN" && isVoiceInput && (!NLUEngine.hasExplicitEndTurnIntent(rawUtter, true) || hasSummonIntent || Boolean(explicitMon))) return false;
+              const ec = (typeof a._clause === "string" && a._clause.trim()) ? a._clause : rawUtter;
+              if (a.type === "END_TURN" && isVoiceInput && (!NLUEngine.hasExplicitEndTurnIntent(ec, true) || ((hasSummonIntent || Boolean(explicitMon)) && !NLUEngine.hasExplicitEndTurnIntent(ec, true)))) return false;
               return true;
             });
           }
@@ -6325,9 +6672,10 @@
           const fi = SpecEngine.matchItem(fixed);
           if (fi && candidates.includes(fi.id)) pickedId = fi.id;
         }
-        if (!pickedId && /炎|火/.test(fixed) && candidates.includes("energy_fire")) pickedId = "energy_fire";
-        if (!pickedId && /水/.test(fixed) && candidates.includes("energy_water")) pickedId = "energy_water";
-        if (!pickedId && /雷/.test(fixed) && candidates.includes("energy_thunder")) pickedId = "energy_thunder";
+        if (!pickedId) {
+          const resolvedEnergy = NLUEngine.resolveEnergyCardFromText(fixed);
+          if (resolvedEnergy && candidates.includes(resolvedEnergy)) pickedId = resolvedEnergy;
+        }
         if (!pickedId && /(1|１|最初|ひとつ|第一)/.test(fixed) && candidates[0]) pickedId = candidates[0];
         if (!pickedId && /(2|２|ふたつ|第二)/.test(fixed) && candidates[1]) pickedId = candidates[1];
         if (!pickedId && /(3|３|みっつ|第三)/.test(fixed) && candidates[2]) pickedId = candidates[2];
@@ -6395,15 +6743,15 @@
       if (rJa || rZh) {
         TableUI.setRival(rJa, rZh);
       }
-      if (priority === "high" && spokenReferee && spokenRival) {
+      if (priority === "high" && spokenReferee && spokenRival && !opts.interruptible) {
         /* 仅保留 700ms 启动防爆音窗口，之后允许玩家随时开口灵敏打断 */
         VoiceEngine.bargeInGuardUntil = Math.max(VoiceEngine.bargeInGuardUntil || 0, Date.now() + 700);
       }
-      if (spokenReferee) VoiceEngine.speak({ ja: refJa, zh: refZh }, "referee", { priority, lang });
+      if (spokenReferee) VoiceEngine.speak({ ja: refJa, zh: refZh }, "referee", { priority, interruptible: opts.interruptible, lang });
       if (spokenRival) {
         const rivalPriority = priority === "high" ? "high" : "normal";
         const firstRivalChunk = VoiceEngine.splitIntoClauses(spokenRival, lang)[0] || spokenRival;
-        VoiceEngine.speak({ ja: rJa, zh: rZh }, "rival", { priority: rivalPriority, lang, deferPrefetch: true });
+        VoiceEngine.speak({ ja: rJa, zh: rZh }, "rival", { priority: rivalPriority, interruptible: opts.interruptible, lang, deferPrefetch: true });
         const expectedToken = VoiceEngine.speakToken;
         /* 错峰 350ms 预取对手语音首句，避免 0ms 并发两条 Nia TTS WS 互相争抢带宽 */
         setTimeout(() => {
@@ -6497,7 +6845,7 @@
             await this.announceAndReact("エネルギーをつける対象が見つかりません。", "未找到可附着能量的目标怪兽。", null);
             return false;
           }
-          let targetSlot = act.target;
+          let targetSlot = act.target || (act._clause ? NLUEngine.resolveSlotFromText(act._clause, "player", this.getSnapshot()) : null);
           let targetUnit = targetSlot ? this.getSlotUnit(targetSlot) : null;
           if (!targetUnit) {
             if (allAllies.length === 1) {
@@ -6654,7 +7002,7 @@
           const healMatch = /^heal_ally_(\d+)$/.exec(it.effect_type || "");
           if (healMatch) {
             const healAmount = Number(healMatch[1]) || 30;
-            let targetSlot = act.target;
+            let targetSlot = act.target || (act._clause ? NLUEngine.resolveSlotFromText(act._clause, "player", this.getSnapshot()) : null);
             let targetUnit = targetSlot ? this.getSlotUnit(targetSlot) : null;
             if (!targetUnit) {
               const wounded = this.getAllEntries("player").filter((e) => e.unit.hp < e.def.hp);
@@ -6711,7 +7059,8 @@
               await this.announceAndReact("相手のベンチにモンスターがいないため、よびだし笛は使えません。", "对手备战区没有怪兽，无法使用召唤笛。", null);
               return false;
             }
-            let targetSlot = act.target;
+            let targetSlot = act.target || (act._clause ? NLUEngine.resolveSlotFromText(act._clause, "enemy", this.getSnapshot()) : null);
+            if (targetSlot === "enemy_active") targetSlot = null;
             let picked = eBench.find((e) => e.slot === targetSlot);
             if (!picked) {
               if (eBench.length === 1) {
@@ -7015,8 +7364,15 @@
             return false;
           }
 
-          /* 狙击类技能（enemy_any）：敌方场上有 2 只及以上怪兽且未指定对象时，必须追问确认目标 */
+          /* 狙击类技能（enemy_any）：敌方场上有 2 只及以上怪兽且未指定对象时，必须追问确认目标；常规攻击前基于实时盘面重解目标，防止召唤笛刚换上场的怪兽仍按旧备战槽拒打 */
           let targetSlot = act.target;
+          const liveEnemyTarget = act._clause ? NLUEngine.resolveSlotFromText(act._clause, "enemy", this.getSnapshot()) : null;
+          if (liveEnemyTarget) {
+            targetSlot = liveEnemyTarget;
+          } else if (chosenSkill.target === "enemy_active" && targetSlot && targetSlot !== "enemy_active"
+            && !/(后排|备战|ベンチ|控え|左|中央|真ん中|中间|右)/.test(act._clause || "")) {
+            targetSlot = "enemy_active";
+          }
           if (chosenSkill.target === "enemy_any" && !targetSlot) {
             const eUnits = this.getAllEntries("enemy");
             if (eUnits.length > 1) {
@@ -9883,7 +10239,7 @@
     if (settingsOpen) {
       /* 设置弹窗打开时保留用户未保存的编辑内容，仅联动语种选项、音色目录与状态提示 */
       if (!settingsAsrLangTouched && !ConfigManager.data.niaAsrLangManual) {
-        if ($("niaAsrLang")) $("niaAsrLang").value = "";
+        if ($("niaAsrLang")) $("niaAsrLang").value = next === "zh" ? "zh" : "ja";
         if ($("asrLang")) $("asrLang").value = next === "zh" ? "zh-CN" : "ja-JP";
       }
       populateVoiceSelectsForEngine($("ttsEngine")?.value || settingsTtsEnginePrev);
