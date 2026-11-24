@@ -3227,7 +3227,7 @@
   }
 
   /* =========================================================================
-     9. v1.2.0 精修：5 档 0.5px 字号体系 + 全盘面 100% 统一卡牌尺寸 + 三段式卡面 + 奖赏卡与按钮比例精修
+     9. v1.2.0 精修：最左侧纵向手牌三栏布局 + 主战两侧奖赏/牌库 + 全盘面 100% 统一卡牌尺寸 + 5 档 0.5px 字号体系
      ========================================================================= */
   :root {
     --fs-splash: 24px; /* 仅用于启动黑金遮罩主标题 */
@@ -3238,12 +3238,12 @@
     --fs-sm: 11.5px;   /* HP 徽章、道具/能量描述、次数牌、区域标签、状态胶囊 */
     --fs-xs: 10.5px;   /* 卡槽角标、能量圆片、技能特效徽章、ex/弱点/防御微标 */
 
-    /* 全盘面 100% 统一卡牌尺寸（敌我主战、敌我备战、己方每张手牌完全等宽等高） */
-    --card-w: clamp(222px, 19.6vw, 258px);
-    --card-h: 122px;
-    --slot-pad-top: 17px;
-    --slot-pad-x: 5px;
-    --slot-pad-b: 5px;
+    /* 全盘面 100% 统一卡牌尺寸（敌我主战、敌我备战、左侧纵向每张手牌完全等宽等高） */
+    --card-w: clamp(208px, 16vw, 236px);
+    --card-h: 114px;
+    --slot-pad-top: 16px;
+    --slot-pad-x: 4px;
+    --slot-pad-b: 4px;
     --slot-w: calc(var(--card-w) + (var(--slot-pad-x) * 2) + 2px);
     --slot-h: calc(var(--card-h) + var(--slot-pad-top) + var(--slot-pad-b) + 2px);
   }
@@ -3251,7 +3251,7 @@
   .boot-splash-title { font-size: var(--fs-splash); }
   .boot-splash-sub { font-size: var(--fs-sm); }
 
-  .table-shell { max-width: 1620px; }
+  .table-shell { max-width: 1640px; }
   .topbar { padding: 6px 14px; gap: 8px; }
   .brand-title { font-size: var(--fs-xl); }
   .turn-pill { font-size: var(--fs-md); padding: 3.5px 14px; min-width: 172px; text-align: center; }
@@ -3260,34 +3260,155 @@
   .lang-pill { font-size: var(--fs-sm); min-width: 72px; }
   .lang-switch.light .lang-pill { font-size: var(--fs-md); }
 
-  /* 经典双栏牌桌：左侧对战垫与右侧面板黄金比例 */
-  .arena-grid { grid-template-columns: minmax(0, 1fr) clamp(296px, 23vw, 356px); gap: clamp(7px, 0.75vw, 10px); }
-  .playmat { overflow-y: auto; overflow-x: hidden; padding: 6px 10px; gap: 4px; }
-  .side-half { grid-template-columns: clamp(82px, 6.2vw, 94px) minmax(0, 1fr) clamp(70px, 5.4vw, 80px); gap: clamp(6px, 0.6vw, 9px); }
+  /* 桌面端三栏对称舞台：[最左侧纵向手牌栏] | [中间 4 行零重叠牌桌] | [右侧语音/日志栏] */
+  .arena-grid {
+    grid-template-columns: calc(var(--card-w) + 26px) minmax(0, 1fr) clamp(288px, 21.5vw, 336px);
+    gap: clamp(7px, 0.7vw, 10px);
+  }
+
+  /* 左侧纵向手牌独立羊皮纸栏（与右侧语音日志栏视觉对称，底部固定防御与结束回合按钮） */
+  .hand-rail {
+    height: 100%;
+    min-height: 0;
+    background: linear-gradient(180deg, #f6eedd 0%, var(--panel-bg) 100%);
+    border: 2px solid #9c7946;
+    border-radius: 14px;
+    box-shadow: 0 10px 26px rgba(34, 20, 9, 0.3), inset 0 0 0 2px rgba(255, 250, 238, 0.55);
+    padding: 9px 10px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .hand-section {
+    flex: 1 1 0;
+    min-height: 0;
+    border-top: none;
+    padding-top: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .hand-header {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    border-bottom: 1.5px solid #d7c39f;
+    padding-bottom: 6px;
+  }
+  .hand-header .zone-label:first-child { font-size: var(--fs-md); font-weight: 800; color: #3f2b19; }
+  #handSelectionHint {
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--ink-sub);
+    text-align: left;
+    line-height: 1.3;
+  }
+  .hand-body {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .hand-cards {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 7px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 4px 2px 6px;
+    scrollbar-gutter: stable;
+  }
+  .hand-card:hover {
+    transform: translateX(4px) scale(1.015);
+    z-index: 12;
+  }
+  .hand-card.selected {
+    transform: translateX(5px);
+    box-shadow: 0 0 0 2px var(--ok), 0 6px 14px rgba(64, 42, 20, 0.24);
+  }
+  .hand-card.setup-pick {
+    transform: none;
+  }
+  .hand-card.setup-pick:hover {
+    transform: translateX(4px) scale(1.015);
+  }
+  .hand-actions {
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    padding: 7px 0 0;
+    border-left: none;
+    border-top: 1.5px solid #d7c39f;
+  }
+  .hand-actions .btn-sm {
+    font-size: var(--fs-sm);
+    padding: 8px 6px;
+    border-radius: 9px;
+    min-height: 38px;
+  }
+
+  /* 中间对战垫：仅 4 行卡牌（对手备战 / 对手主战 / 己方主战 / 己方备战），严禁压缩重叠 */
+  .playmat {
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 6px 10px;
+    justify-content: center;
+    gap: 6px;
+  }
+  .side-half {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+  }
+
+  /* 主战区三段横带：[奖赏卡] — [主战卡槽] — [牌库/弃牌区]，充分利用主战行两侧空白 */
+  .active-band {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--slot-w) minmax(0, 1fr);
+    align-items: center;
+    gap: 8px;
+  }
+  .active-band > .zone-col:first-child { justify-self: end; padding-right: 4px; }
+  .active-band > .zone-col:last-child { justify-self: start; padding-left: 4px; }
+  .active-band > .pile-col {
+    flex-direction: row;
+    gap: 6px;
+  }
 
   /* 奖赏卡与牌库区比例精修 */
-  .zone-col { gap: 6px; }
+  .zone-col { gap: 5px; }
   .zone-label { font-size: var(--fs-sm); letter-spacing: 0.02em; }
   .prize-stack { gap: 4.5px; }
   .prize-card {
     width: 26px;
-    height: 39px;
+    height: 38px;
     border-radius: 5.5px;
     font-size: var(--fs-md);
     border-width: 1.5px;
   }
   .prize-count-pill { font-size: var(--fs-xs); padding: 2px 8px; }
   .pile-box {
-    width: clamp(68px, 5.2vw, 76px);
-    padding: 5px 4px;
+    width: 68px;
+    padding: 6px 4px;
     border-radius: 9px;
     gap: 2px;
   }
   .pile-box strong { font-size: var(--fs-lg); line-height: 1.1; }
   .pile-box .pile-ja, .pile-box .pile-zh { font-size: var(--fs-xs); font-weight: 700; color: #543b24; line-height: 1.15; }
 
-  /* 全盘面统一尺寸卡槽：主战区与备战区三格完全等宽等高，空槽与满槽 0 跳动 */
-  .field-center { gap: 6px; align-items: center; }
+  /* 全盘面统一尺寸卡槽：备战区三格吃满整行宽，主战与备战 100% 等宽等高，空满 0 跳动 */
   .bench-row {
     display: flex;
     flex-wrap: nowrap;
@@ -3314,9 +3435,10 @@
     min-height: var(--card-h);
     max-height: var(--card-h);
   }
-  .slot-tag { top: 2.5px; left: 7px; font-size: var(--fs-xs); line-height: 1.2; }
+  .slot-tag { top: 2px; left: 7px; font-size: var(--fs-xs); line-height: 1.2; }
   .slot-empty { font-size: var(--fs-sm); }
 
+  .mat-divider { margin: 2px 0; }
   .vs-badge { font-size: var(--fs-sm); padding: 2.5px 12px; }
   .limit-pill { font-size: var(--fs-sm); padding: 2.5px 9px; }
 
@@ -3324,31 +3446,31 @@
   .card {
     width: var(--card-w);
     height: var(--card-h);
-    padding: 0 0 4px;
+    padding: 0 0 3px;
     gap: 0;
     justify-content: flex-start;
   }
   .card-head {
-    padding: 4px 6px;
+    padding: 3.5px 5.5px;
     gap: 4px;
-    min-height: 31px;
+    min-height: 29px;
     flex-shrink: 0;
   }
-  .card-head-left { gap: 4.5px; min-width: 0; flex: 1 1 auto; }
+  .card-head-left { gap: 4px; min-width: 0; flex: 1 1 auto; }
   .card-head-right { flex-direction: row; align-items: center; gap: 3px; flex-shrink: 0; }
   .card-art,
   .bench-row .card-art,
   .hand-card .card-art {
-    width: 23px;
-    height: 23px;
-    border-radius: 5.5px;
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
     flex-shrink: 0;
   }
   .card-art svg,
   .bench-row .card-art svg,
   .hand-card .card-art svg {
-    width: 19px;
-    height: 19px;
+    width: 18px;
+    height: 18px;
   }
 
   /* 长日文怪兽名（カエンリュウex / タイカイザメex）完整单行显示，零换行零省略号 */
@@ -3358,7 +3480,7 @@
     font-size: var(--fs-md);
     font-weight: 800;
     line-height: 1.2;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
     white-space: nowrap;
     overflow: visible;
     text-overflow: clip;
@@ -3368,7 +3490,7 @@
   .hand-card .hp-badge {
     font-size: var(--fs-sm);
     font-weight: 800;
-    padding: 1px 5px;
+    padding: 1px 4.5px;
     line-height: 1.2;
     letter-spacing: -0.02em;
     display: inline-flex;
@@ -3395,8 +3517,8 @@
   .hp-fill { border-radius: 0; }
 
   .token-row {
-    min-height: 21px;
-    padding: 2.5px 6px 1.5px;
+    min-height: 20px;
+    padding: 2px 5.5px 1px;
     gap: 2px 4px;
     flex-wrap: nowrap;
     overflow: hidden;
@@ -3417,25 +3539,25 @@
   .pip,
   .bench-row .pip,
   .hand-card .pip {
-    width: 14px;
-    height: 14px;
+    width: 13.5px;
+    height: 13.5px;
     font-size: var(--fs-xs);
     flex-shrink: 0;
   }
   .pip svg,
   .bench-row .pip svg,
   .hand-card .pip svg {
-    width: 9px;
-    height: 9px;
+    width: 8.5px;
+    height: 8.5px;
   }
   .dmg-chip, .guard-chip, .boost-chip, .weak-chip, .ex-chip, .supporter-chip, .energy-cat-chip, .item-cat-chip {
     font-size: var(--fs-xs);
     font-weight: 700;
-    padding: 0.5px 4.5px;
+    padding: 0.5px 4px;
     border-radius: 4px;
     white-space: nowrap;
     flex-shrink: 0;
-    line-height: 1.25;
+    line-height: 1.2;
   }
   .energy-cat-chip { color: #fff; background: #857664; }
   .energy-cat-chip.fire { background: var(--fire); }
@@ -3449,8 +3571,8 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 3px;
-    padding: 2px 5px 1px;
+    gap: 2.5px;
+    padding: 1.5px 4.5px 1px;
     min-height: 0;
   }
   .skill-line,
@@ -3458,8 +3580,8 @@
   .hand-card .skill-line {
     font-size: var(--fs-md);
     line-height: 1.2;
-    padding: 2px 5px;
-    min-height: 24px;
+    padding: 1.5px 4.5px;
+    min-height: 22px;
     flex-wrap: nowrap;
     border-left: 2.5px solid transparent;
     border-radius: 5px;
@@ -3470,14 +3592,14 @@
     border-color: rgba(47, 122, 83, 0.36);
     border-left: 3px solid var(--ok);
   }
-  .skill-left { flex-wrap: nowrap; overflow: hidden; min-width: 0; gap: 3px; }
+  .skill-left { flex-wrap: nowrap; overflow: hidden; min-width: 0; gap: 2.5px; }
   .skill-name {
     font-size: var(--fs-sm);
     font-weight: 700;
     white-space: nowrap;
     overflow: visible;
     text-overflow: clip;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
   }
   .skill-dmg,
   .bench-row .skill-dmg,
@@ -3493,18 +3615,16 @@
     background: linear-gradient(135deg, #fce7cc, #f7d5b5);
     border: 1px solid rgba(184, 69, 58, 0.45);
     border-radius: 4px;
-    padding: 0 4px;
+    padding: 0 3.5px;
   }
   .skill-dmg.is-lethal svg { width: 11px; height: 11px; fill: currentColor; flex-shrink: 0; }
   .eff-dmg { font-size: var(--fs-xs); font-weight: 800; color: #b54524; margin-left: 1px; }
   .skill-tag { font-size: var(--fs-xs); padding: 0.5px 3.5px; flex-shrink: 0; }
 
-  /* 手牌区：每张手牌与场上主战/备战卡 100% 相同宽高，右侧防御/结束按钮比例精修 */
-  .hand-section { padding-top: 4px; gap: 3px; }
-  .hand-cards { padding: 8px 4px 4px; gap: 8px; align-items: center; }
+  /* 手牌卡片：与场上主战/备战卡 100% 相同宽高 */
   .hand-card,
   .hand-drop-placeholder {
-    flex: 0 0 var(--card-w);
+    flex: 0 0 var(--card-h);
     width: var(--card-w);
     min-width: var(--card-w);
     max-width: var(--card-w);
@@ -3534,8 +3654,8 @@
     position: absolute;
     right: 6px;
     bottom: 4px;
-    width: 44px;
-    height: 44px;
+    width: 42px;
+    height: 42px;
     opacity: 0.13;
     pointer-events: none;
     z-index: 0;
@@ -3544,18 +3664,6 @@
   .energy-watermark.fire { color: var(--fire); }
   .energy-watermark.water { color: var(--water); }
   .energy-watermark.thunder { color: var(--thunder); }
-
-  .hand-actions {
-    flex: 0 0 118px;
-    gap: 7px;
-    padding: 8px 0 4px 9px;
-  }
-  .hand-actions .btn-sm {
-    font-size: var(--fs-md);
-    padding: 8px 10px;
-    border-radius: 9px;
-    min-height: 46px;
-  }
 
   /* 右侧面板：统一 5 档字号，气泡与战报层次清晰 */
   .side-panel { padding: 10px 12px; gap: 7px; }
@@ -3597,13 +3705,14 @@
   .live-tip-ja,
   .live-tip-zh { font-size: var(--fs-md); font-weight: 700; color: var(--ink); line-height: 1.42; margin-top: 0; }
 
-  .voice-hud { bottom: 146px; }
+  .voice-hud { bottom: 18px; }
   .voice-hud-body { font-size: var(--fs-md); }
 
-  .guide-card { padding: 11px 14px; }
+  .guide-float { top: 50%; right: 10px; width: clamp(210px, 27%, 268px); }
+  .guide-card { padding: 10px 12px; }
   .guide-tag { font-size: var(--fs-sm); margin-bottom: 3px; }
   .guide-ja,
-  .guide-zh { font-size: var(--fs-lg); font-weight: 700; color: var(--ink); line-height: 1.44; margin-top: 0; }
+  .guide-zh { font-size: var(--fs-md); font-weight: 700; color: var(--ink); line-height: 1.44; margin-top: 0; }
 
   .prize-toast .pt-ja,
   .prize-toast .pt-zh { font-size: var(--fs-lg); font-weight: 800; color: #3a240e; margin-top: 0; display: inline-flex; align-items: center; gap: 5px; }
@@ -3691,58 +3800,56 @@
   .dlog-meta { font-size: var(--fs-xs); }
   .dlog-detail { font-size: var(--fs-sm); }
 
-  /* ---------- 中等宽度桌面屏（<= 1280px）保持统一卡牌尺寸，备战区平滑横滑 ---------- */
+  /* ---------- 高屏桌面（>= 860px 高度）：略微放大卡高，观感更舒展 ---------- */
+  @media (min-width: 1180px) and (min-height: 860px) {
+    :root {
+      --card-h: 122px;
+      --slot-pad-top: 17px;
+    }
+  }
+
+  /* ---------- 中等宽度桌面屏（<= 1280px）保持三栏统一卡宽，备战区平滑横滑 ---------- */
   @media (min-width: 821px) and (max-width: 1280px) {
     :root {
-      --card-w: 214px;
-      --card-h: 118px;
+      --card-w: 204px;
+      --card-h: 112px;
     }
     .topbar { flex-wrap: wrap; padding: 5px 10px; gap: 5px; }
     .top-actions { flex-wrap: wrap; gap: 4px; }
     .top-btn { padding: 3.5px 8px; }
-    .arena-grid { grid-template-columns: minmax(0, 1fr) clamp(270px, 24vw, 312px); gap: 6px; }
+    .arena-grid { grid-template-columns: calc(var(--card-w) + 22px) minmax(0, 1fr) clamp(260px, 23vw, 298px); gap: 6px; }
     .bench-row { justify-content: flex-start; overflow-x: auto; padding-bottom: 2px; }
+    .active-band > .pile-col { flex-direction: column; gap: 4px; }
   }
 
-  /* ---------- 桌面端矮屏自适应（统一微调 0.5px 梯度与卡牌高度，仍保持全盘面 100% 等大） ---------- */
-  @media (min-width: 821px) and (max-height: 840px) {
+  /* ---------- 桌面端矮屏自适应（<= 750px 高度）：平滑微缩卡高与 0.5px 字号，保证 4 行 0 重叠 ---------- */
+  @media (min-width: 821px) and (max-height: 750px) {
     :root {
       --fs-xl: 17px;
       --fs-lg: 13.5px;
       --fs-md: 12px;
       --fs-sm: 11px;
       --fs-xs: 10px;
-      --card-h: 114px;
-      --slot-pad-top: 16px;
-    }
-    body { padding: 5px 8px; }
-    .table-shell { gap: 5px; }
-    .topbar { padding: 4px 10px; }
-    .playmat { padding: 4px 8px; gap: 3px; }
-    .field-center { gap: 4px; }
-    .card-head { padding: 3px 5px; min-height: 28px; }
-    .card-art, .bench-row .card-art, .hand-card .card-art { width: 21px; height: 21px; }
-    .card-art svg, .bench-row .card-art svg, .hand-card .card-art svg { width: 17px; height: 17px; }
-    .token-row { min-height: 19px; padding: 2px 5px 1px; }
-    .skills-list { gap: 2px; padding: 1.5px 4px; }
-    .skill-line, .bench-row .skill-line, .hand-card .skill-line { padding: 1.5px 4.5px; min-height: 22px; }
-    .bubble { padding: 6px 9px; }
-    .voice-hud { bottom: 124px; }
-    #rulesModal .modal-box { padding: 12px 18px; }
-    .rules-list { line-height: 1.66; }
-    .rules-list li { margin-bottom: 7px; }
-  }
-  @media (min-width: 821px) and (max-height: 720px) {
-    :root {
-      --card-h: 108px;
+      --card-h: 106px;
       --slot-pad-top: 15px;
     }
+    body { padding: 4px 8px; }
+    .table-shell { gap: 4px; }
+    .topbar { padding: 4px 10px; }
+    .playmat { padding: 4px 8px; gap: 4px; }
+    .side-half { gap: 4px; }
+    .card-head { padding: 3px 5px; min-height: 27px; }
+    .card-art, .bench-row .card-art, .hand-card .card-art { width: 20px; height: 20px; }
+    .card-art svg, .bench-row .card-art svg, .hand-card .card-art svg { width: 16px; height: 16px; }
+    .token-row { min-height: 18px; padding: 1.5px 5px 1px; }
+    .skills-list { gap: 2px; padding: 1px 4px; }
+    .skill-line, .bench-row .skill-line, .hand-card .skill-line { padding: 1.5px 4px; min-height: 21px; }
     .prize-card { width: 23px; height: 34px; }
-    .pile-box { padding: 3px 3px; }
-    .hand-actions .btn-sm { padding: 6px 8px; min-height: 40px; }
+    .pile-box { width: 62px; padding: 4px 3px; }
+    .bubble { padding: 6px 9px; }
   }
 
-  /* ---------- 手机/小屏横屏恢复紧凑布局（同样保持 5 档 0.5px 字号与统一卡面尺寸） ---------- */
+  /* ---------- 手机/小屏横屏：保持三栏紧凑对称与统一卡面 ---------- */
   @media (max-height: 620px) and (orientation: landscape), (max-width: 960px) and (orientation: landscape) {
     :root {
       --fs-xl: 15px;
@@ -3750,8 +3857,8 @@
       --fs-md: 11.5px;
       --fs-sm: 11px;
       --fs-xs: 10px;
-      --card-w: 204px;
-      --card-h: 106px;
+      --card-w: 196px;
+      --card-h: 104px;
       --slot-pad-top: 15px;
     }
     .topbar { padding: 4px 8px; gap: 6px; }
@@ -3760,20 +3867,22 @@
     .top-btn { min-height: 26px; padding: 3px 8px; }
     .lang-pill { padding: 2px 7px; min-width: 0; }
     .lang-badge-svg { width: 15px; height: 15px; }
-    .arena-grid { grid-template-columns: minmax(0, 1fr) clamp(235px, 29vw, 285px); }
+    .arena-grid { grid-template-columns: calc(var(--card-w) + 18px) minmax(0, 1fr) clamp(232px, 27vw, 276px); }
+    .hand-rail { padding: 6px 7px; }
+    .playmat { justify-content: flex-start; }
     .bench-row { justify-content: flex-start; overflow-x: auto; }
-    .hand-actions { flex: 0 0 96px; }
+    .active-band > .pile-col { flex-direction: column; gap: 4px; }
     .side-panel { padding: 6px 8px; gap: 5px; }
     .bubble { padding: 5px 8px; }
-    .voice-hud { bottom: 96px; padding: 5px 12px; }
+    .voice-hud { bottom: 12px; padding: 5px 12px; }
   }
 
-  /* ---------- 手机竖屏单列防溢出布局（保持所有卡牌完全等宽等高） ---------- */
+  /* ---------- 手机竖屏：保持原有单列上下布局（牌桌在上 → 横向手牌在中 → 语音/日志在下），适配新版统一卡牌与动画 ---------- */
   @media (max-width: 820px) and (orientation: portrait) {
     :root {
       --card-w: 214px;
       --card-h: 114px;
-      --slot-pad-top: 17px;
+      --slot-pad-top: 16px;
     }
     html, body { height: auto; min-height: 100dvh; overflow-y: auto; overflow-x: hidden; }
     .app-shell { height: auto; min-height: 100dvh; overflow: visible; }
@@ -3787,13 +3896,71 @@
     .lang-badge-svg { width: 15px; height: 15px; }
 
     .arena-grid {
-      grid-template-columns: 1fr !important;
+      display: flex;
+      flex-direction: column;
       height: auto;
       min-height: 0;
+      gap: 8px;
       overflow: visible;
     }
-    .playmat { height: auto; overflow: visible; padding: 8px; gap: 8px; }
-    .side-half { display: flex; flex-direction: column; gap: 6px; }
+    .playmat {
+      order: 1;
+      height: auto;
+      overflow: visible;
+      padding: 8px;
+      gap: 8px;
+    }
+    .guide-float {
+      position: relative;
+      top: auto;
+      right: auto;
+      width: 100%;
+      transform: translateY(-6px);
+    }
+    .guide-float.show {
+      transform: translateY(0);
+    }
+    .side-half {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    /* 竖屏下奖赏卡与牌库置于主战区上方同一紧凑条，主战卡槽居中，备战区横向滑动 */
+    .active-band {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-rows: auto auto;
+      gap: 6px;
+      align-items: center;
+    }
+    .active-band > .zone-col:first-child {
+      grid-column: 1;
+      grid-row: 1;
+      justify-self: start;
+      padding-right: 0;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 5px;
+    }
+    .active-band > .pile-col {
+      grid-column: 2;
+      grid-row: 1;
+      justify-self: end;
+      padding-left: 0;
+      flex-direction: row;
+      gap: 5px;
+    }
+    .active-band > .slot-box.active-slot {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      justify-self: center;
+      width: var(--slot-w);
+      min-width: var(--slot-w);
+      max-width: var(--slot-w);
+      height: var(--slot-h);
+      min-height: var(--slot-h);
+    }
     .bench-row {
       display: flex;
       justify-content: flex-start;
@@ -3802,22 +3969,73 @@
       padding-bottom: 4px;
       -webkit-overflow-scrolling: touch;
     }
+    .bench-row > .slot-box {
+      flex: 0 0 var(--slot-w);
+      width: var(--slot-w);
+      min-width: var(--slot-w);
+      max-width: var(--slot-w);
+      height: var(--slot-h);
+      min-height: var(--slot-h);
+    }
 
-    .hand-body { flex-direction: column; gap: 8px; }
-    .hand-cards { width: 100%; overflow-x: auto; padding-bottom: 4px; }
-    .hand-actions { flex: none; width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 6px 0 2px; border-left: none; }
-    .hand-actions .btn-sm { padding: 9px 10px; }
+    /* 竖屏手牌回归传统手机端横向滑动模式，放在牌桌正下方、语音面板正上方 */
+    .hand-rail {
+      order: 2;
+      height: auto;
+      overflow: visible;
+      padding: 8px 10px;
+    }
+    .hand-header {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 4px 8px;
+    }
+    .hand-cards {
+      flex: 0 0 auto;
+      flex-direction: row;
+      align-items: center;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 12px 2px 6px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .hand-card,
+    .hand-drop-placeholder {
+      flex: 0 0 var(--card-w);
+    }
+    .hand-card:hover {
+      transform: translateY(-7px) scale(1.02);
+    }
+    .hand-card.selected {
+      transform: translateY(-7px);
+    }
+    .hand-card.setup-pick {
+      transform: translateY(-5px);
+    }
+    .hand-card.setup-pick:hover {
+      transform: translateY(-9px) scale(1.03);
+    }
+    .hand-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 7px 0 2px;
+    }
+    .hand-actions .btn-sm { padding: 9px 10px; min-height: 40px; }
 
     .side-panel {
+      order: 3;
       width: 100%;
-      border-left: none;
-      border-top: 2px solid rgba(112, 82, 47, 0.28);
       padding: 10px;
       gap: 8px;
       height: auto;
       overflow: visible;
     }
     .notepad-log { max-height: 180px; }
+    .turn-banner { position: fixed; top: 44%; max-width: 90vw; }
+    .prize-toast { position: fixed; top: max(12px, env(safe-area-inset-top)); max-width: 92vw; }
     .voice-hud { position: fixed; bottom: 14px; max-width: calc(100vw - 24px); padding: 7px 14px; }
     #rulesModal .modal-box { width: calc(100vw - 16px); max-height: 92dvh; padding: 14px; }
     #settingsModal .modal-box { width: calc(100vw - 16px); height: min(88dvh, 680px); }
@@ -3944,7 +4162,24 @@
   </header>
 
   <main class="arena-grid">
-    <!-- 左侧：实体帆布对战垫（对手半场 / 分界线 / 己方半场 / 语音 HUD / 手牌区） -->
+    <!-- 最左侧：己方纵向手牌栏 + 底部防御/结束回合操作条（手机竖屏自动回落至牌桌正下方横向滑动） -->
+    <aside class="hand-rail">
+      <div class="hand-section">
+        <div class="hand-header">
+          <div class="zone-label" style="text-align:left;"><span class="lang-ja">手札</span><span class="lang-zh">手牌</span></div>
+          <div class="zone-label" id="handSelectionHint"></div>
+        </div>
+        <div class="hand-body">
+          <div class="hand-cards" id="playerHand"></div>
+          <div class="hand-actions">
+            <button class="btn-sm btn-defend" id="btnDefend"><span><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg><span class="lang-ja">防御態勢</span><span class="lang-zh">防御姿态</span></span></button>
+            <button class="btn-sm btn-endturn" id="btnEndTurn"><span><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18l8.5-6L6 6v12zm10-12v12h2V6h-2z"/></svg><span class="lang-ja">ターン終了</span><span class="lang-zh">结束回合</span></span></button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 中间：实体帆布对战垫（4 行统一尺寸卡牌：对手备战 / 对手主战 / 分界线 / 己方主战 / 己方备战） -->
     <section class="playmat">
       <div class="turn-banner" id="turnBanner"></div>
       <div class="prize-toast" id="prizeToast" role="status" aria-live="polite"></div>
@@ -3978,29 +4213,27 @@
         </div>
       </div>
 
-      <!-- 对手半场 -->
-      <div class="side-half">
-        <div class="zone-col">
-          <div class="zone-label"><span class="lang-ja">相手サイド</span><span class="lang-zh">对手奖赏卡</span></div>
-          <div class="prize-stack" id="enemyPrizes"></div>
-          <div class="prize-count-pill" id="enemyPrizeCount">0/3</div>
-        </div>
-
-        <div class="field-center">
-          <div class="bench-row" id="enemyBenchRow"></div>
-          <div class="slot-box active-slot" id="enemyActiveSlot"></div>
-        </div>
-
-        <div class="zone-col">
-          <div class="pile-box" id="enemyDeckBox" role="button" tabindex="0">
-            <strong id="enemyDeckCount">0</strong>
-            <span class="pile-ja">山札</span>
-            <span class="pile-zh" lang="zh-CN">牌库</span>
+      <!-- 对手半场：顶部三格满宽备战区 + 中部 [奖赏卡 | 主战区 | 牌库/弃牌] -->
+      <div class="side-half enemy-half">
+        <div class="bench-row" id="enemyBenchRow"></div>
+        <div class="active-band">
+          <div class="zone-col">
+            <div class="zone-label"><span class="lang-ja">相手サイド</span><span class="lang-zh">对手奖赏卡</span></div>
+            <div class="prize-stack" id="enemyPrizes"></div>
+            <div class="prize-count-pill" id="enemyPrizeCount">0/3</div>
           </div>
-          <div class="pile-box" id="enemyTrashBox" role="button" tabindex="0">
-            <strong id="enemyTrashCount">0</strong>
-            <span class="pile-ja">トラッシュ</span>
-            <span class="pile-zh" lang="zh-CN">弃牌区</span>
+          <div class="slot-box active-slot" id="enemyActiveSlot"></div>
+          <div class="zone-col pile-col">
+            <div class="pile-box" id="enemyDeckBox" role="button" tabindex="0">
+              <strong id="enemyDeckCount">0</strong>
+              <span class="pile-ja">山札</span>
+              <span class="pile-zh" lang="zh-CN">牌库</span>
+            </div>
+            <div class="pile-box" id="enemyTrashBox" role="button" tabindex="0">
+              <strong id="enemyTrashCount">0</strong>
+              <span class="pile-ja">トラッシュ</span>
+              <span class="pile-zh" lang="zh-CN">弃牌区</span>
+            </div>
           </div>
         </div>
       </div>
@@ -4015,46 +4248,29 @@
         </div>
       </div>
 
-      <!-- 己方半场 -->
-      <div class="side-half">
-        <div class="zone-col">
-          <div class="zone-label"><span class="lang-ja">自分サイド</span><span class="lang-zh">己方奖赏卡</span></div>
-          <div class="prize-stack" id="playerPrizes"></div>
-          <div class="prize-count-pill" id="playerPrizeCount">0/3</div>
-        </div>
-
-        <div class="field-center">
+      <!-- 己方半场：中部 [奖赏卡 | 主战区 | 牌库/弃牌] + 底部三格满宽备战区 -->
+      <div class="side-half player-half">
+        <div class="active-band">
+          <div class="zone-col">
+            <div class="zone-label"><span class="lang-ja">自分サイド</span><span class="lang-zh">己方奖赏卡</span></div>
+            <div class="prize-stack" id="playerPrizes"></div>
+            <div class="prize-count-pill" id="playerPrizeCount">0/3</div>
+          </div>
           <div class="slot-box active-slot" id="playerActiveSlot"></div>
-          <div class="bench-row" id="playerBenchRow"></div>
-        </div>
-
-        <div class="zone-col">
-          <div class="pile-box" id="playerDeckBox" role="button" tabindex="0">
-            <strong id="playerDeckCount">0</strong>
-            <span class="pile-ja">山札</span>
-            <span class="pile-zh" lang="zh-CN">牌库</span>
-          </div>
-          <div class="pile-box" id="playerTrashBox" role="button" tabindex="0">
-            <strong id="playerTrashCount">0</strong>
-            <span class="pile-ja">トラッシュ</span>
-            <span class="pile-zh" lang="zh-CN">弃牌区</span>
+          <div class="zone-col pile-col">
+            <div class="pile-box" id="playerDeckBox" role="button" tabindex="0">
+              <strong id="playerDeckCount">0</strong>
+              <span class="pile-ja">山札</span>
+              <span class="pile-zh" lang="zh-CN">牌库</span>
+            </div>
+            <div class="pile-box" id="playerTrashBox" role="button" tabindex="0">
+              <strong id="playerTrashCount">0</strong>
+              <span class="pile-ja">トラッシュ</span>
+              <span class="pile-zh" lang="zh-CN">弃牌区</span>
+            </div>
           </div>
         </div>
-      </div>
-
-      <!-- 己方手牌区与右侧防御/回合结束操作列 -->
-      <div class="hand-section">
-        <div class="hand-header">
-          <div class="zone-label" style="text-align:left;"><span class="lang-ja">手札</span><span class="lang-zh">手牌</span></div>
-          <div class="zone-label" id="handSelectionHint"></div>
-        </div>
-        <div class="hand-body">
-          <div class="hand-cards" id="playerHand"></div>
-          <div class="hand-actions">
-            <button class="btn-sm btn-defend" id="btnDefend"><span><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2L4 5v6.09c0 5.05 3.41 9.76 8 10.91 4.59-1.15 8-5.86 8-10.91V5l-8-3z"/></svg><span class="lang-ja">防御態勢</span><span class="lang-zh">防御姿态</span></span></button>
-            <button class="btn-sm btn-endturn" id="btnEndTurn"><span><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 18l8.5-6L6 6v12zm10-12v12h2V6h-2z"/></svg><span class="lang-ja">ターン終了</span><span class="lang-zh">结束回合</span></span></button>
-          </div>
-        </div>
+        <div class="bench-row" id="playerBenchRow"></div>
       </div>
     </section>
 

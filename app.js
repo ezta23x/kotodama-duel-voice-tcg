@@ -9320,14 +9320,18 @@
           node.classList.remove("dragging-source");
         });
       };
-      const updatePlaceholderAt = (clientX) => {
+      const updatePlaceholderAt = (clientX, clientY) => {
         if (this._dragHandIdx === null || !this._handPlaceholder) return;
+        const isVertical = window.getComputedStyle(handContainer).flexDirection === "column";
         const others = Array.from(handContainer.querySelectorAll(".hand-card:not(.dragging-source)"));
         let targetIdx = others.length;
         let beforeEl = null;
         for (let i = 0; i < others.length; i++) {
           const rect = others[i].getBoundingClientRect();
-          if (clientX < rect.left + rect.width / 2) {
+          const hit = isVertical
+            ? clientY < rect.top + rect.height / 2
+            : clientX < rect.left + rect.width / 2;
+          if (hit) {
             targetIdx = i;
             beforeEl = others[i];
             break;
@@ -9347,7 +9351,7 @@
         if (this._dragHandIdx === null) return;
         e.preventDefault();
         if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
-        updatePlaceholderAt(e.clientX);
+        updatePlaceholderAt(e.clientX, e.clientY);
       };
       handContainer.ondrop = (e) => {
         if (this._dragHandIdx === null) return;
