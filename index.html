@@ -4565,41 +4565,41 @@
     background: var(--cta-gold-hover);
   }
   .side-panel .btn-sm.btn-ai-tip {
-    background: linear-gradient(180deg, #f6ecd6 0%, #e3cfa7 100%);
-    border: 1px solid #d9b56c;
-    color: #362413;
+    background: var(--btn-dk-bg);
+    border: 1px solid #c7ab7a;
+    color: var(--dk-ink);
     padding: 3.5px 10px;
     min-height: 25px;
     border-radius: 7px;
     font-size: var(--fs-xs);
-    font-weight: 800;
+    font-weight: 700;
     line-height: 1.1;
     gap: 4px;
     display: inline-flex;
     align-items: center;
     cursor: pointer;
-    box-shadow: 0 2px 5px rgba(24, 16, 8, 0.34), inset 0 1px 0 rgba(255, 254, 248, 0.88);
-    transition: transform 0.14s ease, background 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    box-shadow: 0 2px 5px rgba(18, 12, 6, 0.44), 0 1px 0 rgba(18, 12, 6, 0.52), inset 0 1px 0 rgba(255, 246, 226, 0.24);
+    transition: transform 0.14s ease, background 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   }
   .side-panel .btn-sm.btn-ai-tip svg {
     width: 12px;
     height: 12px;
-    color: #b07418;
+    color: #e6c278;
     flex-shrink: 0;
   }
   .side-panel .btn-sm.btn-ai-tip.is-loading svg {
     animation: hudSpin 0.9s linear infinite;
   }
   .side-panel .btn-sm.btn-ai-tip:hover:where(:not(:disabled)) {
-    background: linear-gradient(180deg, #fff7e4 0%, #eddab4 100%);
-    border-color: #ebd08f;
-    color: #2b1a0c;
+    background: var(--btn-dk-hover);
+    border-color: #e6c98e;
+    color: #fffdf8;
     transform: translateY(-1px);
-    box-shadow: 0 3px 8px rgba(24, 16, 8, 0.38), inset 0 1px 0 rgba(255, 255, 252, 0.95);
+    box-shadow: 0 3px 8px rgba(18, 12, 6, 0.5), 0 1px 0 rgba(18, 12, 6, 0.55), inset 0 1px 0 rgba(255, 248, 232, 0.34);
   }
   .side-panel .btn-sm.btn-ai-tip:active:where(:not(:disabled)) {
     transform: translateY(1px);
-    box-shadow: 0 1px 2px rgba(24, 16, 8, 0.34), inset 0 1px 2px rgba(58, 36, 16, 0.18);
+    box-shadow: 0 1px 2px rgba(18, 12, 6, 0.44), inset 0 1px 3px rgba(18, 12, 6, 0.32);
   }
   .side-panel .btn-sm.btn-ai-tip:disabled {
     opacity: 0.72;

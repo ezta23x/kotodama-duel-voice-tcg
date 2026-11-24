@@ -486,14 +486,29 @@
       const VALID_LANG = new Set(["ja-JP", "zh-CN"]);
       const VALID_NIA_LANG = new Set(["", "ja", "zh"]);
       const VALID_TTS = new Set(["nia_tts", "vertex_tts", "chrome_tts"]);
-      const VALID_VOICES = new Set(["Zephyr", "Leda", "Kore", "Aoede", "Puck", "Charon", "Fenrir"]);
+      const VALID_VOICES = new Set([
+        "Kore", "Fenrir", "Zephyr", "Leda", "Aoede", "Puck", "Charon",
+        "Orus", "Callirrhoe", "Autonoe", "Enceladus", "Iapetus", "Umbriel",
+        "Algieba", "Despina", "Erinome", "Algenib", "Rasalgethi", "Laomedeia",
+        "Achernar", "Alnilam", "Schedar", "Gacrux", "Pulcherrima", "Achird",
+        "Zubenelgenubi", "Vindemiatrix", "Sadachbia", "Sadaltager", "Sulafat"
+      ]);
       const VALID_NIA_VOICES_JA = new Set([
         "female_xiaowan", "female_luna", "female_meihe", "female_lora", "female_shuying",
         "male_zichen", "male_haru", "male_shantian", "male_youzhen"
       ]);
       const VALID_NIA_VOICES_ZH = new Set([
         "female_luna", "female_lingxi", "female_kexin", "female_qinghe", "female_weiyang",
-        "male_xingye", "male_chenlang", "male_lingchuan", "male_yunshen"
+        "male_xingye", "male_chenlang", "male_lingchuan", "male_yunshen",
+        "female_0003_a", "female_0006_a", "female_0018_b", "female_0027_a", "female_0030_e",
+        "female_0036_a", "female_duoduo", "female_lingling", "female_mengmeng", "female_nuannuan",
+        "female_ruanruan", "female_ruoyan", "female_ruyan", "female_tangtang", "female_xiaocheng",
+        "female_xiaohe", "female_xiaoli", "female_xiaolin", "female_xiaomo", "female_xiaotang",
+        "female_xiaotao", "female_xiaoyou", "female_xiaoyou_v5i", "female_youyou", "female_zengtong",
+        "female_zhinuann", "female_zhirou", "child_0001_a",
+        "male_ahao", "male_cixingnansheng", "male_hexiao", "male_huaijin", "male_jingheng",
+        "male_linzhou", "male_mili", "male_nanfeng", "male_qingmu", "male_tianhe",
+        "male_wanzhou", "male_xiaobei", "male_xiaoyang", "male_xuanzhao", "male_yian", "male_yunzheng"
       ]);
       const VALID_DIFF = new Set(["normal", "hard"]);
       if (VALID_UI_LANG.has(src.uiLang)) out.uiLang = src.uiLang;
@@ -1618,7 +1633,51 @@
         { value: "male_xingye", label: "星野" },
         { value: "male_chenlang", label: "晨朗" },
         { value: "male_lingchuan", label: "凌川" },
-        { value: "male_yunshen", label: "云深" }
+        { value: "male_yunshen", label: "云深" },
+        { value: "female_0003_a", label: "傲娇少女" },
+        { value: "female_0006_a", label: "温柔御姐" },
+        { value: "female_0018_b", label: "森系少女" },
+        { value: "female_0027_a", label: "魅力姐姐" },
+        { value: "female_0030_e", label: "贴心女人" },
+        { value: "female_0036_a", label: "青春女声" },
+        { value: "female_duoduo", label: "朵朵" },
+        { value: "female_lingling", label: "玲玲" },
+        { value: "female_mengmeng", label: "萌萌" },
+        { value: "female_nuannuan", label: "暖暖" },
+        { value: "female_ruanruan", label: "软软" },
+        { value: "female_ruoyan", label: "若颜" },
+        { value: "female_ruyan", label: "如烟" },
+        { value: "female_tangtang", label: "糖糖" },
+        { value: "female_xiaocheng", label: "小程" },
+        { value: "female_xiaohe", label: "小荷" },
+        { value: "female_xiaoli", label: "小栗" },
+        { value: "female_xiaolin", label: "小琳" },
+        { value: "female_xiaomo", label: "小莫" },
+        { value: "female_xiaotang", label: "小汤" },
+        { value: "female_xiaotao", label: "小桃" },
+        { value: "female_xiaoyou", label: "小柚" },
+        { value: "female_xiaoyou_v5i", label: "小柚 (v5i)" },
+        { value: "female_youyou", label: "悠悠" },
+        { value: "female_zengtong", label: "曾彤" },
+        { value: "female_zhinuann", label: "知暖" },
+        { value: "female_zhirou", label: "知柔" },
+        { value: "child_0001_a", label: "乐乐" },
+        { value: "male_ahao", label: "阿豪" },
+        { value: "male_cixingnansheng", label: "磁性男声" },
+        { value: "male_hexiao", label: "何萧" },
+        { value: "male_huaijin", label: "怀瑾" },
+        { value: "male_jingheng", label: "景珩" },
+        { value: "male_linzhou", label: "林舟" },
+        { value: "male_mili", label: "弥狸" },
+        { value: "male_nanfeng", label: "南风" },
+        { value: "male_qingmu", label: "青木" },
+        { value: "male_tianhe", label: "天何" },
+        { value: "male_wanzhou", label: "晚舟" },
+        { value: "male_xiaobei", label: "小北" },
+        { value: "male_xiaoyang", label: "晓阳" },
+        { value: "male_xuanzhao", label: "玄昭" },
+        { value: "male_yian", label: "亦安" },
+        { value: "male_yunzheng", label: "云峥" }
       ],
       vertex_tts: [
         { value: "Kore", label: "Kore" },
@@ -1627,7 +1686,30 @@
         { value: "Leda", label: "Leda" },
         { value: "Aoede", label: "Aoede" },
         { value: "Puck", label: "Puck" },
-        { value: "Charon", label: "Charon" }
+        { value: "Charon", label: "Charon" },
+        { value: "Orus", label: "Orus" },
+        { value: "Callirrhoe", label: "Callirrhoe" },
+        { value: "Autonoe", label: "Autonoe" },
+        { value: "Enceladus", label: "Enceladus" },
+        { value: "Iapetus", label: "Iapetus" },
+        { value: "Umbriel", label: "Umbriel" },
+        { value: "Algieba", label: "Algieba" },
+        { value: "Despina", label: "Despina" },
+        { value: "Erinome", label: "Erinome" },
+        { value: "Algenib", label: "Algenib" },
+        { value: "Rasalgethi", label: "Rasalgethi" },
+        { value: "Laomedeia", label: "Laomedeia" },
+        { value: "Achernar", label: "Achernar" },
+        { value: "Alnilam", label: "Alnilam" },
+        { value: "Schedar", label: "Schedar" },
+        { value: "Gacrux", label: "Gacrux" },
+        { value: "Pulcherrima", label: "Pulcherrima" },
+        { value: "Achird", label: "Achird" },
+        { value: "Zubenelgenubi", label: "Zubenelgenubi" },
+        { value: "Vindemiatrix", label: "Vindemiatrix" },
+        { value: "Sadachbia", label: "Sadachbia" },
+        { value: "Sadaltager", label: "Sadaltager" },
+        { value: "Sulafat", label: "Sulafat" }
       ]
     },
 
@@ -5794,7 +5876,7 @@
       TableUI.showTurnBanner("ターン 1：あなたの番", "第 1 回合：你的回合", false);
       /* 选定首发后立即终止已过时的“请选择首发”引导语音，并以高优播报裁判开幕 + 对手开场第一句话 */
       VoiceEngine.stopPlayback();
-      this.announceAndReact(ja, zh, def.is_ex ? "play_ex" : "start", null, { priority: "high", speakJa: startVoiceJa, speakZh: startVoiceZh });
+      this.announceAndReact(ja, zh, def.is_ex ? "play_ex" : "start", null, { priority: "high", interruptible: true, speakJa: startVoiceJa, speakZh: startVoiceZh });
       if (def.is_ex) GuideEngine.trigger("first_ex_card", false);
       else GuideEngine.trigger("first_turn_energy", false);
       this.resetIdleTimer(true);
@@ -6700,15 +6782,15 @@
       if (rJa || rZh) {
         TableUI.setRival(rJa, rZh);
       }
-      if (priority === "high" && spokenReferee && spokenRival) {
+      if (priority === "high" && spokenReferee && spokenRival && !opts.interruptible) {
         /* 仅保留 700ms 启动防爆音窗口，之后允许玩家随时开口灵敏打断 */
         VoiceEngine.bargeInGuardUntil = Math.max(VoiceEngine.bargeInGuardUntil || 0, Date.now() + 700);
       }
-      if (spokenReferee) VoiceEngine.speak({ ja: refJa, zh: refZh }, "referee", { priority, lang });
+      if (spokenReferee) VoiceEngine.speak({ ja: refJa, zh: refZh }, "referee", { priority, interruptible: Boolean(opts.interruptible), lang });
       if (spokenRival) {
         const rivalPriority = priority === "high" ? "high" : "normal";
         const firstRivalChunk = VoiceEngine.splitIntoClauses(spokenRival, lang)[0] || spokenRival;
-        VoiceEngine.speak({ ja: rJa, zh: rZh }, "rival", { priority: rivalPriority, lang, deferPrefetch: true });
+        VoiceEngine.speak({ ja: rJa, zh: rZh }, "rival", { priority: rivalPriority, interruptible: Boolean(opts.interruptible), lang, deferPrefetch: true });
         const expectedToken = VoiceEngine.speakToken;
         /* 错峰 350ms 预取对手语音首句，避免 0ms 并发两条 Nia TTS WS 互相争抢带宽 */
         setTimeout(() => {
