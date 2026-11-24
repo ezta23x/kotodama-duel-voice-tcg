@@ -5536,7 +5536,7 @@
       return seq === this.matchSeq && Boolean(this.state) && !this.state.gameOver;
     },
 
-    /** 26 张快节奏牌组随机洗牌：保底起手 5 张至少含 1 对同色「怪兽+能量」（优先非 ex），且奖赏卡最多盖入 1 只怪兽 */
+    /** 24 张快节奏牌组随机洗牌：保底起手 5 张至少含 1 对同色「怪兽+能量」（优先非 ex），且奖赏卡最多盖入 1 只怪兽且不埋入唯一 ex 王牌 */
     dealGuaranteedOpening(pool) {
       const arr = [...pool];
       for (let i = arr.length - 1; i > 0; i--) {
@@ -5573,7 +5573,17 @@
           if (!hand.some((id) => id.startsWith("energy_"))) swapFromOutside(swapSlot, (id) => id.startsWith("energy_"));
         }
       }
-      /* 3. 限制奖赏卡最多埋入 1 只怪兽，避免前期无后备怪兽猝死 */
+      /* 3. 限制奖赏卡最多埋入 1 只怪兽且不埋入 ex 王牌卡，避免唯一王牌沉奖赏卡或前期无后备猝死 */
+      const isExMon = (id) => {
+        const m = SpecEngine.getMonster(id);
+        return Boolean(m ? m.is_ex : /_ex$/i.test(id));
+      };
+      for (let i = 0; i < prizes.length; i++) {
+        if (!isExMon(prizes[i])) continue;
+        let dIdx = deck.findIndex((id) => !isMon(id));
+        if (dIdx === -1) dIdx = deck.findIndex((id) => !isExMon(id));
+        if (dIdx !== -1) [prizes[i], deck[dIdx]] = [deck[dIdx], prizes[i]];
+      }
       let prizeMonCount = prizes.filter(isMon).length;
       while (prizeMonCount > 1) {
         const pIdx = prizes.findIndex(isMon);
@@ -5585,19 +5595,19 @@
       return { hand, prizes, deck };
     },
 
-    /** 双方 26 张对称标准卡表（双方均为 8 怪兽含双 ex + 10 能量 + 5 支援者 + 1 伤药 + 2 能量回收） */
+    /** 双方 24 张对称标准卡表（双方均为 7 怪兽含唯一 ex + 9 均色能量 + 5 支援者 + 1 伤药 + 2 能量回收） */
     INITIAL_DECKS: {
       player: [
-        "p_fox", "p_fox", "p_turtle", "p_turtle", "p_lion", "p_lion", "p_dragon_ex", "p_dragon_ex",
-        "energy_fire", "energy_fire", "energy_fire", "energy_fire",
+        "p_fox", "p_fox", "p_turtle", "p_turtle", "p_lion", "p_lion", "p_dragon_ex",
+        "energy_fire", "energy_fire", "energy_fire",
         "energy_water", "energy_water", "energy_water",
         "energy_thunder", "energy_thunder", "energy_thunder",
         "item_bag", "item_bag", "item_flute", "item_flute", "item_power", "item_potion", "item_recycle", "item_recycle"
       ],
       enemy: [
-        "e_dog", "e_dog", "e_fish", "e_fish", "e_bird", "e_bird", "e_shark_ex", "e_shark_ex",
+        "e_dog", "e_dog", "e_fish", "e_fish", "e_bird", "e_bird", "e_shark_ex",
         "energy_fire", "energy_fire", "energy_fire",
-        "energy_water", "energy_water", "energy_water", "energy_water",
+        "energy_water", "energy_water", "energy_water",
         "energy_thunder", "energy_thunder", "energy_thunder",
         "item_bag", "item_bag", "item_flute", "item_flute", "item_power", "item_potion", "item_recycle", "item_recycle"
       ]
@@ -5655,7 +5665,7 @@
       return true;
     },
 
-    /** 开局状态：空场开局，双方 26 张快节奏卡组洗牌发 5 张保底起手 + 3 张盖放奖赏卡 + 18 张牌库 */
+    /** 开局状态：空场开局，双方 24 张快节奏卡组洗牌发 5 张保底起手 + 3 张盖放奖赏卡 + 16 张牌库 */
     createInitialState() {
       const pDeckSrc = SpecEngine.decks?.player || this.INITIAL_DECKS.player;
       const eDeckSrc = SpecEngine.decks?.enemy || this.INITIAL_DECKS.enemy;
