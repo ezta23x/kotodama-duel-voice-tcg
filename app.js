@@ -492,7 +492,8 @@
         "male_zichen", "male_haru", "male_shantian", "male_youzhen"
       ]);
       const VALID_NIA_VOICES_ZH = new Set([
-        "child_0001_a", "female_0003_a", "female_0006_a", "female_0018_b", "female_0027_a", "female_0030_e", "female_0036_a", "female_duoduo", "female_kexin", "female_lingling", "female_lingxi", "female_luna", "female_mengmeng", "female_nuannuan", "female_qinghe", "female_ruanruan", "female_ruoyan", "female_ruyan", "female_tangtang", "female_weiyang", "female_xiaocheng", "female_xiaohe", "female_xiaoli", "female_xiaolin", "female_xiaomo", "female_xiaotang", "female_xiaotao", "female_xiaoyou", "female_xiaoyou_v5i", "female_youyou", "female_zengtong", "female_zhinuann", "female_zhirou", "male_ahao", "male_chenlang", "male_cixingnansheng", "male_hexiao", "male_huaijin", "male_jingheng", "male_lingchuan", "male_linzhou", "male_mili", "male_nanfeng", "male_qingmu", "male_tianhe", "male_wanzhou", "male_xiaobei", "male_xiaoyang", "male_xingye", "male_xuanzhao", "male_yian", "male_yunshen", "male_yunzheng"
+        "female_luna", "female_lingxi", "female_kexin", "female_qinghe", "female_weiyang",
+        "male_xingye", "male_chenlang", "male_lingchuan", "male_yunshen"
       ]);
       const VALID_DIFF = new Set(["normal", "hard"]);
       if (VALID_UI_LANG.has(src.uiLang)) out.uiLang = src.uiLang;
@@ -1609,59 +1610,15 @@
         { value: "male_youzhen", label: "悠真" }
       ],
       nia_tts_zh: [
-        { value: "child_0001_a", label: "乐乐" },
-        { value: "female_0003_a", label: "傲娇少女" },
-        { value: "female_0006_a", label: "温柔御姐" },
-        { value: "female_0018_b", label: "森系少女" },
-        { value: "female_0027_a", label: "魅力姐姐" },
-        { value: "female_0030_e", label: "贴心女人" },
-        { value: "female_0036_a", label: "青春女声" },
-        { value: "female_duoduo", label: "朵朵" },
-        { value: "female_kexin", label: "可昕" },
-        { value: "female_lingling", label: "玲玲" },
+        { value: "female_luna", label: "Luna" },
         { value: "female_lingxi", label: "灵汐" },
-        { value: "female_luna", label: "luna" },
-        { value: "female_mengmeng", label: "萌萌" },
-        { value: "female_nuannuan", label: "暖暖" },
+        { value: "female_kexin", label: "可昕" },
         { value: "female_qinghe", label: "青禾" },
-        { value: "female_ruanruan", label: "软软" },
-        { value: "female_ruoyan", label: "若颜" },
-        { value: "female_ruyan", label: "如烟" },
-        { value: "female_tangtang", label: "糖糖" },
         { value: "female_weiyang", label: "未央" },
-        { value: "female_xiaocheng", label: "小程" },
-        { value: "female_xiaohe", label: "小荷" },
-        { value: "female_xiaoli", label: "小栗" },
-        { value: "female_xiaolin", label: "小琳" },
-        { value: "female_xiaomo", label: "小莫" },
-        { value: "female_xiaotang", label: "小汤" },
-        { value: "female_xiaotao", label: "小桃" },
-        { value: "female_xiaoyou", label: "小柚" },
-        { value: "female_xiaoyou_v5i", label: "小柚" },
-        { value: "female_youyou", label: "悠悠" },
-        { value: "female_zengtong", label: "曾彤" },
-        { value: "female_zhinuann", label: "知暖" },
-        { value: "female_zhirou", label: "知柔" },
-        { value: "male_ahao", label: "阿豪" },
-        { value: "male_chenlang", label: "晨朗" },
-        { value: "male_cixingnansheng", label: "磁性男声" },
-        { value: "male_hexiao", label: "何萧" },
-        { value: "male_huaijin", label: "怀瑾" },
-        { value: "male_jingheng", label: "景珩" },
-        { value: "male_lingchuan", label: "凌川" },
-        { value: "male_linzhou", label: "林舟" },
-        { value: "male_mili", label: "弥狸" },
-        { value: "male_nanfeng", label: "南风" },
-        { value: "male_qingmu", label: "青木" },
-        { value: "male_tianhe", label: "天何" },
-        { value: "male_wanzhou", label: "晚舟" },
-        { value: "male_xiaobei", label: "小北" },
-        { value: "male_xiaoyang", label: "晓阳" },
         { value: "male_xingye", label: "星野" },
-        { value: "male_xuanzhao", label: "玄昭" },
-        { value: "male_yian", label: "亦安" },
-        { value: "male_yunshen", label: "云深" },
-        { value: "male_yunzheng", label: "云峥" }
+        { value: "male_chenlang", label: "晨朗" },
+        { value: "male_lingchuan", label: "凌川" },
+        { value: "male_yunshen", label: "云深" }
       ],
       vertex_tts: [
         { value: "Kore", label: "Kore" },
@@ -3891,16 +3848,16 @@
           const hasTerminalTail = asrTxt ? this.hasTerminalCommandTail(asrTxt) : false;
           const looksCombo = asrTxt ? this.looksLikeOngoingCombo(asrTxt) : false;
           const tailSilenceMs = isSetupPhase
-            ? (incompleteTail ? 1800 : 1200)
+            ? (incompleteTail ? 1350 : 780)
             : (incompleteTail
-                ? 2200
+                ? 1750
                 : (hasTerminalTail
-                    ? (dur < 1200 ? 1100 : 1250)
-                    : (looksCombo ? 1800 : 1600)));
+                    ? (dur < 1200 ? 820 : 940)
+                    : (looksCombo ? 1250 : 1150)));
           const asrIdleMs = this.vadLastAsrChangeAt ? (now - this.vadLastAsrChangeAt) : 0;
           const asrStableLimit = isSetupPhase
-            ? (incompleteTail ? 2200 : 1400)
-            : (incompleteTail ? 2800 : (hasTerminalTail ? 1600 : (looksCombo ? 2100 : 1900)));
+            ? (incompleteTail ? 1850 : 1050)
+            : (incompleteTail ? 2350 : (hasTerminalTail ? 1300 : (looksCombo ? 1650 : 1500)));
           /* 声学静音 + ASR 文本稳定双信号联合判停：长连招中间自然停顿（~1s）不截断，明确终结词或停顿足够久才提交 */
           const asrTextStableDone = Boolean(
             asrTxt
@@ -5837,7 +5794,7 @@
       TableUI.showTurnBanner("ターン 1：あなたの番", "第 1 回合：你的回合", false);
       /* 选定首发后立即终止已过时的“请选择首发”引导语音，并以高优播报裁判开幕 + 对手开场第一句话 */
       VoiceEngine.stopPlayback();
-      this.announceAndReact(ja, zh, def.is_ex ? "play_ex" : "start", null, { priority: "high", interruptible: true, speakJa: startVoiceJa, speakZh: startVoiceZh });
+      this.announceAndReact(ja, zh, def.is_ex ? "play_ex" : "start", null, { priority: "high", speakJa: startVoiceJa, speakZh: startVoiceZh });
       if (def.is_ex) GuideEngine.trigger("first_ex_card", false);
       else GuideEngine.trigger("first_turn_energy", false);
       this.resetIdleTimer(true);
@@ -6743,15 +6700,15 @@
       if (rJa || rZh) {
         TableUI.setRival(rJa, rZh);
       }
-      if (priority === "high" && spokenReferee && spokenRival && !opts.interruptible) {
+      if (priority === "high" && spokenReferee && spokenRival) {
         /* 仅保留 700ms 启动防爆音窗口，之后允许玩家随时开口灵敏打断 */
         VoiceEngine.bargeInGuardUntil = Math.max(VoiceEngine.bargeInGuardUntil || 0, Date.now() + 700);
       }
-      if (spokenReferee) VoiceEngine.speak({ ja: refJa, zh: refZh }, "referee", { priority, interruptible: opts.interruptible, lang });
+      if (spokenReferee) VoiceEngine.speak({ ja: refJa, zh: refZh }, "referee", { priority, lang });
       if (spokenRival) {
         const rivalPriority = priority === "high" ? "high" : "normal";
         const firstRivalChunk = VoiceEngine.splitIntoClauses(spokenRival, lang)[0] || spokenRival;
-        VoiceEngine.speak({ ja: rJa, zh: rZh }, "rival", { priority: rivalPriority, interruptible: opts.interruptible, lang, deferPrefetch: true });
+        VoiceEngine.speak({ ja: rJa, zh: rZh }, "rival", { priority: rivalPriority, lang, deferPrefetch: true });
         const expectedToken = VoiceEngine.speakToken;
         /* 错峰 350ms 预取对手语音首句，避免 0ms 并发两条 Nia TTS WS 互相争抢带宽 */
         setTimeout(() => {
