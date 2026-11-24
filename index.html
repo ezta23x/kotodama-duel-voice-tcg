@@ -3260,13 +3260,17 @@
   .lang-pill { font-size: var(--fs-sm); min-width: 72px; }
   .lang-switch.light .lang-pill { font-size: var(--fs-md); }
 
-  /* 桌面端三栏对称舞台：[最左侧纵向手牌栏] | [中间 4 行零重叠牌桌] | [右侧语音/日志栏] */
+  /* 桌面端/横屏三栏对称舞台：[左侧语音/日志栏] | [中间 4 行零重叠牌桌] | [右侧纵向手牌栏] */
   .arena-grid {
-    grid-template-columns: calc(var(--card-w) + 26px) minmax(0, 1fr) clamp(288px, 21.5vw, 336px);
+    grid-template-columns: clamp(288px, 21.5vw, 336px) minmax(0, 1fr) calc(var(--card-w) + 26px);
     gap: clamp(7px, 0.7vw, 10px);
   }
+  .side-panel { order: 1; }
+  .playmat { order: 2; }
+  .hand-rail { order: 3; }
+  .debug-log-drawer { transform: translateX(-104%); }
 
-  /* 左侧纵向手牌独立羊皮纸栏（与右侧语音日志栏视觉对称，底部固定防御与结束回合按钮） */
+  /* 右侧纵向手牌独立羊皮纸栏（与左侧语音日志栏视觉对称，底部固定防御与结束回合按钮） */
   .hand-rail {
     height: 100%;
     min-height: 0;
@@ -3326,18 +3330,18 @@
     scrollbar-gutter: stable;
   }
   .hand-card:hover {
-    transform: translateX(4px) scale(1.015);
+    transform: translateX(-4px) scale(1.015);
     z-index: 12;
   }
   .hand-card.selected {
-    transform: translateX(5px);
+    transform: translateX(-5px);
     box-shadow: 0 0 0 2px var(--ok), 0 6px 14px rgba(64, 42, 20, 0.24);
   }
   .hand-card.setup-pick {
     transform: none;
   }
   .hand-card.setup-pick:hover {
-    transform: translateX(4px) scale(1.015);
+    transform: translateX(-4px) scale(1.015);
   }
   .hand-actions {
     flex: 0 0 auto;
@@ -3442,14 +3446,23 @@
   .vs-badge { font-size: var(--fs-sm); padding: 2.5px 12px; }
   .limit-pill { font-size: var(--fs-sm); padding: 2.5px 9px; }
 
-  /* 三段式卡面内部精修：头部单行不折行不截断、4px 嵌入式血条、紧凑状态条、两行清晰技能 */
+  /* 三段式卡面内部精修：全卡牌清晰 2px 属性边框 + 头部单行不折行不截断 + 4px 嵌入式血条 + 两行清晰技能 */
   .card {
     width: var(--card-w);
     height: var(--card-h);
     padding: 0 0 3px;
     gap: 0;
     justify-content: flex-start;
+    border: 2px solid #9f8358;
+    border-top: 3.5px solid #8a7358;
+    box-shadow: 0 3px 8px rgba(58, 36, 16, 0.2), inset 0 0 0 1px rgba(255, 252, 244, 0.72);
   }
+  .card.fire { border-color: rgba(189, 79, 59, 0.72); border-top-color: var(--fire); }
+  .card.water { border-color: rgba(61, 118, 166, 0.72); border-top-color: var(--water); }
+  .card.thunder { border-color: rgba(179, 131, 30, 0.76); border-top-color: var(--thunder); }
+  .card.item { border-color: rgba(59, 124, 94, 0.72); border-top-color: var(--item); }
+  .card.supporter { border-color: rgba(116, 86, 148, 0.72); border-top-color: var(--supporter); }
+  .card.is-ex { border: 2.5px solid var(--gold); border-top: 4px solid var(--gold-deep); }
   .card-head {
     padding: 3.5px 5.5px;
     gap: 4px;
@@ -3817,7 +3830,7 @@
     .topbar { flex-wrap: wrap; padding: 5px 10px; gap: 5px; }
     .top-actions { flex-wrap: wrap; gap: 4px; }
     .top-btn { padding: 3.5px 8px; }
-    .arena-grid { grid-template-columns: calc(var(--card-w) + 22px) minmax(0, 1fr) clamp(260px, 23vw, 298px); gap: 6px; }
+    .arena-grid { grid-template-columns: clamp(260px, 23vw, 298px) minmax(0, 1fr) calc(var(--card-w) + 22px); gap: 6px; }
     .bench-row { justify-content: flex-start; overflow-x: auto; padding-bottom: 2px; }
     .active-band > .pile-col { flex-direction: column; gap: 4px; }
   }
@@ -3867,7 +3880,7 @@
     .top-btn { min-height: 26px; padding: 3px 8px; }
     .lang-pill { padding: 2px 7px; min-width: 0; }
     .lang-badge-svg { width: 15px; height: 15px; }
-    .arena-grid { grid-template-columns: calc(var(--card-w) + 18px) minmax(0, 1fr) clamp(232px, 27vw, 276px); }
+    .arena-grid { grid-template-columns: clamp(232px, 27vw, 276px) minmax(0, 1fr) calc(var(--card-w) + 18px); }
     .hand-rail { padding: 6px 7px; }
     .playmat { justify-content: flex-start; }
     .bench-row { justify-content: flex-start; overflow-x: auto; }
