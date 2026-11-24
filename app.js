@@ -1103,6 +1103,7 @@
 
     /** 按卡牌 ID 查询怪兽静态定义，未命中返回 null */
     getMonster(id) { return this.monsters.find((m) => m.id === id) || null; },
+    /** 按卡牌 ID 查询道具或能量卡静态定义，未命中返回 null */
     getItem(id) { return this.items.find((it) => it.id === id) || null; },
     /** 获取对手台词（同一事件配置多条时自动轮换，避免连续重复） */
     getRivalLine(eventKey) {
@@ -1527,7 +1528,7 @@
       const typoDict = this.asrCorrections.map((t) =>
         `- 「${t.variants.join("」「")}」→「${t.standard}」(${t.meaning})`
       ).join("\n");
-      return `${this.promptInstructions}\n\n### 応答範囲ルール\n- 常にこのカードゲーム（盤面・手札・ルール・戦術）に関する応答のみを行い、日常雑談には応じず簡潔にプレイ操作へ案内すること。\n- phase が "setup"（先発選択中）の場合は攻撃・エネ添付等は実行せず、手札モンスターからの先発選択へ案内すること。\n\n### カード一覧\n${monsterDict}\n${itemDict}\n\n### ASR誤認識辞書\n${typoDict}`;
+      return `${this.promptInstructions}\n\n### 応答範囲ルール\n- 常にこのカードゲーム（盤面・手札・ルール・戦術）に関する応答のみを行い、日常雑談には応じず簡潔にプレイ操作へ案内すること。\n- phase が "setup"（先発選択中）の場合は攻撃・エネ添付等は実行せず、手札モンスターからの先発選択へ案内すること。\n- RETREAT は「バトル場とベンチの交代」専用。ベンチと手札の入れ替え・交換・手札に戻す指示はルール上不可なので絶対に RETREAT にせず status="reject" で案内すること。\n\n### カード一覧\n${monsterDict}\n${itemDict}\n\n### ASR誤認識辞書\n${typoDict}`;
     },
 
     /** 加载策略：1. 用户显式导入的本地缓存 → 2. 同目录 gamedata.json（单一数据源）；均失败时返回 false 由界面引导手动选择 */
@@ -1551,6 +1552,7 @@
      ========================================================================= */
   /* ---------- 轻量 Web Audio 交互与战斗音效（无需外部音频文件） ---------- */
   const SoundFX = {
+    /** 播放指定类型的轻量 Web Audio 战斗/交互音效（click/energy/attack/hit/heal/guard/switch/ko/win/lose） */
     play(type, elem = "fire") {
       try {
         const sfxGuardMs = type === "tap" ? 0 : (type === "energy" || type === "heal" || type === "guard" || type === "switch" ? 140 : 260);
@@ -5065,7 +5067,7 @@
       if (!audioBase64 && text) {
         const fast = this.localParse(text, boardSnapshot, conversationContext, parseOpts);
         const hasUnmatched = Array.isArray(fast._unmatchedClauses) && fast._unmatchedClauses.length > 0;
-        const canShortCircuit = fast.status === "confirm" || fast.status === "chat"
+        const canShortCircuit = fast.status === "confirm" || fast.status === "chat" || fast.status === "reject"
           || (fast.status === "execute" && (!hasUnmatched || !url || cfg.asrMode === "chrome_local"));
         if (canShortCircuit) {
           DebugLog.add("NLU", `本地快通道命中 (${fast.status})`, { text, actions: fast.actions });
@@ -5415,9 +5417,11 @@
 
       const actions = [];
       const unmatchedEntries = [];
+      let benchHandSwapRejected = false;
       const isFillerClause = (seg) => {
+        if (this.isFillerUtterance(seg)) return true;
         const core = String(seg || "").replace(/[\s　「」『』（）()【】\[\]、，。.,！!？?・\-ー…~～]/g, "");
-        return !core || /^(?:好的|可以|行|嗯|啊|呀|吧|呢|哦|嘛|哈|呐|好吗|行吗|一下|えっと|えー|まあ|あの|はい|うん)$/.test(core);
+        return /^(?:好的|可以|行|一下|はい|うん)$/.test(core);
       };
       for (let ci = 0; ci < clauses.length; ci++) {
         const c = clauses[ci];
@@ -5446,6 +5450,13 @@
           && (Boolean(fluteEnemyMon) || /(?:对手|对面|对方|敌方|相手)/.test(c));
         if (explicitFluteSignal || pullUpFluteSignal || (fuzzyItem && fuzzyItem.id === "item_flute")) {
           actions.push({ type: "USE_ITEM", card_id: "item_flute", target: this.resolveSlotFromText(c, "enemy", board, { benchOnly: true }), _clause: c, _clauseIdx: ci });
+          continue;
+        }
+        /* 先拦截「备战区与手牌互换 / 退回手牌」（中/日双语）：规则不允许且绝不能误判为 RETREAT 换上主战区 */
+        const prevUnmatched = unmatchedEntries.find((ue) => ue.idx === ci - 1);
+        const benchHandCheckText = prevUnmatched ? `${prevUnmatched.text} ${c}` : c;
+        if (this.isBenchHandSwapAttempt(c, board, liveHand) || this.isBenchHandSwapAttempt(benchHandCheckText, board, liveHand)) {
+          benchHandSwapRejected = true;
           continue;
         }
         /* 先判定己方撤退/主战与备战交换（中/日双语），防止“把备战区的炎龙ex和主战交换 / ベンチの炎龍exとバトル場を交換”被误判为从手牌下怪（PLAY_BENCH） */
@@ -5629,6 +5640,19 @@
         }
       }
 
+      if (actions.length === 0 && benchHandSwapRejected) {
+        const rej = this.buildBenchHandSwapRejectReply(board);
+        return {
+          transcript: fixed,
+          status: "reject",
+          actions: [],
+          reply_ja: rej.reply_ja,
+          reply_zh: rej.reply_zh,
+          rival_ja: "",
+          rival_zh: ""
+        };
+      }
+
       if (actions.length === 0 && /キャンセル|やめる|取り消|取消|算了/.test(fixed)) {
         return { transcript: fixed, status: "execute", actions: [{ type: "CANCEL" }], reply_ja: "", reply_zh: "", rival_ja: "", rival_zh: "" };
       }
@@ -5666,13 +5690,71 @@
       return core.length === 0;
     },
 
-    /** 判断语音转写是否仅为无意义语气词/叹词（如“嗯”“呃”“啊”“えっと”等），避免白白触发“AI解析中”和云端调用 */
+    /**
+     * 判断语音转写是否为无意义语气词、叹词或呼吸/麦克风杂音（如“嗯”“嘘”“嘶”“し”“hhh”等），
+     * 避免触发“AI解析中”和云端调用，同时通过有效单字白名单保护绝不误杀“防/火/左/1”等合法单字指令。
+     */
     isFillerUtterance(text) {
       const raw = String(text || "").trim();
       if (!raw) return true;
       const core = raw.replace(/[\s　「」『』（）()【】\[\]、，。.,！!？?・\-ー…~～]/g, "");
       if (!core) return true;
-      return /^(?:[嗯呃额啊哦喔唔哎唉诶欸哈哼咳啧喂]+|嗯哼|嗯嗯|啊啊|哦哦|呃呃|唔唔|哈哈|嘿嘿|咳咳|あ+|え+|う+|お+|ん+|うん+|うーん|んー|んと|えっと|えーっと|ええと|えーと|あの+|あのね|まあ|ふーん|へー|はあ|うわ|うっ|あっ|おっ|えっ)$/.test(core);
+      if (/^(?:[嗯呃额啊哦喔噢唔哎唉诶欸哈哼呵嘻嘿嗨咳啧呸切喂呀哟呦咦哇呜嗷嘎呐呢吧啦嘛嘘嘶呼吁噗嗤哧呲滋哒嗒啪咔嚓擦刷嘭砰咚叮当嘀滴]+|嗯哼|哎呀|哎哟|啊呀|啊哟|しー+|すー+|ふー+|はー+|へー+|ほー+|ちっ|ぷっ|かっ|ぱっ|あっ|いっ|うっ|えっ|おっ|あー+|いー+|うー+|えー+|おー+|んー+|うん+|うーん|んと|えっと|えーっと|ええと|えーと|あの+|あのね|まあ|ふーん|はあ|うわ)$/i.test(core)) {
+        return true;
+      }
+      const VALID_SINGLE_GAME_CHAR = /^[打攻防守换撤退奶抽摸贴放出上下用吃喝拉拖吹过停消火炎水冰雷电红蓝黄赤青前后左中右是对好行要不要否别没1234一二三四１２３４狐龟狮龙鲨犬狗鱼鸟药笛包袋]$/;
+      if (core.length === 1 && !VALID_SINGLE_GAME_CHAR.test(core)) return true;
+      if (/^(.)\1{1,3}$/.test(core) && !VALID_SINGLE_GAME_CHAR.test(core[0])) return true;
+      return false;
+    },
+
+    /**
+     * 判断发话是否试图将备战区怪兽与手牌互换或退回手牌（规则不允许，避免误判为 RETREAT 换上主战区）。
+     */
+    isBenchHandSwapAttempt(text, board, handOverride = null) {
+      const s = String(text || "").trim();
+      if (!s) return false;
+      if (/(?:对手|对面|对方|敌方|相手)/.test(s)) return false;
+      if (/(?:弃牌区|墓地|トラッシュ|捨て札|能量回收|エネ回収)/.test(s)) return false;
+      if (/(?:主战|战斗区|战斗场|前排|出战位|首发位|バトル場|先発)/.test(s)) return false;
+
+      const hasReturnToHand = (/(?:换回|退回|放回|收回|拿回|移回|打回).{0,4}(?:手牌|手里|手中)|(?:手札|手元)に(?:戻|もど|返|かえ)/.test(s))
+        && !/(?:能量|火能|水能|雷能|炎能|电能|エネルギー|エネ)/.test(s);
+      if (hasReturnToHand) return true;
+
+      const hasSwapWord = /(?:交换|互换|对换|替换|调换|换卡|换一下|换一换|换个|换成|换回|换到|换掉|换走|交換|こうかん|入れ替|いれかえ|交代|こうたい|チェンジ|スイッチ|(?:和|跟|与).{0,10}换|把.{0,10}换(?:成|为|回|到|掉|一下|一换|个)|(?:手牌|手里|手中|手札|手元).{0,6}换|换.{0,6}(?:手牌|手里|手中|手札|手元))/.test(s);
+      if (!hasSwapWord) return false;
+
+      const liveHand = Array.isArray(handOverride) ? handOverride : (Array.isArray(board?.player?.hand) ? board.player.hand : []);
+      const activeId = board?.player?.active?.id || null;
+      const benchIds = new Set((Array.isArray(board?.player?.bench) ? board.player.bench : []).filter(Boolean).map((u) => u.id));
+      const hasHandWord = /(?:手牌|手里|手中|手札|手元)/.test(s);
+      const hasBenchWord = /(?:备战|后排|替补|ベンチ|べんち|控え|ひかえ|後ろ)/.test(s);
+      const matchedMons = SpecEngine.matchAllMonsters(s, "player");
+      const namesActiveMon = Boolean(activeId && matchedMons.some((m) => m.id === activeId));
+      const namesBenchMon = matchedMons.some((m) => benchIds.has(m.id));
+      const hasHandOnlyMon = matchedMons.some((m) => liveHand.includes(m.id) && m.id !== activeId && !benchIds.has(m.id));
+
+      if (hasHandWord && (hasBenchWord || namesBenchMon)) return true;
+      if (hasHandOnlyMon && !namesActiveMon && (hasBenchWord || namesBenchMon)) return true;
+      return false;
+    },
+
+    /**
+     * 生成备战区与手牌互换规则拒答的双语提示（按当前备战区是否有空位给出明确指引）。
+     */
+    buildBenchHandSwapRejectReply(board) {
+      const emptyBenchCount = Math.max(0, 3 - (Array.isArray(board?.player?.bench) ? board.player.bench.filter(Boolean).length : 0));
+      if (emptyBenchCount > 0) {
+        return {
+          reply_ja: "ルール上、ベンチのモンスターを手札と入れ替えることはできません。手札のモンスターは空いているベンチ枠に直接出せます（バトル場との交代は「主戦と交代」と伝えてください）。",
+          reply_zh: "按规则无法将备战区怪兽与手牌互换。手牌里的怪兽可以直接放到空着的备战区（如果想让备战区怪兽上主战区，请说“和主战交换”或“撤退”）。"
+        };
+      }
+      return {
+        reply_ja: "ルール上、ベンチのモンスターを手札と入れ替えることはできません（現在ベンチ満員3体です）。バトル場と交代する場合は「主戦と交代」と伝えてください。",
+        reply_zh: "按规则无法将备战区怪兽与手牌互换（当前备战区已满 3 只）。如果想让备战区怪兽上主战区，请说“和主战交换”或“撤退”。"
+      };
     },
 
     /** 严格判定结束回合意图：语音模式自动过滤裁判播报回声与2字环境残音，仅匹配明确结束回合短语 */
@@ -6959,7 +7041,7 @@
           const localFirst = NLUEngine.localParse(heardText, this.getSnapshot(), convCtx, { isVoice: isVoiceInput });
           const validLocalExec = localFirst.status === "execute" && Array.isArray(localFirst.actions) && localFirst.actions.length > 0
             && !(localFirst.actions.length === 1 && localFirst.actions[0].type === "CANCEL" && !s.pending);
-          const validLocalSpecial = localFirst.status === "confirm" || localFirst.status === "chat";
+          const validLocalSpecial = localFirst.status === "confirm" || localFirst.status === "chat" || localFirst.status === "reject";
           const cloudActions = Array.isArray(result.actions) ? result.actions : [];
           /* 当玩家在提问/盘面咨询且云端已明确回复 chat/reject 时，绝不用本地解析覆盖云端回答 */
           const cloudHandledQuestion = NLUEngine.isQuestionOrStatusQuery(heardText) && (result.status === "chat" || result.status === "reject");
@@ -6986,7 +7068,7 @@
         }
 
         /* 语音输入静默/噪声/短语气词/扬声器自回声过滤（手动单次按录不做回声静默吞掉） */
-        const isFillerOnly = !s.pending && s.phase !== "setup" && /^[嗯呃啊哦唔哎哈嗯哼あえうおんうんえっとあのー！!。.,，\s]+$/.test(heardText);
+        const isFillerOnly = !this.isConfirmPending() && NLUEngine.isFillerUtterance(heardText);
         const isEcho = !isManualVoice && VoiceEngine.isLikelySelfEcho(heardText);
         if (isVoiceInput && (
           result.status === "ignore" ||
@@ -7135,6 +7217,7 @@
         const explicitItem = SpecEngine.matchItem(rawUtter);
         const explicitMon = SpecEngine.matchMonster(rawUtter, "player");
         let safeQueue = [];
+        let blockedBenchHandSwap = false;
         const hasSummonIntent = /(召喚|召唤|上场|出战|ベンチに出|ベンチに置|备战区|放到?备战|下怪|を出す|を出して|派上)/.test(rawUtter) && !/(よびだし笛|召唤笛)/.test(rawUtter);
         for (const a of queue) {
           if (!a || !a.type) continue;
@@ -7185,8 +7268,12 @@
               const matchedId = clauseMons.some((m) => m.id === a.card_id) ? a.card_id : (clauseMons[0]?.id || null);
               if (!matchedId) a.card_id = null;
             }
-            /* 盘面纠偏（中/日双语）：若被解析为 PLAY_BENCH 的怪兽不在手牌、却已在备战区，且原话含交换/换人/上场/主战意图，自动纠正为 RETREAT */
+            /* 盘面纠偏（中/日双语）：若被解析为 PLAY_BENCH 的怪兽不在手牌、却已在备战区，且原话含交换/换人/上场/主战意图（且非备战区与手牌互换），自动纠正为 RETREAT */
             if (a.card_id && !s.player.hand.includes(a.card_id)) {
+              if (NLUEngine.isBenchHandSwapAttempt(actClause || rawUtter, snapNow, s.player.hand)) {
+                blockedBenchHandSwap = true;
+                continue;
+              }
               const benchIdx = s.player.bench.findIndex((u) => u && u.id === a.card_id);
               if (benchIdx !== -1 && /(交换|互换|对换|替换|调换|换|交代|交換|こうかん|入れ替|いれかえ|撤退|チェンジ|スイッチ|上场|出战|主战|前排|战斗区|バトル場|前[にへ]|出陣|顶上|上来)/.test(rawUtter)) {
                 safeQueue.push({ type: "RETREAT", target: `player_bench_${benchIdx}`, _clause: actClause || rawUtter });
@@ -7210,6 +7297,10 @@
             }
           }
           if (a.type === "RETREAT") {
+            if (NLUEngine.isBenchHandSwapAttempt(actClause || rawUtter, snapNow, s.player.hand)) {
+              blockedBenchHandSwap = true;
+              continue;
+            }
             const rSlot = NLUEngine.resolveSlotFromText(actClause, "player", snapNow, { benchOnly: true })
               || (queue.length === 1 ? NLUEngine.resolveSlotFromText(rawUtter, "player", snapNow, { benchOnly: true }) : null);
             const hasRetreatWord = /(交代|こうたい|交換|こうかん|入れ替|いれかえ|下|さげ|さが|逃げ|にげる|にげ|撤退|てったい|チェン|スイッチ|バトン|戻|もど|引|ひく|换|退|切|下场|撤下去|拉回|拉上|拉出|顶上)/.test(rawUtter)
@@ -7235,6 +7326,17 @@
               return true;
             });
           }
+        }
+
+        if (safeQueue.length === 0 && (blockedBenchHandSwap || NLUEngine.isBenchHandSwapAttempt(rawUtter, snapNow, s.player.hand))) {
+          const rej = NLUEngine.buildBenchHandSwapRejectReply(snapNow);
+          TableUI.setReferee(rej.reply_ja, rej.reply_zh);
+          TableUI.appendLog(rej.reply_ja, rej.reply_zh);
+          this.pushHistory("referee", rej.reply_ja);
+          if (VoiceEngine.isSpeaking) VoiceEngine.fadeOutAndStopPlayback(100);
+          VoiceEngine.clearQueuedOnly(false);
+          VoiceEngine.speak({ ja: rej.reply_ja, zh: rej.reply_zh }, "referee", { priority: "high" });
+          return;
         }
 
         if (safeQueue.length === 0) {
