@@ -1190,16 +1190,19 @@
     ZH_PHONETIC_MAP: (() => {
       const groups = {
         lei: "雷蕾类累垒泪擂磊", si: "狮丝思师诗施湿司私死四似斯撕",
-        yan: "炎严盐延演眼烟岩颜言研沿掩燕", hu: "狐湖虎胡壶呼护忽弧糊",
+        yan: "炎严盐延演眼烟岩颜言研沿掩燕焰", hu: "狐湖虎胡壶呼护忽弧糊",
         sui: "水睡税岁碎随遂虽", gui: "龟贵规鬼归硅桂柜跪",
         long: "龙隆笼拢聋咙弄农", quan: "犬圈权全拳泉劝券",
-        pao: "泡跑炮抛袍刨", yu: "鱼雨玉语羽宇欲遇域愈",
-        dian: "电点店垫殿典颠", niao: "鸟尿袅",
+        pao: "泡跑炮抛袍刨", mo: "沫末莫墨默漠磨魔", yu: "鱼雨玉语羽宇欲遇域愈",
+        dian: "电点店垫殿典颠", guang: "光广逛", niao: "鸟尿袅",
         cang: "沧仓藏苍舱昌厂场唱", hai: "海害孩还亥", sa: "鲨沙杀纱傻啥萨",
         huo: "火活货伙获或豁", hua: "花化华画话划滑",
         dan: "弹蛋单淡但担胆诞", qiang: "枪强墙抢腔呛",
         tie: "铁贴帖叠", jia: "甲假加家架价佳驾", ke: "壳可克客科刻课颗",
-        ji: "击鸡基机极级急集寄技记给济计", ting: "霆停挺听庭廷亭厅",
+        bi: "壁避闭币必毕比彼秘", lie: "烈列裂猎劣", zhua: "爪抓", yun: "陨云运匀允晕韵",
+        ji: "击鸡基机极级急集寄技记给济计", qiu: "球求秋丘囚", ting: "霆停挺听庭廷亭厅",
+        luo: "落洛络骆乐", ming: "鸣明名铭冥", rong: "熔融荣容蓉溶",
+        ya: "牙压押雅哑鸭", xiao: "啸笑消销肖宵效", ju: "狙居车拘举局巨聚",
         tu: "突图途土吐兔涂", xi: "袭西希吸洗喜戏系细席息",
         san: "伤商尚上山闪善扇三散", yao: "药要咬摇耀腰遥邀",
         bu: "补不步部布捕", bao: "包宝报抱爆薄保",
@@ -1208,7 +1211,7 @@
         neng: "能嫩农", sou: "收手首守受售瘦搜",
         bao2: "暴爆抱报", feng: "风封峰蜂疯丰", lang: "浪朗狼廊郎",
         chong: "冲充重虫崇", zhuang: "撞装壮状庄", pen: "喷盆", se: "射设社色涩涉",
-        xuan: "旋宣悬选轩", wo: "涡窝我握卧", shan: "闪善扇山", xing: "星兴行形型醒"
+        xuan: "旋宣悬选轩漩", wo: "涡窝我握卧", shan: "闪善扇山", xing: "星兴行形型醒"
       };
       const map = Object.create(null);
       for (const [code, chars] of Object.entries(groups)) {
@@ -1217,6 +1220,46 @@
       }
       return map;
     })(),
+
+    /** L1 领域「汉字→平假名」读音统一表（长词优先，一次打通汉字/平假名/片假名混写与常见同音拆词） */
+    JA_KANJI_TO_KANA: [
+      ["呼び出し", "よびだし"], ["予備出し", "よびだし"], ["呼出", "よびだし"],
+      ["傷薬", "きずぐすり"], ["地図薬", "きずぐすり"],
+      ["火炎", "かえん"], ["会員", "かえん"], ["開演", "かえん"], ["華炎", "かえん"],
+      ["甲羅", "こうら"], ["水瓶", "みずがめ"], ["補給", "ほきゅう"], ["呼吸", "ほきゅう"], ["高級", "ほきゅう"],
+      ["回収", "かいしゅう"], ["雷鳴", "らいめい"], ["渦潮", "うずしお"], ["津波", "つなみ"],
+      ["波乗り", "なみのり"], ["大海", "たいかい"], ["大会", "たいかい"],
+      ["獅子", "じし"], ["来日", "らいじ"], ["指示", "じし"],
+      ["電気", "でんき"], ["天気", "でんき"], ["元気", "でんき"], ["電機", "でんき"],
+      ["撃ち", "うち"], ["打ち", "うち"], ["噛み付く", "かみつく"], ["噛みつく", "かみつく"],
+      ["増え", "ふえ"], ["壁", "かべ"], ["弾", "だん"], ["団", "だん"], ["撃", "う"], ["打", "う"],
+      ["玉", "だま"], ["爪", "つめ"], ["牙", "きば"], ["犬", "いぬ"], ["鳥", "どり"], ["笛", "ふえ"],
+      ["亀", "がめ"], ["狐", "きつね"], ["鮫", "ざめ"], ["竜", "りゅう"], ["龍", "りゅう"], ["流", "りゅう"],
+      ["魚", "うお"], ["炎", "ほのお"], ["火", "ひ"], ["日", "ひ"], ["水", "みず"], ["雷", "かみなり"],
+      ["傷", "きず"], ["薬", "くすり"], ["粉", "こ"], ["子", "こ"], ["円", "えん"], ["園", "えん"], ["塩", "えん"], ["縁", "えん"]
+    ],
+
+    /** L2 复合词双段锚点表（前缀 + 0~2 干扰字/助词 + 后缀，直击「コーラ壁」「コーラの壁」「呼吸バッグ」等部分误识成独立词） */
+    COMPOUND_ANCHORS: [
+      { kind: "skill", key: "こうら壁", re: /(?:こうら|こら|甲羅|コーラ|コラ).{0,2}(?:壁|かべ|カベ|へき)/i, activeHalfRe: /(?:こうら|コーラ|甲羅|かべ|壁)/i },
+      { kind: "skill", key: "かえん弾", re: /(?:かえん|火炎|会員|開演|華炎|替えん).{0,2}(?:弾|だん|団|だま|玉)/i, activeHalfRe: /(?:かえん|火炎|会員|開演)/i },
+      { kind: "skill", key: "みず撃ち", re: /(?:みず|水|ミス).{0,2}(?:撃ち|打ち|うち|撃|打|うって)/i, activeHalfRe: /(?:みず撃|水撃|水打|みずう)/i },
+      { kind: "skill", key: "でんき玉", re: /(?:でんき|電気|天気|元気|電機|デンキ).{0,2}(?:玉|だま|たま|タマ|球)/i, activeHalfRe: /(?:でんき|電気|天気|元気)/i },
+      { kind: "skill", key: "フレア爪", re: /(?:フレア|ふれあ|フレヤ|ふれや|フレーア).{0,2}(?:爪|つめ|づめ|ツメ)/i, activeHalfRe: /(?:フレア|ふれあ|フレヤ|爪|つめ)/i },
+      { kind: "skill", key: "メテオ炎", re: /(?:メテオ|めてお|メティオ).{0,2}(?:炎|えん|ほのお|円|園|塩|縁|ーン|ン)/i, activeHalfRe: /(?:メテオ|めてお|メティオ)/i },
+      { kind: "skill", key: "ほのお牙", re: /(?:ほのお|炎|火).{0,2}(?:牙|きば|が)/i },
+      { kind: "skill", key: "ツナミ牙", re: /(?:ツナミ|つなみ|津波).{0,2}(?:牙|きば|が)/i },
+      { kind: "item", key: "item_flute", re: /(?:よびだし|呼び出し|予備出し|呼出).{0,2}(?:笛|ふえ|ぶえ|増え)/i },
+      { kind: "item", key: "item_bag", re: /(?:補給|ほきゅう|呼吸|高級).{0,2}(?:バッグ|バック|ばっぐ|ばっく|袋|包)/i },
+      { kind: "item", key: "item_power", re: /(?:パワー|ぱわー|パワ).{0,2}(?:バッジ|バッチ|ばっじ|ばっち|バチ|バジ)/i },
+      { kind: "item", key: "item_recycle", re: /(?:エネ|えね|エネルギー).{0,2}(?:回収|かいしゅう|カイシュウ)/i },
+      { kind: "item", key: "item_potion", re: /(?:きず|キズ|傷|地図|気づ).{0,2}(?:ぐすり|くすり|薬)/i },
+      { kind: "monster", key: "p_dragon_ex", re: /(?:カエン|かえん|火炎|会員).{0,2}(?:リュウ|りゅう|竜|龍|流)/i },
+      { kind: "monster", key: "e_shark_ex", re: /(?:タイカイ|たいかい|大海|大会).{0,2}(?:ザメ|ざめ|サメ|さめ|鮫)/i },
+      { kind: "monster", key: "p_fox", re: /(?:ヒノ|ひの|火の|日の|火ノ).{0,1}(?:キツネ|きつね|狐)/i },
+      { kind: "monster", key: "p_turtle", re: /(?:ミズ|みず|水|ミス).{0,1}(?:ガメ|がめ|カメ|かめ|亀|瓶)/i },
+      { kind: "monster", key: "p_lion", re: /(?:ライ|らい|雷|来日|大).{0,1}(?:ジシ|じし|シシ|しし|獅子|日時|指示)/i }
+    ],
 
     /** 将中文片段转为模糊拼音音素序列（无法映射的字符保留原文，保留边界避免跨词误拼） */
     toZhPhonetic(str) {
@@ -1229,12 +1272,23 @@
       return out.join("|");
     },
 
-    /** 日语 Mora 音拍归一化（片假名→平假名、去长音、统一 じ/ぢ・ず/づ・お/を、合并长元音） */
+    /** 日语深度 Mora 音拍归一化（领域汉字→假名 + 片假名→平假名 + 小假名/拗音/外来音归一 + 剥离词中助词「の」 + 合并长元音） */
     toJaPhonetic(str) {
-      return this.normalizeText(str)
+      let s = String(str || "");
+      for (const [kanji, kana] of this.JA_KANJI_TO_KANA) {
+        if (s.includes(kanji)) s = s.split(kanji).join(kana);
+      }
+      return this.normalizeText(s)
+        .replace(/ゔ/g, "ば")
+        .replace(/てぃ/g, "ち")
+        .replace(/ふぁ/g, "は")
+        .replace(/ふぇ/g, "へ")
+        .replace(/ぁ/g, "あ").replace(/ぃ/g, "い").replace(/ぅ/g, "う").replace(/ぇ/g, "え").replace(/ぉ/g, "お")
+        .replace(/ゃ/g, "や").replace(/ゅ/g, "ゆ").replace(/ょ/g, "よ")
         .replace(/ぢ/g, "じ")
         .replace(/づ/g, "ず")
         .replace(/を/g, "お")
+        .replace(/([\u3041-\u3096])の([\u3041-\u3096])/g, "$1$2")
         .replace(/おう|おお/g, "お")
         .replace(/えい|ええ/g, "え")
         .replace(/うう/g, "う")
@@ -1260,36 +1314,50 @@
       return /(出|放|派|上|下|备战|贴|能|打|攻|用|换|撤|拉|奶|回血|治疗|技能|招|前排|后排|战斗区|左|中|右|防御|ベンチ|エネ|攻撃|交代|回復|使う|出す|貼|付)/.test(String(rawText || ""));
     },
 
-    /** 计算输入文本与标准别名的综合模糊相似度（0~1，兼顾包含匹配与编辑距离） */
+    /** 在指定字符串对上计算滑动窗口 Levenshtein 最佳相似度 */
+    slidingLevenshteinScore(haystack, needle) {
+      const nlen = needle.length;
+      if (nlen < 4 || haystack.length < nlen - 1) return 0;
+      if (haystack.length <= nlen) {
+        const d = this.levenshtein(haystack, needle);
+        return Math.max(0, 1 - d / Math.max(haystack.length, nlen));
+      }
+      let best = 0;
+      const minW = Math.max(3, nlen - 1);
+      const maxW = Math.min(haystack.length, nlen + 1);
+      for (let w = minW; w <= maxW; w++) {
+        for (let i = 0; i <= haystack.length - w; i++) {
+          const sub = haystack.slice(i, i + w);
+          const d = this.levenshtein(sub, needle);
+          const score = 1 - d / Math.max(w, nlen);
+          if (score > best) best = score;
+        }
+      }
+      return best;
+    },
+
+    /** 计算输入文本与标准别名的综合模糊相似度（0~1，兼顾字面、汉字转假名深度音拍、清浊音及音拍编辑距离） */
     fuzzyScore(inputNorm, aliasNorm) {
       if (!inputNorm || !aliasNorm) return 0;
       if (inputNorm.includes(aliasNorm)) return 1.0;
       const alen = aliasNorm.length;
-      /* 日语 4 拍以上支持音拍归一化与清浊音宽容匹配 */
+      /* 日语深度音拍归一化（含领域汉字→假名、去词中「の」、小假名合并）与清浊音宽容匹配 */
       const inJa = this.toJaPhonetic(inputNorm);
       const alJa = this.toJaPhonetic(aliasNorm);
       if (alJa.length >= 3 && inJa.includes(alJa)) return 0.96;
       if (alJa.length >= 4) {
         const inBase = this.stripJaVoicing(inJa);
         const alBase = this.stripJaVoicing(alJa);
-        if (inBase.includes(alBase)) return 0.92;
-      }
-      /* 3字及以下短词字面仅允许精确包含（避免短词 1 字编辑距离撞车），同音词由 matchFromIndex 音素通道在语境下单独处理 */
-      if (alen <= 3 || inputNorm.length < alen) return 0;
-      if (inputNorm.length <= alen) {
-        const d = this.levenshtein(inputNorm, aliasNorm);
-        return Math.max(0, 1 - d / Math.max(inputNorm.length, alen));
+        if (inBase.includes(alBase)) return 0.93;
       }
       let best = 0;
-      const minW = Math.max(3, alen - 1);
-      const maxW = Math.min(inputNorm.length, alen + 1);
-      for (let w = minW; w <= maxW; w++) {
-        for (let i = 0; i <= inputNorm.length - w; i++) {
-          const sub = inputNorm.slice(i, i + w);
-          const d = this.levenshtein(sub, aliasNorm);
-          const score = 1 - d / Math.max(w, alen);
-          if (score > best) best = score;
-        }
+      if (alen >= 4) {
+        best = Math.max(best, this.slidingLevenshteinScore(inputNorm, aliasNorm));
+      }
+      if (alJa.length >= 4 && inJa.length >= 3) {
+        const phScore = this.slidingLevenshteinScore(inJa, alJa);
+        const voicedBaseScore = this.slidingLevenshteinScore(this.stripJaVoicing(inJa), this.stripJaVoicing(alJa)) * 0.96;
+        best = Math.max(best, phScore, voicedBaseScore);
       }
       return best;
     },
@@ -1408,22 +1476,45 @@
       return set;
     },
 
-    /** 在指定模糊索引中按文本字面、日语清浊音归一及中文音素匹配得分最高的条目 */
-    matchFromIndex(entries, rawText, minScore = 0.78, preferIds = null) {
+    /** 在指定模糊索引中按复合词双段锚点、深度音拍归一、盘面动态加权及中文音素匹配得分最高的条目 */
+    matchFromIndex(entries, rawText, minScore = 0.78, preferIds = null, opts = null) {
       const fixed = this.applyLocalTypoFix(rawText);
       const norm = this.normalizeText(fixed);
       if (!norm) return null;
       const activeSet = preferIds || this.getActiveCardIdSet();
       const inZhPh = this.toZhPhonetic(fixed);
       const hasActionCtx = this.hasGameActionContext(fixed);
+      const activeBoost = Boolean(opts && opts.activeBoost);
+      const kind = opts && opts.kind ? opts.kind : "";
       let best = null;
+
+      /* L2 复合词双段锚点快速命中（如 コーラ壁 / コーラの壁 / 呼吸バッグ / 大会ザメ） */
+      if (kind) {
+        for (const anchor of this.COMPOUND_ANCHORS) {
+          if (anchor.kind !== kind) continue;
+          const hitFull = anchor.re.test(fixed) || anchor.re.test(rawText || "");
+          const hitHalf = !hitFull && activeBoost && anchor.activeHalfRe && (anchor.activeHalfRe.test(fixed) || anchor.activeHalfRe.test(rawText || ""));
+          if (!hitFull && !hitHalf) continue;
+          const matchedEntry = entries.find((e) => (kind === "skill" ? e.item.name_ja === anchor.key : e.item.id === anchor.key));
+          if (matchedEntry) {
+            const sc = hitFull ? 0.96 : 0.86;
+            if (!best || sc > best.rankScore) {
+              best = { item: matchedEntry.item, score: sc, rankScore: sc, aliasLen: anchor.key.length };
+            }
+          }
+        }
+      }
+
       for (const entry of entries) {
         const itemId = entry.item?.id || entry.item?.ownerId || "";
         const inActive = Boolean(itemId && activeSet.has(itemId));
+        /* L3 盘面动态阈值：场上/手牌活跃卡允许 4 拍词 1 拍容错（0.75 + 0.06 = 0.81 >= 0.78），非活跃卡保持严格防误触 */
+        const effMin = activeBoost ? Math.min(minScore, 0.68) : (inActive ? Math.min(minScore, 0.74) : minScore);
+        const ctxBonus = activeBoost ? 0.08 : (inActive ? 0.06 : 0);
         for (const alias of entry.aliases) {
           const score = this.fuzzyScore(norm, alias);
-          if (score < minScore) continue;
-          const rankScore = score + (inActive ? 0.03 : 0);
+          if (score < effMin) continue;
+          const rankScore = score + ctxBonus;
           if (!best || rankScore > best.rankScore || (rankScore === best.rankScore && alias.length > best.aliasLen)) {
             best = { item: entry.item, score, rankScore, aliasLen: alias.length };
           }
@@ -1435,7 +1526,7 @@
             if (zp.charLen <= 2 && !inActive && !hasActionCtx) continue;
             if (paddedIn.includes(`|${zp.ph}|`)) {
               const score = zp.charLen >= 3 ? 0.94 : 0.91;
-              const rankScore = score + (inActive ? 0.03 : 0);
+              const rankScore = score + ctxBonus;
               if (!best || rankScore > best.rankScore || (rankScore === best.rankScore && zp.charLen > best.aliasLen)) {
                 best = { item: entry.item, score, rankScore, aliasLen: zp.charLen };
               }
@@ -1451,7 +1542,7 @@
       const list = filterSide
         ? this.fuzzyIndex.monsters.filter((e) => e.item.side === filterSide)
         : this.fuzzyIndex.monsters;
-      const res = this.matchFromIndex(list, rawText, 0.78);
+      const res = this.matchFromIndex(list, rawText, 0.78, null, { kind: "monster" });
       return res ? res.item : null;
     },
 
@@ -1518,18 +1609,19 @@
       return found.map((f) => f.item);
     },
 
-    /** 从自然语言文本中匹配得分最高的一个技能（可限定在当前怪兽技能列表内） */
-    matchSkill(rawText, allowedSkills = null) {
+    /** 从自然语言文本中匹配得分最高的一个技能（可限定在当前怪兽技能列表内并启用主战上下文加权） */
+    matchSkill(rawText, allowedSkills = null, opts = null) {
       const list = allowedSkills
         ? this.fuzzyIndex.skills.filter((e) => allowedSkills.some((s) => s.name_ja === e.item.name_ja))
         : this.fuzzyIndex.skills;
-      const res = this.matchFromIndex(list, rawText, 0.78);
+      const minSc = opts && opts.activeBoost ? 0.68 : 0.78;
+      const res = this.matchFromIndex(list, rawText, minSc, null, { kind: "skill", activeBoost: Boolean(opts && opts.activeBoost) });
       return res ? res.item : null;
     },
 
     /** 从自然语言文本中匹配得分最高的一张道具、支援卡或能量卡 */
     matchItem(rawText) {
-      const res = this.matchFromIndex(this.fuzzyIndex.items, rawText, 0.78);
+      const res = this.matchFromIndex(this.fuzzyIndex.items, rawText, 0.78, null, { kind: "item" });
       return res ? res.item : null;
     },
 
@@ -5706,7 +5798,10 @@
           actions.push({ type: "RETREAT", target, _clause: c, _clauseIdx: ci });
           continue;
         }
-        const matchedSkillEarly = SpecEngine.matchSkill(c) || this.resolveColloquialSkillFromClause(c, board);
+        const activeMonDef = board?.player?.active?.id ? SpecEngine.getMonster(board.player.active.id) : null;
+        const matchedSkillEarly = (activeMonDef ? SpecEngine.matchSkill(c, activeMonDef.skills, { activeBoost: true }) : null)
+          || SpecEngine.matchSkill(c)
+          || this.resolveColloquialSkillFromClause(c, board);
         const allMatchedPlayerMons = SpecEngine.matchAllMonsters(c, "player");
         const matchedPlayerMon = allMatchedPlayerMons[0] || SpecEngine.matchMonster(c, "player");
         const isSummonClause = NLU_PATTERNS.summonClause.test(c)
