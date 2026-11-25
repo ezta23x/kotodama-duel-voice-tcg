@@ -570,10 +570,11 @@
         "male_wanzhou", "male_xiaobei", "male_xiaoyang", "male_xuanzhao", "male_yian", "male_yunzheng"
       ]);
       const VALID_DIFF = new Set(["normal", "hard"]);
+      const VALID_LLM_MODELS = new Set(["gemini-3.5-flash-lite", "gemini-3.8-flash"]);
       if (VALID_UI_LANG.has(src.uiLang)) out.uiLang = src.uiLang;
       if (VALID_UI_LANG.has(src.ttsLang)) out.ttsLang = src.ttsLang;
       if (typeof src.apiKey === "string") out.apiKey = src.apiKey.trim();
-      if (typeof src.llmModel === "string" && src.llmModel.trim()) out.llmModel = src.llmModel.trim();
+      if (typeof src.llmModel === "string" && VALID_LLM_MODELS.has(src.llmModel.trim())) out.llmModel = src.llmModel.trim();
       if (typeof src.ttsModel === "string" && src.ttsModel.trim()) out.ttsModel = src.ttsModel.trim();
       if (typeof src.niaAk === "string") out.niaAk = src.niaAk.trim();
       if (typeof src.niaSk === "string") out.niaSk = src.niaSk.trim();
@@ -597,7 +598,6 @@
       if (typeof src.autoSpeak === "boolean") out.autoSpeak = src.autoSpeak;
       if (typeof src.guideMode === "boolean") out.guideMode = src.guideMode;
       if (typeof src.kotodamaResonance === "boolean") out.kotodamaResonance = src.kotodamaResonance;
-      if (/^gemini-2\.5-(flash|pro)/i.test(out.llmModel)) out.llmModel = DEFAULT_CONFIG.llmModel;
       return out;
     },
 
@@ -749,6 +749,15 @@
       if (/3\.[156].*flash|gemini-3-flash/.test(m)) return { thinkingLevel: "MINIMAL" };
       if (/3\.[78]|gemini-4/.test(m)) return { thinkingLevel: "LOW" };
       return null;
+    },
+
+    /** 根据模型思考档位与调用场景自动计算合适的 maxOutputTokens（避免 LOW 思考占用配额导致 JSON 截断） */
+    buildMaxOutputTokens(model, kind = "nlu") {
+      const thinkCfg = this.buildThinkingConfig(model);
+      const isLowThink = Boolean(thinkCfg && thinkCfg.thinkingLevel && thinkCfg.thinkingLevel !== "MINIMAL");
+      if (kind === "probe") return isLowThink ? 128 : 2;
+      if (kind === "tip") return isLowThink ? 1024 : 320;
+      return isLowThink ? 1024 : 260;
     },
 
     /** 构建 Vertex generateContent 接口地址（密钥通过请求头 x-goog-api-key 传递，不暴露在 URL 中） */
@@ -4532,7 +4541,7 @@
       if (!url) return;
       const ac = typeof AbortController !== "undefined" ? new AbortController() : null;
       const timer = ac ? setTimeout(() => ac.abort(), 4500) : null;
-      const genCfg = { maxOutputTokens: 2 };
+      const genCfg = { maxOutputTokens: ConfigManager.buildMaxOutputTokens(cfg.llmModel, "probe") };
       const thinkCfg = ConfigManager.buildThinkingConfig(cfg.llmModel);
       if (thinkCfg) genCfg.thinkingConfig = thinkCfg;
       try {
@@ -5327,19 +5336,20 @@
         parts.push({ text: `発話:「${text}」${hintLine}` });
       }
 
+      const thinkCfg = ConfigManager.buildThinkingConfig(cfg.llmModel);
       const genCfg = {
         responseMimeType: "application/json",
         temperature: 0.1,
-        maxOutputTokens: 260
+        maxOutputTokens: ConfigManager.buildMaxOutputTokens(cfg.llmModel, "nlu")
       };
-      const thinkCfg = ConfigManager.buildThinkingConfig(cfg.llmModel);
       if (thinkCfg) genCfg.thinkingConfig = thinkCfg;
 
       const t0 = Date.now();
       const ac = typeof AbortController !== "undefined" ? new AbortController() : null;
       if (ac && typeof BattleEngine !== "undefined") BattleEngine.activeAbortCtrl = ac;
       let timedOut = false;
-      const fetchTimer = ac ? setTimeout(() => { timedOut = true; ac.abort(); }, 8000) : null;
+      const timeoutMs = thinkCfg?.thinkingLevel === "LOW" ? 10000 : 8000;
+      const fetchTimer = ac ? setTimeout(() => { timedOut = true; ac.abort(); }, timeoutMs) : null;
       try {
         if (!this._cachedSysPrompt || this._cachedSysPromptSource !== SpecEngine.sourceLabel) {
           this._cachedSysPrompt = SpecEngine.buildSystemPrompt();
@@ -5373,7 +5383,7 @@
         if (VoiceEngine.apiAsrBlocked && cfg.asrMode === "gemini_audio") VoiceEngine.onOnlineApiRecovered();
         const parsed = this.safeParseJson(streamRes.text || "");
         if (usedAudioRescue) parsed._usedAudioRescue = true;
-        DebugLog.add("NLU", `Vertex ${cfg.llmModel}${streamRes.streamed ? " [SSE]" : ""} (${Date.now() - t0}ms, ${parsed.status})`, { transcript: parsed.transcript, actions: parsed.actions });
+        DebugLog.add("NLU", `Vertex ${cfg.llmModel}${thinkCfg?.thinkingLevel ? `/${thinkCfg.thinkingLevel}` : ""}${streamRes.streamed ? " [SSE]" : ""} (${Date.now() - t0}ms, maxTok=${genCfg.maxOutputTokens}, ${parsed.status})`, { transcript: parsed.transcript, actions: parsed.actions });
         return parsed;
       } catch (e) {
         const isUserCancelled = e?.name === "AbortError" && !timedOut;
@@ -10736,12 +10746,16 @@
         btn.classList.add("is-loading");
         btn.innerHTML = `${SVG_ICONS.hudSpinner}${escapeHtml(t("解析中…", "分析中…"))}`;
       }
+      const thinkCfg = ConfigManager.buildThinkingConfig(cfg.llmModel);
       const ac = typeof AbortController !== "undefined" ? new AbortController() : null;
-      const timer = ac ? setTimeout(() => ac.abort(), 8000) : null;
+      const tipTimeoutMs = thinkCfg?.thinkingLevel === "LOW" ? 10000 : 8000;
+      const timer = ac ? setTimeout(() => ac.abort(), tipTimeoutMs) : null;
       try {
         const snap = BattleEngine.getSnapshot();
-        const genCfg = { responseMimeType: "application/json" };
-        const thinkCfg = ConfigManager.buildThinkingConfig(cfg.llmModel);
+        const genCfg = {
+          responseMimeType: "application/json",
+          maxOutputTokens: ConfigManager.buildMaxOutputTokens(cfg.llmModel, "tip")
+        };
         if (thinkCfg) genCfg.thinkingConfig = thinkCfg;
         const jaEl = $("liveTipJa");
         const zhEl = $("liveTipZh");
@@ -11550,6 +11564,10 @@
         }
       }
     };
+    setOptMap("llmModel", {
+      "gemini-3.5-flash-lite": t("Gemini 3.5 Flash-Lite（標準）", "Gemini 3.5 Flash-Lite（默认）"),
+      "gemini-3.8-flash": t("Gemini 3.8 Flash（Low 思考）", "Gemini 3.8 Flash（Low 思考）")
+    });
     setOptMap("aiDifficulty", {
       normal: t("ふつう", "普通"),
       hard: t("むずかしい", "困难")
@@ -11814,7 +11832,7 @@
         : (niaLangVal === "zh" ? "zh-CN" : (getUiLang() === "ja" ? "ja-JP" : "zh-CN"));
       return {
         apiKey: ($("apiKey")?.value || "").trim(),
-        llmModel: ($("llmModel")?.value || "").trim(),
+        llmModel: $("llmModel")?.value || DEFAULT_CONFIG.llmModel,
         niaAk: ($("niaAk")?.value || "").trim(),
         niaSk: ($("niaSk")?.value || "").trim(),
         niaAsrLang: niaLangVal,
