@@ -252,10 +252,10 @@
 
   function evaluateCase(c, res) {
     const acts = res.actions || [];
-    const isNeg = c.expected_status === "ignore_or_chat_or_clarify" || c.expected_status === "reject";
+    const isNeg = c.expected_status === "no_execute" || c.expected_status === "ignore_or_chat_or_clarify" || c.expected_status === "reject";
     const falseExec = isNeg && res.status === "execute";
     let pass = false;
-    if (c.expected_status === "ignore_or_chat_or_clarify") {
+    if (c.expected_status === "no_execute" || c.expected_status === "ignore_or_chat_or_clarify") {
       pass = res.status !== "execute" && acts.length === 0;
     } else if (c.expected_status === "reject") {
       pass = res.status === "reject" || (res.status !== "execute" && acts.length === 0);
@@ -317,15 +317,36 @@
     return { pcm, sampleRate: buf.sampleRate, fromCache: false };
   }
 
-  async function runNiaAsrOnPcm(pcm, sampleRate) {
+  async function runNiaAsrOnce(pcm, sampleRate) {
+    const prePad = Math.floor(sampleRate * 0.2);
+    const postPad = Math.floor(sampleRate * 0.3);
+    const padded = new Float32Array(prePad + pcm.length + postPad);
+    padded.set(pcm, prePad);
     const sess = bench.VoiceEngine.createNiaAsrSession({ lang: "" });
-    const chunkLen = Math.floor(sampleRate * 0.1); // 100ms chunks
-    for (let off = 0; off < pcm.length; off += chunkLen) {
-      const slice = pcm.subarray(off, Math.min(pcm.length, off + chunkLen));
+    await new Promise((r) => setTimeout(r, 260));
+    const chunkLen = Math.floor(sampleRate * 0.1);
+    for (let off = 0; off < padded.length; off += chunkLen) {
+      const slice = padded.subarray(off, Math.min(padded.length, off + chunkLen));
       sess.pushFloat32(slice, sampleRate);
-      await new Promise((r) => setTimeout(r, 15));
+      await new Promise((r) => setTimeout(r, 80));
     }
     return String(await sess.finish() || "").trim();
+  }
+
+  async function runNiaAsrOnPcm(pcm, sampleRate) {
+    let lastErr = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) await new Promise((r) => setTimeout(r, 800 * attempt));
+      try {
+        const txt = await runNiaAsrOnce(pcm, sampleRate);
+        await new Promise((r) => setTimeout(r, 250));
+        return txt;
+      } catch (err) {
+        lastErr = err;
+        if (/401|403|AUTH|UNAUTH|FORBID/i.test(String(err?.message || err || ""))) throw err;
+      }
+    }
+    throw lastErr;
   }
 
   function esc(s) {
