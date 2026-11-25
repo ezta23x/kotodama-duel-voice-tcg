@@ -10691,7 +10691,7 @@
         bannerHtml = `<div class="pile-modal-banner"><span>${escapeHtml(t(`※山札の順番やサイドの中身は非公開です（初期${list.length}枚のみ表示）`, `牌库顺序与奖赏卡内容保密，仅展示初始 ${list.length} 张卡表`))}</span></div>`;
       } else if (isPlayer) {
         const elemSummary = energies.map((e) => `${escapeHtml(t(e.ja, e.zh))}×${escapeHtml(e.qty)}`).join(t("・", "、"));
-        bannerHtml = `<div class="pile-modal-banner recycle"><span style="display:inline-flex;align-items:center;gap:4px;">${SVG_ICONS.boost}${escapeHtml(t("エネ回収対象：", "可回收能量："))}<strong>${totalEnergy}${escapeHtml(t("枚", " 张"))}</strong></span><span style="font-size:12px;">${elemSummary || escapeHtml(t("回収可能なエネルギーなし", "暂无可回收能量"))}</span></div>`;
+        bannerHtml = `<div class="pile-modal-banner recycle"><span style="display:inline-flex;align-items:center;gap:4px;">${SVG_ICONS.boost}${escapeHtml(t("エネ回収対象：", "可回收能量："))}<strong>${totalEnergy}${escapeHtml(t("枚", " 张"))}</strong></span><span style="font-size:var(--fs-sm);">${elemSummary || escapeHtml(t("回収可能なエネルギーなし", "暂无可回收能量"))}</span></div>`;
       }
 
       const renderGroup = (titleJa, titleZh, items) => {
@@ -11201,7 +11201,7 @@
         const unit = s.player.active;
         const def = SpecEngine.getMonster(unit.id);
         const pop = $("actionPopover");
-        pop.innerHTML = `<div style="font-size:13px;font-weight:800;margin-bottom:4px;">${escapeHtml(t(def.name_ja, def.name_zh))}</div>`;
+        pop.innerHTML = `<div class="action-popover-title">${escapeHtml(t(def.name_ja, def.name_zh))}</div>`;
         def.skills.forEach((sk) => {
           const b = document.createElement("button");
           b.className = "btn-sm";
@@ -11565,8 +11565,8 @@
       }
     };
     setOptMap("llmModel", {
-      "gemini-3.5-flash-lite": t("Gemini 3.5 Flash-Lite（標準）", "Gemini 3.5 Flash-Lite（默认）"),
-      "gemini-3.8-flash": t("Gemini 3.8 Flash（Low 思考）", "Gemini 3.8 Flash（Low 思考）")
+      "gemini-3.5-flash-lite": "Gemini 3.5 Flash-Lite",
+      "gemini-3.8-flash": "Gemini 3.8 Flash"
     });
     setOptMap("aiDifficulty", {
       normal: t("ふつう", "普通"),

@@ -3243,11 +3243,11 @@
      ========================================================================= */
   :root {
     --fs-splash: 24px; /* 仅用于启动黑金遮罩主标题 */
-    /* 严格 5 档整数梯度字号体系（20 / 16 / 14 / 13 / 11，按区域功能分档） */
-    --fs-xl: 20px;     /* 顶栏品牌标题、主弹窗/确认弹窗标题、回合横幅 */
-    --fs-lg: 16px;     /* 规则正文、语音主按钮/输入框、牌库数字、奖赏浮层、弹窗说明 */
-    --fs-md: 14px;     /* 卡牌标题、技能伤害、台词气泡、追问提示、对局日志、战术建议、引导卡正文、常用按钮、面板标题 */
-    --fs-sm: 13px;     /* 技能名、HP 徽章、道具/能量描述、区域标签、顶栏按钮、状态胶囊 */
+    /* 严格 5 档梯度字号体系（18 / 15 / 14 / 12.5 / 11，按区域功能分档） */
+    --fs-xl: 18px;     /* 顶栏品牌标题、主弹窗/确认弹窗标题、回合横幅 */
+    --fs-lg: 15px;     /* 规则正文、语音主按钮/输入框、牌库数字、奖赏浮层、弹窗说明 */
+    --fs-md: 14px;     /* 卡牌标题、技能伤害、台词气泡、追问提示、对局日志、战术建议、引导卡标题、常用按钮、面板标题 */
+    --fs-sm: 12.5px;   /* 技能名、HP 徽章、道具/能量描述、引导卡正文、弹窗辅助说明、顶栏按钮、状态胶囊 */
     --fs-xs: 11px;     /* 卡槽角标、能量圆片、技能特效徽章、ex/弱点/防御微标、奖赏统计 */
 
     /* 全盘面 100% 统一卡牌尺寸（敌我主战、敌我备战、右侧纵向每张手牌完全等宽等高） */
@@ -3744,14 +3744,23 @@
   .live-tip-ja,
   .live-tip-zh { font-size: var(--fs-md); font-weight: 700; color: var(--ink); line-height: 1.42; margin-top: 0; }
 
+  .save-toast { font-size: var(--fs-sm); }
+  .action-popover-title {
+    font-size: var(--fs-lg);
+    font-weight: 800;
+    color: var(--ink);
+    margin-bottom: 4px;
+    line-height: 1.3;
+  }
+
   .voice-hud { bottom: 18px; }
   .voice-hud-body { font-size: var(--fs-md); }
 
   .guide-float { top: 50%; right: 10px; width: clamp(210px, 27%, 268px); }
   .guide-card { padding: 10px 12px; }
-  .guide-tag { font-size: var(--fs-sm); margin-bottom: 3px; }
+  .guide-tag { font-size: var(--fs-md); font-weight: 800; margin-bottom: 4px; }
   .guide-ja,
-  .guide-zh { font-size: var(--fs-md); font-weight: 700; color: var(--ink); line-height: 1.44; margin-top: 0; }
+  .guide-zh { font-size: var(--fs-sm); font-weight: 600; color: var(--ink); line-height: 1.48; margin-top: 0; }
 
   .prize-toast .pt-ja,
   .prize-toast .pt-zh { font-size: var(--fs-lg); font-weight: 800; color: #3a240e; margin-top: 0; display: inline-flex; align-items: center; gap: 5px; }
@@ -3817,6 +3826,20 @@
     padding: 6px 10px;
   }
   .cfg-toggle-inline { font-size: var(--fs-md); }
+  .cfg-sub-label { font-size: var(--fs-sm); }
+  .cfg-voice-tag { font-size: var(--fs-sm); }
+  .dropzone { font-size: var(--fs-sm); }
+  .pile-modal-banner { font-size: var(--fs-sm); }
+  .pile-section-title { font-size: var(--fs-sm); }
+  .pile-chip { font-size: var(--fs-sm); }
+  .pile-chip-name { font-size: var(--fs-md); }
+  .pile-chip-zh { font-size: var(--fs-sm); }
+  .pile-chip-qty { font-size: var(--fs-xs); }
+  .pile-empty { font-size: var(--fs-md); }
+  #gameOverTitleJa,
+  #gameOverTitleZh { font-size: var(--fs-xl); }
+  #gameOverDescJa,
+  #gameOverDescZh { font-size: var(--fs-lg); }
   .secret-mask { -webkit-text-security: disc; text-security: disc; }
   #cmdInput::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; display: none; }
   #resetConfirmModal .modal-box,
@@ -3834,6 +3857,8 @@
   .codex-skill-top { font-size: var(--fs-lg); }
   .codex-skill-desc { font-size: var(--fs-sm); }
   .codex-meta { font-size: var(--fs-sm); }
+  .side-tag { font-size: var(--fs-xs); }
+  .dlog-head { font-size: var(--fs-md); }
   .dlog-chip { font-size: var(--fs-sm); padding: 3px 10px; }
   .dlog-list { font-size: var(--fs-md); }
   .dlog-meta { font-size: var(--fs-xs); }
@@ -4076,7 +4101,7 @@
     }
     .guide-ja,
     .guide-zh {
-      font-size: 13px;
+      font-size: var(--fs-sm);
       line-height: 1.38;
     }
     .side-half {
@@ -4740,7 +4765,7 @@
     }
     .turn-banner .tb-ja,
     .turn-banner .tb-zh {
-      font-size: 16px;
+      font-size: var(--fs-lg);
       white-space: nowrap;
     }
   }
@@ -4760,6 +4785,87 @@
     color: var(--ink-sub);
   }
   .guide-close:hover { background: #e5d6ba; color: var(--ink); border-color: #9e8256; }
+
+  /* 语音识别浮层（#voiceHud）：与引导卡・暖羊皮纸鎏金棋桌一致的高对比度质感胶囊 */
+  .voice-hud {
+    padding: 8px 16px 8px 10px;
+    gap: 10px;
+    border-radius: 14px;
+    max-width: min(560px, calc(100% - 24px));
+    background: linear-gradient(180deg, rgba(252, 248, 239, 0.97) 0%, rgba(242, 233, 214, 0.96) 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1.5px solid #c6a66a;
+    border-left: 4px solid var(--ok);
+    color: var(--ink);
+    box-shadow: 0 12px 28px rgba(36, 24, 12, 0.26), 0 2px 6px rgba(36, 24, 12, 0.14), inset 0 1px 0 rgba(255, 254, 249, 0.9);
+  }
+  .voice-hud.hud-listening {
+    border-color: #84be9b;
+    border-left-color: #2f7a53;
+    background: linear-gradient(180deg, rgba(250, 253, 250, 0.97) 0%, rgba(236, 245, 238, 0.96) 100%);
+  }
+  .voice-hud.hud-fast {
+    border-color: #d6b16a;
+    border-left-color: #b88224;
+    background: linear-gradient(180deg, rgba(253, 250, 241, 0.97) 0%, rgba(246, 236, 212, 0.96) 100%);
+  }
+  .voice-hud.hud-llm {
+    border-color: #8eb3d8;
+    border-left-color: #366da3;
+    background: linear-gradient(180deg, rgba(248, 251, 255, 0.97) 0%, rgba(233, 241, 250, 0.96) 100%);
+  }
+  .voice-hud-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    border: 1px solid transparent;
+    color: #1f6a43;
+  }
+  .voice-hud-icon svg { width: 17px; height: 17px; }
+  .voice-hud.hud-listening .voice-hud-icon {
+    background: rgba(47, 122, 83, 0.14);
+    border-color: rgba(47, 122, 83, 0.28);
+    color: #1f6a43;
+    animation: hudPulseRing 1.8s ease-out infinite;
+  }
+  .voice-hud.hud-fast .voice-hud-icon {
+    background: rgba(184, 130, 36, 0.16);
+    border-color: rgba(184, 130, 36, 0.3);
+    color: #8f6011;
+  }
+  .voice-hud.hud-llm .voice-hud-icon {
+    background: rgba(54, 109, 163, 0.14);
+    border-color: rgba(54, 109, 163, 0.28);
+    color: #245585;
+  }
+  @keyframes hudPulseRing {
+    0% { box-shadow: 0 0 0 0 rgba(47, 122, 83, 0.34); }
+    75% { box-shadow: 0 0 0 6px rgba(47, 122, 83, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(47, 122, 83, 0); }
+  }
+  .voice-hud-body {
+    align-items: center;
+    gap: 8px;
+    font-size: var(--fs-md);
+  }
+  .voice-hud-label {
+    font-size: var(--fs-sm);
+    font-weight: 800;
+    padding: 2px 8px;
+    border-radius: 999px;
+    line-height: 1.25;
+    color: #5b4325;
+    background: rgba(169, 117, 32, 0.12);
+  }
+  .voice-hud.hud-listening .voice-hud-label { color: #1c623d; background: rgba(47, 122, 83, 0.13); }
+  .voice-hud.hud-fast .voice-hud-label { color: #84560e; background: rgba(184, 130, 36, 0.15); }
+  .voice-hud.hud-llm .voice-hud-label { color: #204f7d; background: rgba(54, 109, 163, 0.13); }
+  .voice-hud-text {
+    font-size: var(--fs-md);
+    font-weight: 700;
+    color: var(--ink);
+  }
 
   /* L5 阅读层（所有弹窗 / 操作菜单 / 奖赏提示）：明亮温润暖羊皮纸，阅读舒展无压抑感 */
   .modal-backdrop { background: rgba(42, 34, 26, 0.52); backdrop-filter: blur(2.5px); }
@@ -5311,7 +5417,7 @@
       <div class="debug-log-drawer" id="debugLogDrawer">
         <div class="dlog-head">
           <span><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg><span class="lang-ja">音声・AI通信ログ</span><span class="lang-zh">语音与 AI 链路日志</span></span>
-          <button class="btn-sm" id="btnCloseLogDrawer" style="padding:2px 8px;font-size:12px;">✕</button>
+          <button class="btn-sm" id="btnCloseLogDrawer" style="padding:2px 8px;font-size:var(--fs-sm);">✕</button>
         </div>
         <div class="dlog-filters" id="dlogFilters">
           <button class="dlog-chip active" data-cat="ALL"><span class="lang-ja">すべて</span><span class="lang-zh">全部</span></button>
@@ -5362,7 +5468,7 @@
       <!-- 实时战术建议（位于对局日志下方、语音通话与输入框上方） -->
       <div class="live-tip-box" id="liveTipBox">
         <div class="live-tip-label" style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
-          <span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21h6v-1H9v1zm3-19a7 7 0 0 0-4 12.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26A7 7 0 0 0 12 2z"/></svg>Tips<span id="liveTipAiTag" style="display:none;margin-left:5px;font-size:11px;padding:0 5px;border-radius:4px;background:rgba(72,166,114,0.22);color:var(--dk-ok-text);">AI</span></span>
+          <span><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21h6v-1H9v1zm3-19a7 7 0 0 0-4 12.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26A7 7 0 0 0 12 2z"/></svg>Tips<span id="liveTipAiTag" style="display:none;margin-left:5px;font-size:var(--fs-xs);padding:0 5px;border-radius:4px;background:rgba(72,166,114,0.22);color:var(--dk-ok-text);">AI</span></span>
           <button type="button" class="btn-sm btn-ai-tip" id="btnAiTip"><svg class="chip-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 7.2L22 12l-7.6 2.8L12 22l-2.4-7.2L2 12l7.6-2.8L12 2z"/></svg><span class="lang-ja">AI戦術</span><span class="lang-zh">AI战术</span></button>
         </div>
         <div class="live-tip-ja" id="liveTipJa"></div>
@@ -5507,10 +5613,10 @@
 <div class="modal-backdrop" id="gameOverModal">
   <div class="modal-box" style="max-width:460px;text-align:center;">
     <h2 id="gameOverTitleJa" style="margin:0 0 8px;">勝利！</h2>
-    <p id="gameOverDescJa" style="font-size:15px;line-height:1.65;margin:0 0 16px;"></p>
+    <p id="gameOverDescJa" style="font-size:var(--fs-lg);line-height:1.65;margin:0 0 16px;"></p>
     <div id="gameOverZhWrap" lang="zh-CN" style="margin-bottom:16px;">
       <h2 id="gameOverTitleZh" style="margin:0 0 8px;">你赢了！</h2>
-      <p id="gameOverDescZh" style="font-size:15px;line-height:1.65;margin:0;"></p>
+      <p id="gameOverDescZh" style="font-size:var(--fs-lg);line-height:1.65;margin:0;"></p>
     </div>
     <button class="btn-sm primary" id="btnPlayAgain" style="padding:10px 24px;"><span class="lang-ja">もう一度対戦</span><span class="lang-zh">再来一局</span></button>
   </div>
@@ -5531,7 +5637,7 @@
         <span class="cfg-section-title">
           <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12.87 15.07l-2.54-2.51.03-.03A17.52 17.52 0 0 0 14.07 6H17V4h-7V2H8v2H1v2h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
           <span class="lang-ja">表示言語</span><span class="lang-zh">界面语言</span>
-          <span style="font-size:11px;font-weight:500;color:var(--ink-sub);margin-left:4px;"><span class="lang-ja">（画面のみ・ASR/TTSは下で独立設定）</span><span class="lang-zh">（仅改界面文字・ASR/TTS 在下方独立设置）</span></span>
+          <span style="font-size:var(--fs-xs);font-weight:500;color:var(--ink-sub);margin-left:4px;"><span class="lang-ja">（画面のみ・ASR/TTSは下で独立設定）</span><span class="lang-zh">（仅改界面文字・ASR/TTS 在下方独立设置）</span></span>
         </span>
         <div class="lang-switch light" id="settingsLangSwitch" role="group" aria-label="UI Language">
           <button type="button" class="lang-pill" data-set-lang="ja">
@@ -5568,8 +5674,8 @@
         <div class="cfg-field">
           <label><span class="lang-ja">LLM モデル</span><span class="lang-zh">LLM 解析模型</span></label>
           <select id="llmModel">
-            <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite（標準）</option>
-            <option value="gemini-3.8-flash">Gemini 3.8 Flash（Low 思考）</option>
+            <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite</option>
+            <option value="gemini-3.8-flash">Gemini 3.8 Flash</option>
           </select>
         </div>
       </div>
@@ -5607,7 +5713,7 @@
       <div class="cfg-sub-box" id="niaCredsBlock">
         <div class="cfg-sub-label">
           <span><span class="lang-ja">SenseTime Nia 認証キー（ASR・TTS 共用）</span><span class="lang-zh">SenseTime Nia 认证密钥（ASR・TTS 共用）</span></span>
-          <span style="font-size:11px;color:var(--ink-sub);white-space:nowrap;flex-shrink:0;">HS256 JWT</span>
+          <span style="font-size:var(--fs-xs);color:var(--ink-sub);white-space:nowrap;flex-shrink:0;">HS256 JWT</span>
         </div>
         <div class="cfg-grid">
           <div class="cfg-field">
@@ -5663,7 +5769,7 @@
         </div>
       </div>
 
-      <div id="voiceEngineStatus" style="font-size:12px;color:var(--ink-sub);margin:2px 0 4px;"></div>
+      <div id="voiceEngineStatus" style="font-size:var(--fs-sm);color:var(--ink-sub);margin:2px 0 4px;"></div>
     </div>
 
     <!-- 4. 对局设置与外部数据热更新 -->
@@ -5695,7 +5801,7 @@
           <span class="lang-ja">ファイル選択</span><span class="lang-zh">选择文件</span>
           <input type="file" id="mdFileInput" accept=".json,.md,.txt" style="display:none;" />
         </label>
-        <div id="mdStatusText" style="margin-top:4px;font-size:12px;"></div>
+        <div id="mdStatusText" style="margin-top:4px;font-size:var(--fs-sm);"></div>
       </div>
     </div>
     </div>
@@ -5714,13 +5820,13 @@
 <div class="modal-backdrop" id="dataLoadModal">
   <div class="modal-box" style="max-width:460px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <div style="font-size:17px;font-weight:900;"><span class="lang-ja">gamedata.json を読み込む</span><span class="lang-zh">加载游戏数据文件（gamedata.json）</span></div>
+      <div style="font-size:var(--fs-xl);font-weight:900;"><span class="lang-ja">gamedata.json を読み込む</span><span class="lang-zh">加载游戏数据文件（gamedata.json）</span></div>
     </div>
-    <p class="lang-ja" style="font-size:14px;line-height:1.65;color:var(--ink);margin:0 0 12px;">
+    <p class="lang-ja" style="font-size:var(--fs-md);line-height:1.65;color:var(--ink);margin:0 0 12px;">
       ブラウザのセキュリティ制限（<code>file://</code>）により、ローカルの <strong>gamedata.json</strong> を自動読込できませんでした。<br/>
       下のボタンから同フォルダ内の <strong>gamedata.json</strong> を選択してください（次回からは自動読込されます）。
     </p>
-    <p class="lang-zh" lang="zh-CN" style="font-size:14px;line-height:1.65;color:var(--ink);margin:0 0 12px;">
+    <p class="lang-zh" lang="zh-CN" style="font-size:var(--fs-md);line-height:1.65;color:var(--ink);margin:0 0 12px;">
       由于浏览器本地 <code>file://</code> 安全限制，无法自动读取同目录的 <strong>gamedata.json</strong>。请点击下方选择同目录的 <strong>gamedata.json</strong>（选择一次后会缓存），或直接运行 <code>start.command</code> / <code>start.bat</code> 自动启动。
     </p>
     <div class="dropzone" id="dataLoadDropzone" style="padding:14px;">
@@ -5728,7 +5834,7 @@
         <span class="lang-ja">gamedata.json を選択</span><span class="lang-zh">选择 gamedata.json</span>
         <input type="file" id="dataLoadFileInput" accept=".json" style="display:none;" />
       </label>
-      <div style="margin-top:6px;font-size:12px;color:var(--ink-sub);"><span class="lang-ja">またはここにファイルをドロップ</span><span class="lang-zh">或直接拖拽至此</span></div>
+      <div style="margin-top:6px;font-size:var(--fs-sm);color:var(--ink-sub);"><span class="lang-ja">またはここにファイルをドロップ</span><span class="lang-zh">或直接拖拽至此</span></div>
     </div>
   </div>
 </div>
