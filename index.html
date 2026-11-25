@@ -3243,16 +3243,16 @@
      ========================================================================= */
   :root {
     --fs-splash: 24px; /* 仅用于启动黑金遮罩主标题 */
-    /* 严格 5 档 0.5px 梯度核心字号体系（18 / 14 / 12.5 / 11.5 / 10.5） */
-    --fs-xl: 18px;     /* 顶栏品牌标题、主弹窗/确认弹窗标题、回合横幅 */
-    --fs-lg: 14px;     /* 规则正文、语音主按钮/输入框、牌库数字、奖赏浮层 */
-    --fs-md: 12.5px;   /* 气泡对话、卡牌标题、技能名与伤害、常用按钮、对局日志、战术建议、面板标题 */
-    --fs-sm: 11.5px;   /* HP 徽章、道具/能量描述、次数牌、区域标签、状态胶囊 */
-    --fs-xs: 10.5px;   /* 卡槽角标、能量圆片、技能特效徽章、ex/弱点/防御微标 */
+    /* 严格 5 档整数梯度字号体系（20 / 16 / 14 / 13 / 11，按区域功能分档） */
+    --fs-xl: 20px;     /* 顶栏品牌标题、主弹窗/确认弹窗标题、回合横幅 */
+    --fs-lg: 16px;     /* 规则正文、语音主按钮/输入框、牌库数字、奖赏浮层、弹窗说明 */
+    --fs-md: 14px;     /* 卡牌标题、技能伤害、台词气泡、追问提示、对局日志、战术建议、引导卡正文、常用按钮、面板标题 */
+    --fs-sm: 13px;     /* 技能名、HP 徽章、道具/能量描述、区域标签、顶栏按钮、状态胶囊 */
+    --fs-xs: 11px;     /* 卡槽角标、能量圆片、技能特效徽章、ex/弱点/防御微标、奖赏统计 */
 
     /* 全盘面 100% 统一卡牌尺寸（敌我主战、敌我备战、右侧纵向每张手牌完全等宽等高） */
-    --card-w: clamp(208px, 15.8vw, 232px);
-    --card-h: 114px;
+    --card-w: clamp(216px, 16vw, 238px);
+    --card-h: 118px;
     --slot-pad-top: 16px;
     --slot-pad-x: 4px;
     --slot-pad-b: 4px;
@@ -3271,6 +3271,9 @@
   .turn-pill { font-size: var(--fs-md); padding: 3.5px 14px; min-width: 172px; text-align: center; }
   .top-actions { flex-wrap: nowrap; gap: 6px; }
   .top-btn { font-size: var(--fs-sm); min-height: 30px; padding: 4px 11px; gap: 4px; border-radius: 8px; }
+  .guide-btn-label { display: inline-grid; align-items: center; justify-items: center; }
+  .guide-btn-label > * { grid-area: 1 / 1; }
+  .guide-btn-sizer { visibility: hidden; pointer-events: none; }
   .lang-pill { font-size: var(--fs-sm); min-width: 72px; }
   .lang-switch.light .lang-pill { font-size: var(--fs-md); }
 
@@ -3839,7 +3842,7 @@
   /* ---------- 高屏桌面（>= 860px 高度）：略微放大卡高，观感更舒展 ---------- */
   @media (min-width: 1180px) and (min-height: 860px) {
     :root {
-      --card-h: 122px;
+      --card-h: 124px;
       --slot-pad-top: 17px;
     }
   }
@@ -3847,8 +3850,13 @@
   /* ---------- 中等宽度桌面屏（<= 1280px）保持左右侧栏等宽对称与完整手牌 ---------- */
   @media (min-width: 821px) and (max-width: 1280px) {
     :root {
-      --card-w: 204px;
-      --card-h: 112px;
+      --fs-xl: 18px;
+      --fs-lg: 15px;
+      --fs-md: 13px;
+      --fs-sm: 12px;
+      --fs-xs: 10px;
+      --card-w: 206px;
+      --card-h: 114px;
       --side-w: calc(var(--card-w) + 42px);
     }
     .topbar { flex-wrap: wrap; padding: 5px 10px; gap: 5px; }
@@ -3859,15 +3867,15 @@
     .active-band > .pile-col { flex-direction: column; gap: 4px; }
   }
 
-  /* ---------- 桌面端矮屏自适应（<= 750px 高度）：平滑微缩卡高与 0.5px 字号，保证 4 行 0 重叠 ---------- */
+  /* ---------- 桌面端矮屏自适应（<= 750px 高度）：平滑微缩卡高与整数档位字号，保证 4 行 0 重叠 ---------- */
   @media (min-width: 821px) and (max-height: 750px) {
     :root {
-      --fs-xl: 17px;
-      --fs-lg: 13.5px;
-      --fs-md: 12px;
-      --fs-sm: 11px;
+      --fs-xl: 18px;
+      --fs-lg: 14px;
+      --fs-md: 13px;
+      --fs-sm: 12px;
       --fs-xs: 10px;
-      --card-h: 106px;
+      --card-h: 108px;
       --slot-pad-top: 15px;
     }
     body { padding: 4px 8px; }
@@ -3889,9 +3897,9 @@
   /* ---------- 手机/小屏横屏：保持左右等宽对称、手牌不裁切且 Log 从左侧同宽弹出 ---------- */
   @media (max-height: 620px) and (orientation: landscape), (max-width: 960px) and (orientation: landscape) {
     :root {
-      --fs-xl: 15px;
-      --fs-lg: 12.5px;
-      --fs-md: 11.5px;
+      --fs-xl: 16px;
+      --fs-lg: 13px;
+      --fs-md: 12px;
       --fs-sm: 11px;
       --fs-xs: 10px;
       --card-w: 196px;
@@ -3931,6 +3939,11 @@
   /* ---------- 手机竖屏：保持原有单列上下布局（牌桌在上 → 横向手牌在中 → 语音/日志在下），适配新版统一卡牌与动画 ---------- */
   @media (max-width: 820px) and (orientation: portrait) {
     :root {
+      --fs-xl: 18px;
+      --fs-lg: 15px;
+      --fs-md: 13px;
+      --fs-sm: 12px;
+      --fs-xs: 10px;
       --card-w: 196px;
       --card-h: 112px;
       --slot-pad-top: 15px;
@@ -3981,7 +3994,7 @@
       margin-left: auto;
       padding: 3px 9px;
       min-width: 0;
-      font-size: 11.5px;
+      font-size: 12px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -4063,7 +4076,7 @@
     }
     .guide-ja,
     .guide-zh {
-      font-size: 12.5px;
+      font-size: 13px;
       line-height: 1.38;
     }
     .side-half {
@@ -4093,7 +4106,7 @@
       width: 100%;
     }
     .active-band .zone-label {
-      font-size: 10.5px;
+      font-size: 11px;
       white-space: nowrap;
       text-align: center;
     }
@@ -4101,7 +4114,7 @@
     .active-band .prize-card {
       width: 18px;
       height: 25px;
-      font-size: 9.5px;
+      font-size: 10px;
       border-radius: 4px;
     }
     .active-band .prize-count-pill {
@@ -4133,7 +4146,7 @@
     }
     .pile-box strong { font-size: 13px; line-height: 1.05; }
     .pile-box .pile-ja,
-    .pile-box .pile-zh { font-size: 9.5px; line-height: 1.1; white-space: nowrap; }
+    .pile-box .pile-zh { font-size: 10px; line-height: 1.1; white-space: nowrap; }
     .active-band > .slot-box.active-slot {
       grid-column: 2;
       grid-row: 1;
@@ -4296,7 +4309,7 @@
     .voice-controls-grid .btn-sm.primary {
       min-height: 36px;
       padding: 0 12px;
-      font-size: 12.5px;
+      font-size: 13px;
       border-radius: 9px;
       white-space: nowrap;
     }
@@ -4961,7 +4974,7 @@
     padding: 2px 8px;
     min-height: 20px;
     border-radius: 999px;
-    font-size: 11px;
+    font-size: var(--fs-xs);
     font-weight: 600;
     line-height: 1.2;
     gap: 3px;
@@ -5171,7 +5184,7 @@
       </div>
       <button class="top-btn" id="btnFullscreen"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg><span class="lang-ja">全画面</span><span class="lang-zh">全屏</span></button>
       <button class="top-btn" id="btnToggleLog"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg><span class="lang-ja">ログ</span><span class="lang-zh">日志</span><span class="log-err-dot" id="logErrDot"></span></button>
-      <button class="top-btn guide-on" id="btnGuideMode"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z"/><circle cx="12" cy="12" r="1.2"/></svg><span class="lang-ja">ガイド ON</span><span class="lang-zh">引导 ON</span></button>
+      <button class="top-btn guide-on" id="btnGuideMode"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z"/><circle cx="12" cy="12" r="1.2"/></svg><span class="guide-btn-label"><span class="guide-btn-sizer" aria-hidden="true"><span class="lang-ja">ガイド OFF</span><span class="lang-zh">引导 OFF</span></span><span><span class="lang-ja">ガイド ON</span><span class="lang-zh">引导 ON</span></span></span></button>
       <button class="top-btn" id="btnResetMatch"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.75 10h-2.1A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg><span class="lang-ja">再戦</span><span class="lang-zh">重开</span></button>
       <button class="top-btn" id="btnOpenCodex"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2zm8 14H5v-6h6v6zm0-8H5V5h6v6zm8 8h-6v-6h6v6zm0-8h-6V5h6v6z"/></svg><span class="lang-ja">図鑑</span><span class="lang-zh">图鉴</span></button>
       <button class="top-btn" id="btnOpenRules"><svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM6 4h5v8l-2.5-1.5L6 12V4z"/></svg><span class="lang-ja">ルール</span><span class="lang-zh">规则</span></button>
@@ -5494,10 +5507,10 @@
 <div class="modal-backdrop" id="gameOverModal">
   <div class="modal-box" style="max-width:460px;text-align:center;">
     <h2 id="gameOverTitleJa" style="margin:0 0 8px;">勝利！</h2>
-    <p id="gameOverDescJa" style="font-size:14.5px;line-height:1.65;margin:0 0 16px;"></p>
+    <p id="gameOverDescJa" style="font-size:15px;line-height:1.65;margin:0 0 16px;"></p>
     <div id="gameOverZhWrap" lang="zh-CN" style="margin-bottom:16px;">
       <h2 id="gameOverTitleZh" style="margin:0 0 8px;">你赢了！</h2>
-      <p id="gameOverDescZh" style="font-size:14.5px;line-height:1.65;margin:0;"></p>
+      <p id="gameOverDescZh" style="font-size:15px;line-height:1.65;margin:0;"></p>
     </div>
     <button class="btn-sm primary" id="btnPlayAgain" style="padding:10px 24px;"><span class="lang-ja">もう一度対戦</span><span class="lang-zh">再来一局</span></button>
   </div>
@@ -5578,23 +5591,12 @@
           </select>
         </div>
         <div class="cfg-field" id="niaAsrLangWrap">
-          <label><span class="lang-ja">Nia 認識言語</span><span class="lang-zh">Nia 识别语种</span></label>
+          <label><span class="lang-ja">音声認識言語</span><span class="lang-zh">识别语种</span></label>
           <select id="niaAsrLang">
-            <option value="">自動判別 / 自动双语</option>
-            <option value="ja">日本語 (ja)</option>
-            <option value="zh">中文 (zh)</option>
+            <option value="">自動判別（日・中）</option>
+            <option value="zh">中文</option>
+            <option value="ja">日语</option>
           </select>
-        </div>
-        <div class="cfg-field cfg-hidden" id="chromeAsrLangWrap">
-          <label><span class="lang-ja">ブラウザ認識言語</span><span class="lang-zh">浏览器识别语种</span></label>
-          <select id="asrLang">
-            <option value="ja-JP">日本語 (ja-JP)</option>
-            <option value="zh-CN">中文 (zh-CN)</option>
-          </select>
-        </div>
-        <div class="cfg-field cfg-hidden" id="geminiAsrHintWrap">
-          <label><span class="lang-ja">言語設定</span><span class="lang-zh">识别说明</span></label>
-          <div class="cfg-hint-pill"><span class="lang-ja">Gemini 音声直伝は日本語・中国語を自動認識します</span><span class="lang-zh">Gemini 音频直传自动识别中/日语（复用上方密钥）</span></div>
         </div>
       </div>
 
@@ -5644,16 +5646,6 @@
             <option value="ja">日本語 (JAPANESE)</option>
             <option value="zh">中文 (ZH_CN)</option>
           </select>
-        </div>
-      </div>
-      <div class="cfg-grid cfg-hidden" id="ttsModelRow">
-        <div class="cfg-field" id="ttsModelField">
-          <label><span class="lang-ja">Vertex TTS モデル</span><span class="lang-zh">Vertex TTS 模型</span></label>
-          <input type="text" id="ttsModel" />
-        </div>
-        <div class="cfg-field" id="ttsEngineHintField">
-          <label><span class="lang-ja">エンジン状態</span><span class="lang-zh">引擎状态</span></label>
-          <div class="cfg-hint-pill" id="ttsEngineHintText">Vertex Gemini TTS</div>
         </div>
       </div>
 
@@ -5721,11 +5713,11 @@
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
       <div style="font-size:17px;font-weight:900;"><span class="lang-ja">gamedata.json を読み込む</span><span class="lang-zh">加载游戏数据文件（gamedata.json）</span></div>
     </div>
-    <p class="lang-ja" style="font-size:13.5px;line-height:1.65;color:var(--ink);margin:0 0 12px;">
+    <p class="lang-ja" style="font-size:14px;line-height:1.65;color:var(--ink);margin:0 0 12px;">
       ブラウザのセキュリティ制限（<code>file://</code>）により、ローカルの <strong>gamedata.json</strong> を自動読込できませんでした。<br/>
       下のボタンから同フォルダ内の <strong>gamedata.json</strong> を選択してください（次回からは自動読込されます）。
     </p>
-    <p class="lang-zh" lang="zh-CN" style="font-size:13.5px;line-height:1.65;color:var(--ink);margin:0 0 12px;">
+    <p class="lang-zh" lang="zh-CN" style="font-size:14px;line-height:1.65;color:var(--ink);margin:0 0 12px;">
       由于浏览器本地 <code>file://</code> 安全限制，无法自动读取同目录的 <strong>gamedata.json</strong>。请点击下方选择同目录的 <strong>gamedata.json</strong>（选择一次后会缓存），或直接运行 <code>start.command</code> / <code>start.bat</code> 自动启动。
     </p>
     <div class="dropzone" id="dataLoadDropzone" style="padding:14px;">

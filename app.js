@@ -359,13 +359,15 @@
       this.hide(true);
     },
 
-    /** 将顶部「引导」按钮的选中态与无障碍属性同步到当前配置 */
+    /** 将顶部「引导」按钮的选中态与无障碍属性同步到当前配置（固定占用 OFF 状态宽度，切换不抖动） */
     syncButton() {
       const btn = $("btnGuideMode");
       if (!btn) return;
       const on = this.isEnabled();
       btn.classList.toggle("guide-on", on);
-      btn.innerHTML = `${SVG_ICONS.guide}${escapeHtml(on ? t("ガイド ON", "引导 ON") : t("ガイド OFF", "引导 OFF"))}`;
+      const offText = t("ガイド OFF", "引导 OFF");
+      const curText = on ? t("ガイド ON", "引导 ON") : offText;
+      btn.innerHTML = `${SVG_ICONS.guide}<span class="guide-btn-label"><span class="guide-btn-sizer" aria-hidden="true">${escapeHtml(offText)}</span><span>${escapeHtml(curText)}</span></span>`;
     },
 
     /** 根据当前盘面阶段智能选择最应展示的引导项（用于关闭引导后重新开启时立即恢复） */
@@ -577,7 +579,9 @@
       if (typeof src.niaSk === "string") out.niaSk = src.niaSk.trim();
       if (VALID_ASR.has(src.asrMode)) out.asrMode = src.asrMode;
       if (VALID_NIA_LANG.has(src.niaAsrLang)) out.niaAsrLang = src.niaAsrLang;
-      if (VALID_LANG.has(src.asrLang)) out.asrLang = src.asrLang;
+      if (out.niaAsrLang === "ja") out.asrLang = "ja-JP";
+      else if (out.niaAsrLang === "zh") out.asrLang = "zh-CN";
+      else if (VALID_LANG.has(src.asrLang)) out.asrLang = src.asrLang;
       if (VALID_TTS.has(src.ttsEngine)) out.ttsEngine = src.ttsEngine;
       if (VALID_NIA_VOICES_JA.has(src.niaVoiceReferee)) out.niaVoiceReferee = src.niaVoiceReferee;
       if (VALID_NIA_VOICES_JA.has(src.niaVoiceRival)) out.niaVoiceRival = src.niaVoiceRival;
@@ -1800,10 +1804,12 @@
       return (val === "ja" || val === "zh") ? val : "";
     },
 
-    /** 获取当前生效的 Chrome ASR 语种（完全独立于界面语言与 TTS） */
+    /** 获取当前生效的 Chrome ASR 语种（同步统一识别语种设置：自动时随界面首选语言，否则强制日/中） */
     getEffectiveChromeAsrLang() {
-      const val = ConfigManager.data?.asrLang;
-      return (val === "ja-JP" || val === "zh-CN") ? val : "zh-CN";
+      const niaPref = this.getEffectiveNiaAsrLang();
+      if (niaPref === "ja") return "ja-JP";
+      if (niaPref === "zh") return "zh-CN";
+      return getUiLang() === "ja" ? "ja-JP" : "zh-CN";
     },
 
     /** 获取或懒初始化共享 WebAudio AudioContext 实例 */
@@ -5300,13 +5306,19 @@
 
       const rescueB64 = (!audioBase64 && typeof fallbackAudioGetter === "function") ? fallbackAudioGetter() : "";
       const usedAudioRescue = Boolean(!audioBase64 && rescueB64);
+      const asrLangPref = VoiceEngine.getEffectiveNiaAsrLang();
+      const langScopeHint = asrLangPref === "zh"
+        ? "以下の音声は主に中国語です。中国語の発音を最優先で正確に聞き取り、同音の日本語へ誤変換しないこと。"
+        : (asrLangPref === "ja"
+          ? "以下の音声は主に日本語です。日本語の発音を最優先で正確に聞き取り、同音の中国語へ誤変換しないこと。"
+          : "以下の音声（日本語・中国語どちらでも可）を聞き取り、");
       if (audioBase64) {
-        parts.push({ text: "以下の音声（日本語・中国語どちらでも可）を聞き取り、ゲーム操作JSONを返してください。「防御」「ぼうぎょ」「攻撃」「交代」「撤退」「水」「火」「雷」「左」「はい」「いいえ」などの短い明確なゲーム指示も必ず有効な操作として認識し、ignore にしないでください。「〇〇を召喚」「〇〇を出す」「ベンチに出す」「召唤〇〇」「派〇〇上场」は必ず PLAY_BENCH であり、絶対に END_TURN にしないでください。無音・環境音・効果音・クリック音・ため息・意味のない相槌（えっと/嗯/啊等）のみの場合は、操作を捏造せず {\"transcript\":\"\",\"status\":\"ignore\",\"actions\":[],\"reply_ja\":\"\",\"reply_zh\":\"\",\"rival_ja\":\"\",\"rival_zh\":\"\"} を返してください。" });
+        parts.push({ text: `${langScopeHint}ゲーム操作JSONを返してください。「防御」「ぼうぎょ」「攻撃」「交代」「撤退」「水」「火」「雷」「左」「はい」「いいえ」などの短い明確なゲーム指示も必ず有効な操作として認識し、ignore にしないでください。「〇〇を召喚」「〇〇を出す」「ベンチに出す」「召唤〇〇」「派〇〇上场」は必ず PLAY_BENCH であり、絶対に END_TURN にしないでください。無音・環境音・効果音・クリック音・ため息・意味のない相槌（えっと/嗯/啊等）のみの場合は、操作を捏造せず {"transcript":"","status":"ignore","actions":[],"reply_ja":"","reply_zh":"","rival_ja":"","rival_zh":""} を返してください。` });
         parts.push({ inlineData: { mimeType: audioMime, data: audioBase64 } });
       } else if (rescueB64) {
         const fuzzyHints = SpecEngine.extractFuzzyHints(text);
         const hintLine = fuzzyHints.length ? `\n（候補: ${fuzzyHints.join(" / ")}）` : "";
-        parts.push({ text: `参考ASR文字起こし:「${text}」（誤認識の可能性あり。必ず添付音声の実際の発音を優先して正確に聞き取り、ゲーム操作JSONを返してください）${hintLine}` });
+        parts.push({ text: `${langScopeHint}参考ASR文字起こし:「${text}」（誤認識の可能性あり。必ず添付音声の実際の発音を優先して正確に聞き取り、ゲーム操作JSONを返してください）${hintLine}` });
         parts.push({ inlineData: { mimeType: fallbackAudioMime || "audio/wav", data: rescueB64 } });
         DebugLog.add("NLU", "Nia 文本未命中本地快通道，附带原始音频多模态复核", text);
       } else {
@@ -7652,15 +7664,23 @@
       }
     },
 
-    /** 按序数回答（1/第一/2/第二/1番目/2番目等）从当前追问候选项精确映射槽位，避免空备战槽位错位 */
-    resolveOrdinalOptionSlot(fixed, options) {
-      if (!Array.isArray(options) || options.length === 0) return null;
+    /** 按序数回答（1/第一/2/第二/1番目/2番目等）从当前追问候选项精确映射下标，兼容备战槽与手牌怪兽 */
+    resolveOrdinalOptionIndex(fixed, options) {
+      if (!Array.isArray(options) || options.length === 0) return -1;
       let optIdx = -1;
       if (/(1|１|1番目|１番目|最初|ひとつ|第一)/.test(fixed)) optIdx = 0;
       else if (/(2|２|2番目|２番目|ふたつ|第二)/.test(fixed)) optIdx = 1;
       else if (/(3|３|3番目|３番目|みっつ|第三)/.test(fixed)) optIdx = 2;
       else if (/(4|４|4番目|４番目|よっつ|第四)/.test(fixed)) optIdx = 3;
-      return optIdx >= 0 ? (options[optIdx]?.slot || null) : null;
+      else if (/(5|５|5番目|５番目|いつつ|第五)/.test(fixed)) optIdx = 4;
+      else if (/(6|６|6番目|６番目|むっつ|第六)/.test(fixed)) optIdx = 5;
+      return (optIdx >= 0 && optIdx < options.length) ? optIdx : -1;
+    },
+
+    /** 按序数回答（1/第一/2/第二/1番目/2番目等）从当前追问候选项精确映射槽位，避免空备战槽位错位 */
+    resolveOrdinalOptionSlot(fixed, options) {
+      const idx = this.resolveOrdinalOptionIndex(fixed, options);
+      return idx >= 0 ? (options[idx]?.slot || null) : null;
     },
 
     /** 在处于追问/选择待定态（confirm/choose_skill/choose_card/choose_target/promote_bench）时解析并续接执行玩家回复 */
@@ -7808,10 +7828,54 @@
       }
 
       if (p.type === "promote_bench") {
-        let slot = NLUEngine.resolveSlotFromText(fixed, "player", this.getSnapshot(), { benchOnly: true });
+        const handReplyMatch = /^手札:(\d+)$/.exec(fixed);
+        if (handReplyMatch) {
+          const hIdx = Number(handReplyMatch[1]);
+          if (SpecEngine.getMonster(this.state.player.hand[hIdx])) {
+            this.clearPending();
+            await this.promotePlayerHandMonster(hIdx);
+            return true;
+          }
+          return false;
+        }
+        const prefersHand = NLU_PATTERNS.handZone.test(fixed);
+        const prefersBench = NLU_PATTERNS.benchZone.test(fixed) || /(左|中央|真ん中|中间|中位|右)/.test(fixed);
+        const matchedMon = SpecEngine.matchMonster(fixed, "player");
+        const handIdx = matchedMon ? this.state.player.hand.indexOf(matchedMon.id) : -1;
+        let slot = !prefersHand ? NLUEngine.resolveSlotFromText(fixed, "player", this.getSnapshot(), { benchOnly: true }) : null;
+
+        if (prefersHand && handIdx !== -1) {
+          this.clearPending();
+          await this.promotePlayerHandMonster(handIdx);
+          return true;
+        }
+        if (prefersHand && !matchedMon) {
+          const firstHandMonIdx = this.state.player.hand.findIndex((id) => Boolean(SpecEngine.getMonster(id)));
+          const uniqueHandMonIds = new Set(this.state.player.hand.filter((id) => Boolean(SpecEngine.getMonster(id))));
+          if (uniqueHandMonIds.size === 1 && firstHandMonIdx !== -1) {
+            this.clearPending();
+            await this.promotePlayerHandMonster(firstHandMonIdx);
+            return true;
+          }
+        }
+        if (!slot && !prefersBench && handIdx !== -1) {
+          this.clearPending();
+          await this.promotePlayerHandMonster(handIdx);
+          return true;
+        }
         if (!slot) {
-          const benchFallback = this.getBenchEntries("player").map((e) => ({ slot: e.slot }));
-          slot = this.resolveOrdinalOptionSlot(fixed, p.options || benchFallback);
+          const ordIdx = this.resolveOrdinalOptionIndex(fixed, p.options || []);
+          const ordOpt = ordIdx >= 0 ? p.options[ordIdx] : null;
+          if (ordOpt && ordOpt.source === "hand" && SpecEngine.getMonster(this.state.player.hand[ordOpt.handIdx])) {
+            this.clearPending();
+            await this.promotePlayerHandMonster(ordOpt.handIdx);
+            return true;
+          }
+          if (ordOpt && ordOpt.slot) slot = ordOpt.slot;
+          else if (!prefersHand) {
+            const benchFallback = this.getBenchEntries("player").map((e) => ({ slot: e.slot }));
+            slot = this.resolveOrdinalOptionSlot(fixed, benchFallback);
+          }
         }
         const m = /^player_bench_([0-2])$/.exec(slot || "");
         if (m && this.state.player.bench[Number(m[1])]) {
@@ -8793,29 +8857,84 @@
         VoiceEngine.speak({ ja: r.ja, zh: r.zh }, "rival", { priority: "high" });
       }
       if (deadPlayers.length > 0 && !s.player.active) {
-        const myBench = this.getBenchEntries("player").filter((b) => b.unit.hp > 0);
-        if (myBench.length === 0) {
-          this.endGame("enemy", "自分の場にモンスターがいなくなりました。", "己方场上已无怪兽，本局败北。");
+        const cand = this.buildPromotePendingState();
+        if (cand.myBench.length === 0 && cand.uniqueHandMons.length === 0) {
+          this.endGame("enemy", "自分の場・手札にモンスターがいなくなりました。", "己方场上与手牌均已无怪兽，本局败北。");
           return true;
         }
-        if (myBench.length === 1) {
-          await this.promotePlayerBench(myBench[0].idx);
+        if (cand.myBench.length === 1 && cand.uniqueHandMons.length === 0) {
+          await this.promotePlayerBench(cand.myBench[0].idx);
+        } else if (cand.myBench.length === 0 && cand.uniqueHandMons.length === 1) {
+          await this.promotePlayerHandMonster(cand.uniqueHandMons[0].idx);
         } else {
-          const ja = "バトル場に出すベンチのモンスターを選んでください。";
-          const zh = "请选择备战区一只怪兽补位至战斗区。";
           this.setPending({
-            type: "promote_bench", promptJa: ja, promptZh: zh,
-            options: myBench.map((e) => ({
-              labelJa: `${POS_JA[e.idx]}・${e.def.name_ja}`,
-              labelZh: `${POS_ZH[e.idx]}・${e.def.name_zh}`,
-              reply: POS_JA[e.idx],
-              slot: e.slot
-            }))
+            type: "promote_bench",
+            promptJa: cand.promptJa,
+            promptZh: cand.promptZh,
+            options: cand.options
           });
-          TableUI.setReferee(ja, zh);
+          TableUI.setReferee(cand.promptJa, cand.promptZh);
         }
       }
       return anyKo;
+    },
+
+    /** 构建己方主战倒下后的替补候选状态（同时汇总备战区存活怪兽与手牌怪兽卡） */
+    buildPromotePendingState() {
+      const s = this.state;
+      const myBench = this.getBenchEntries("player").filter((b) => b.unit.hp > 0);
+      const uniqueHandMons = [];
+      const seenHandIds = new Set();
+      (s.player?.hand || []).forEach((id, idx) => {
+        const def = SpecEngine.getMonster(id);
+        if (def && !seenHandIds.has(id)) {
+          seenHandIds.add(id);
+          uniqueHandMons.push({ idx, id, def });
+        }
+      });
+      const options = [
+        ...myBench.map((e) => ({
+          labelJa: `${POS_JA[e.idx]}・${e.def.name_ja}`,
+          labelZh: `${POS_ZH[e.idx]}・${e.def.name_zh}`,
+          reply: POS_JA[e.idx],
+          slot: e.slot,
+          source: "bench",
+          benchIdx: e.idx
+        })),
+        ...uniqueHandMons.map((h) => ({
+          labelJa: `手札・${h.def.name_ja}`,
+          labelZh: `手牌・${h.def.name_zh}`,
+          reply: `手札:${h.idx}`,
+          cardId: h.id,
+          handIdx: h.idx,
+          source: "hand"
+        }))
+      ];
+      let promptJa = "バトル場に出すベンチのモンスターを選んでください。";
+      let promptZh = "请选择备战区一只怪兽补位至战斗区。";
+      if (myBench.length > 0 && uniqueHandMons.length > 0) {
+        promptJa = "バトル場に出すモンスターをベンチまたは手札から選んでください。";
+        promptZh = "请从备战区或手牌中选择 1 只怪兽补位至战斗区。";
+      } else if (myBench.length === 0 && uniqueHandMons.length > 0) {
+        promptJa = "バトル場に出すモンスターを手札から選んでください。";
+        promptZh = "请从手牌中选择 1 只怪兽补位至战斗区。";
+      }
+      return { myBench, uniqueHandMons, options, promptJa, promptZh };
+    },
+
+    /** 回合开始抽牌或疲劳结算后，若仍处于主战补位待选态则刷新候选项并保留补位提示 */
+    applyTurnStartPendingPrompt(turnJa, turnZh) {
+      const s = this.state;
+      if (!s.pending || s.pending.type !== "promote_bench") return false;
+      const cand = this.buildPromotePendingState();
+      this.setPending({
+        type: "promote_bench",
+        promptJa: cand.promptJa,
+        promptZh: cand.promptZh,
+        options: cand.options
+      });
+      TableUI.setReferee(`${cand.promptJa}（${turnJa}）`, `${cand.promptZh}（${turnZh}）`);
+      return true;
     },
 
     /** 将玩家指定备战槽位怪兽推上主战区补位并刷新盘面 */
@@ -8827,6 +8946,21 @@
       this.state.player.bench[idx] = null;
       TableUI.appendLog(`ベンチから${def.name_ja}をバトル場に出しました。`, `已将备战区的${def.name_zh}派上战斗区。`);
       TableUI.renderAll();
+    },
+
+    /** 将玩家指定手牌下标的怪兽卡直接推上主战区补位（用于主战阵亡后的替补登场） */
+    async promotePlayerHandMonster(handIdx) {
+      const hand = this.state.player.hand;
+      if (handIdx < 0 || handIdx >= hand.length) return;
+      const cardId = hand[handIdx];
+      const def = SpecEngine.getMonster(cardId);
+      if (!def) return;
+      hand.splice(handIdx, 1);
+      this.state.player.active = { id: cardId, hp: def.hp, energies: [], guard: 0 };
+      SoundFX.play("switch");
+      TableUI.appendLog(`手札から${def.name_ja}をバトル場に出しました。`, `已从手牌派出${def.name_zh}进入战斗区。`);
+      TableUI.renderAll();
+      TableUI.flashAnim("player_active", "anim-enter");
     },
 
     /** 终结当前对局：锁定状态、展示胜负结算弹窗并高优播报裁判与对手终局台词 */
@@ -9741,9 +9875,7 @@
             const fatigueJa = `ターン${s.turn}、あなたの番です。`;
             const fatigueZh = `第 ${s.turn} 回合，轮到你的回合。`;
             TableUI.showTurnBanner(`ターン ${s.turn} · あなたのターン`, `第 ${s.turn} 回合 · 你的回合`, false);
-            if (s.pending && s.pending.type === "promote_bench") {
-              TableUI.setReferee(`${s.pending.promptJa}（${fatigueJa}）`, `${s.pending.promptZh}（${fatigueZh}）`);
-            } else {
+            if (!this.applyTurnStartPendingPrompt(fatigueJa, fatigueZh)) {
               TableUI.setReferee(fatigueJa, fatigueZh);
               VoiceEngine.speak({ ja: fatigueJa, zh: fatigueZh }, "referee", { priority: "low" });
             }
@@ -9752,10 +9884,14 @@
             TableUI.renderAll();
             const dJa = drawn[0] ? `「${drawn[0].ja}」を引きました。` : "";
             const dZh = drawn[0] ? `抽到了「${drawn[0].zh}」。` : "";
+            const turnJa = `あなたのターンです！${dJa}`;
+            const turnZh = `轮到你的回合了！${dZh}`;
             TableUI.showTurnBanner(`ターン ${s.turn} · あなたのターン`, `第 ${s.turn} 回合 · 你的回合`, false);
-            TableUI.setReferee(`あなたのターンです！${dJa}`, `轮到你的回合了！${dZh}`);
             TableUI.appendLog(`ターン ${s.turn} 開始：${dJa}`, `第 ${s.turn} 回合开始：${dZh}`);
-            VoiceEngine.speak({ ja: `あなたのターンです！${dJa}`, zh: `轮到你的回合了！${dZh}` }, "referee", { priority: "low" });
+            if (!this.applyTurnStartPendingPrompt(turnJa, turnZh)) {
+              TableUI.setReferee(turnJa, turnZh);
+              VoiceEngine.speak({ ja: turnJa, zh: turnZh }, "referee", { priority: "low" });
+            }
           }
           TableUI.renderAll();
           this.resetIdleTimer(true);
@@ -9915,9 +10051,7 @@
         const ja = `ターン${s.turn}、あなたの番です。${drawn[0] ? `「${drawn[0].ja}」を引きました。` : ""}`;
         const zh = `第 ${s.turn} 回合，轮到你的回合。${drawn[0] ? `抽到了${drawn[0].zh}。` : ""}`;
         TableUI.appendLog(ja, zh);
-        if (s.pending && s.pending.type === "promote_bench") {
-          TableUI.setReferee(`${s.pending.promptJa}（${ja}）`, `${s.pending.promptZh}（${zh}）`);
-        } else {
+        if (!this.applyTurnStartPendingPrompt(ja, zh)) {
           TableUI.setReferee(ja, zh);
         }
         TableUI.showTurnBanner(`ターン ${s.turn}：あなたの番`, `第 ${s.turn} 回合：你的回合`, false);
@@ -10251,6 +10385,7 @@
       if (!s || s.gameOver) return false;
       const mon = SpecEngine.getMonster(cardId);
       if (s.phase === "setup") return Boolean(mon);
+      if (s.pending && s.pending.type === "promote_bench") return Boolean(mon);
       if (s.phase !== "battle" || s.currentPlayer !== "player" || s.pending) return false;
       if (mon) return s.player.bench.some((b) => b === null);
       const it = SpecEngine.getItem(cardId);
@@ -10281,19 +10416,23 @@
       const s = BattleEngine.state;
       const selected = s.selectedHandIndex === idx;
       const playable = this.isHandCardPlayable(cardId);
-      const showUnplayable = s.phase === "battle" && s.currentPlayer === "player" && !s.pending && !playable && !selected;
+      const isPromotePick = Boolean(s.pending && s.pending.type === "promote_bench");
+      const showUnplayable = s.phase === "battle" && s.currentPlayer === "player" && (!s.pending || isPromotePick) && !playable && !selected;
       const mon = SpecEngine.getMonster(cardId);
       if (mon) {
         const isSetup = s.phase === "setup";
+        const pickHighlight = isSetup || isPromotePick;
         const weakElem = WEAKNESS_MAP[mon.element];
         const weakBadge = weakElem
           ? `<span class="weak-chip">${escapeHtml(t("弱", "弱"))}<span style="color:${ELEM_COLOR[weakElem] || "inherit"};display:inline-flex;vertical-align:-1px;"><span class="chip-icon" style="margin:0 1px;">${SVG_ICONS[weakElem]}</span></span>+20</span>`
           : "";
         const monTitle = isSetup
           ? ` title="${escapeHtml(t("クリックまたは名前を言って先発に出す", "点击或说出名字作为首发上场"))}"`
-          : ` title="${escapeHtml(t("クリックまたは音声でベンチに出せます", "可直接点击或语音放入备战区"))}"`;
+          : (isPromotePick
+            ? ` title="${escapeHtml(t("クリックしてバトル場へ出す", "点击派上战斗区补位"))}"`
+            : ` title="${escapeHtml(t("クリックまたは音声でベンチに出せます", "可直接点击或语音放入备战区"))}"`);
         return `
-          <div class="card ${escapeHtml(mon.element)} ${mon.is_ex ? "is-ex" : ""} hand-card ${selected ? "selected" : ""} ${isSetup ? "setup-pick" : (playable ? "playable" : "")} ${showUnplayable ? "unplayable" : ""}" data-hand-idx="${idx}" draggable="true"${monTitle}>
+          <div class="card ${escapeHtml(mon.element)} ${mon.is_ex ? "is-ex" : ""} hand-card ${selected ? "selected" : ""} ${pickHighlight ? "setup-pick" : (playable ? "playable" : "")} ${showUnplayable ? "unplayable" : ""}" data-hand-idx="${idx}" draggable="true"${monTitle}>
             <div class="card-head">
               <div class="card-head-left">
                 ${CARD_ART[mon.id] ? `<span class="card-art">${CARD_ART[mon.id]}</span>` : `<span class="pip ${escapeHtml(mon.element)} filled">${SVG_ICONS[mon.element] || SVG_ICONS.any}</span>`}
@@ -10305,7 +10444,7 @@
             </div>
             <div class="hp-track"><div class="hp-fill" style="width:100%"></div></div>
             <div class="token-row">
-              <div class="energy-pips">${isSetup ? `<span class="setup-badge">${escapeHtml(t("先発可", "可首发"))}</span>` : `<span class="energy-zero">${escapeHtml(t("手札", "手牌"))}</span>`}</div>
+              <div class="energy-pips">${isSetup ? `<span class="setup-badge">${escapeHtml(t("先発可", "可首发"))}</span>` : (isPromotePick ? `<span class="setup-badge">${escapeHtml(t("交代可", "可补位"))}</span>` : `<span class="energy-zero">${escapeHtml(t("手札", "手牌"))}</span>`)}</div>
               <div class="token-chips">
                 ${mon.is_ex ? `<span class="ex-chip">ex</span>` : ""}
                 ${weakBadge}
@@ -10836,10 +10975,11 @@
       eAct.innerHTML = `<span class="slot-tag">${escapeHtml(t("相手バトル場", "对手战斗区"))}</span>` +
         (s.enemy.active ? this.renderMonsterCard(s.enemy.active, "enemy_active") : `<div class="slot-empty">${escapeHtml(s.phase === "setup" ? t("裏向き待機中", "对手暗置首发中") : t("空き", "空位"))}</div>`);
 
+      const isPromotePending = Boolean(s.pending && s.pending.type === "promote_bench");
       const pAct = $("playerActiveSlot");
       pAct.className = "slot-box active-slot" + (highlightPlayerActive ? " highlight-ally" : "");
       pAct.innerHTML = `<span class="slot-tag">${escapeHtml(t("自分バトル場", "己方战斗区"))}</span>` +
-        (s.player.active ? this.renderMonsterCard(s.player.active, "player_active") : `<div class="slot-empty">${escapeHtml(s.phase === "setup" ? t("手札から1体選択", "请从手牌选择首发") : t("空き", "空位"))}</div>`);
+        (s.player.active ? this.renderMonsterCard(s.player.active, "player_active") : `<div class="slot-empty">${escapeHtml(s.phase === "setup" ? t("手札から1体選択", "请从手牌选择首发") : (isPromotePending ? t("交代モンスター選択", "请选择补位怪兽") : t("空き", "空位")))}</div>`);
 
       $("enemyBenchRow").innerHTML = s.enemy.bench.map((inst, i) => `
         <div class="slot-box ${(needEnemyBench || (pendingEnemy && (pendingSlots.size ? pendingSlots.has(`enemy_bench_${i}`) : true))) && inst ? "highlight-enemy" : ""}" data-slot-box="enemy_bench_${i}">
@@ -10850,7 +10990,7 @@
 
       const hasHandMon = s.player.hand.some((id) => Boolean(SpecEngine.getMonster(id)));
       const hasEmptyBench = s.player.bench.includes(null);
-      const canHintBench = s.phase === "battle" && s.currentPlayer === "player" && !s.gameOver && hasHandMon && hasEmptyBench;
+      const canHintBench = s.phase === "battle" && s.currentPlayer === "player" && !s.pending && !s.gameOver && hasHandMon && hasEmptyBench;
 
       $("playerBenchRow").innerHTML = s.player.bench.map((inst, i) => `
         <div class="slot-box ${((needEnergyAlly || (needPotionAlly && isWoundedUnit(inst)) || (pendingAlly && (pendingSlots.size ? pendingSlots.has(`player_bench_${i}`) : true)))) && inst ? "highlight-ally" : ""}" data-slot-box="player_bench_${i}">
@@ -10867,11 +11007,13 @@
       $("playerHand").innerHTML = s.player.hand.map((id, idx) => this.renderHandCard(id, idx)).join("");
       $("handSelectionHint").textContent = s.phase === "setup"
         ? t("先発モンスターをクリック", "点击绿色高亮怪兽作为首发")
-        : (selCardId
-          ? t("対象をクリック（再クリックで取消）", "点击高亮目标使用，再点手牌取消")
-          : (canHintBench
-            ? t("手札のモンスターをクリック／発話でベンチへ展開可", "手牌有怪兽卡可直接点击或语音放入备战区")
-            : ""));
+        : (isPromotePending
+          ? t("ベンチまたは緑枠の手札モンスターをクリック", "点击备战区或手牌绿色高亮怪兽补位")
+          : (selCardId
+            ? t("対象をクリック（再クリックで取消）", "点击高亮目标使用，再点手牌取消")
+            : (canHintBench
+              ? t("手札のモンスターをクリック／発話でベンチへ展開可", "手牌有怪兽卡可直接点击或语音放入备战区")
+              : "")));
 
       const bar = $("pendingBar");
       if (s.pending) {
@@ -11182,7 +11324,15 @@
             return;
           }
           if (s.pending && s.pending.type === "promote_bench") {
-            TableUI.setReferee(s.pending.promptJa, s.pending.promptZh);
+            if (SpecEngine.getMonster(cardId)) {
+              const seq = BattleEngine.matchSeq;
+              s.busy = true;
+              BattleEngine.handlePendingReply(`手札:${idx}`).finally(() => {
+                if (seq === BattleEngine.matchSeq && BattleEngine.state === s) { s.busy = false; TableUI.renderAll(); }
+              });
+            } else {
+              TableUI.setReferee(s.pending.promptJa, s.pending.promptZh);
+            }
             return;
           }
           GuideEngine.hide();
@@ -11332,7 +11482,6 @@
   function syncSettingsVisibility() {
     const asr = $("asrMode")?.value || "nia_asr";
     const tts = $("ttsEngine")?.value || "nia_tts";
-    const ttsLang = getSettingsTtsLang();
 
     const asrBadgeMap = {
       nia_asr: "SenseTime Nia",
@@ -11342,22 +11491,8 @@
     };
     if ($("asrEngineBadge")) $("asrEngineBadge").textContent = asrBadgeMap[asr] || asr;
 
-    $("niaAsrLangWrap")?.classList.toggle("cfg-hidden", asr !== "nia_asr");
-    $("chromeAsrLangWrap")?.classList.toggle("cfg-hidden", asr !== "chrome_asr_llm" && asr !== "chrome_local");
-    $("geminiAsrHintWrap")?.classList.toggle("cfg-hidden", asr !== "gemini_audio");
-
     // 只要 ASR 或 TTS 任一使用SenseTime Nia，即展示 Nia AccessKey 区域
     $("niaCredsBlock")?.classList.toggle("cfg-hidden", asr !== "nia_asr" && tts !== "nia_tts");
-
-    $("ttsModelRow")?.classList.toggle("cfg-hidden", tts !== "vertex_tts");
-    if ($("ttsEngineHintText")) {
-      const langLabel = ttsLang === "zh" ? "ZH_CN" : "JAPANESE";
-      $("ttsEngineHintText").textContent = tts === "vertex_tts"
-        ? t(`Vertex Gemini TTS (${langLabel}) · 独立言語対応`, `Vertex Gemini TTS (${langLabel}) · 独立播报语种`)
-        : (tts === "nia_tts"
-            ? t(`SenseTime Nia 24kHz (${langLabel})`, `SenseTime Nia 24kHz (${langLabel})`)
-            : t(`ブラウザ内蔵音声 (${langLabel})`, `浏览器内置朗读 (${langLabel})`));
-    }
   }
 
   function clearSecretDomFields() {
@@ -11386,9 +11521,7 @@
     if ($("niaAsrLang")) $("niaAsrLang").value = VoiceEngine.getEffectiveNiaAsrLang();
     if ($("ttsEngine")) $("ttsEngine").value = c.ttsEngine;
     if ($("ttsLang")) $("ttsLang").value = getTtsLang();
-    if ($("ttsModel")) $("ttsModel").value = c.ttsModel;
     if ($("asrMode")) $("asrMode").value = c.asrMode;
-    if ($("asrLang")) $("asrLang").value = VoiceEngine.getEffectiveChromeAsrLang();
     if ($("idlePromptSec")) $("idlePromptSec").value = c.idlePromptSec;
     if ($("chkAutoSpeak")) $("chkAutoSpeak").checked = Boolean(c.autoSpeak);
     if ($("mdStatusText")) $("mdStatusText").textContent = `${t("読込元：", "数据源：")}${SpecEngine.sourceLabel}`;
@@ -11422,13 +11555,9 @@
       hard: t("むずかしい", "困难")
     });
     setOptMap("niaAsrLang", {
-      "": t("自動判別（日・中）", "自动双语识别"),
-      ja: t("日本語 (ja)", "日语 (ja)"),
-      zh: t("中国語 (zh)", "中文 (zh)")
-    });
-    setOptMap("asrLang", {
-      "ja-JP": t("日本語 (ja-JP)", "日语 (ja-JP)"),
-      "zh-CN": t("中国語 (zh-CN)", "中文 (zh-CN)")
+      "": t("自動（日・中）", "自动（中/日双语）"),
+      zh: t("中国語 (zh)", "中文"),
+      ja: t("日本語 (ja)", "日语")
     });
     setOptMap("asrMode", {
       nia_asr: "SenseTime Nia",
@@ -11680,6 +11809,9 @@
         };
       }
       const niaLangVal = $("niaAsrLang") ? $("niaAsrLang").value : VoiceEngine.getEffectiveNiaAsrLang();
+      const syncedAsrLang = niaLangVal === "ja"
+        ? "ja-JP"
+        : (niaLangVal === "zh" ? "zh-CN" : (getUiLang() === "ja" ? "ja-JP" : "zh-CN"));
       return {
         apiKey: ($("apiKey")?.value || "").trim(),
         llmModel: ($("llmModel")?.value || "").trim(),
@@ -11687,10 +11819,10 @@
         niaSk: ($("niaSk")?.value || "").trim(),
         niaAsrLang: niaLangVal,
         asrMode: $("asrMode")?.value || "nia_asr",
-        asrLang: $("asrLang")?.value || VoiceEngine.getEffectiveChromeAsrLang(),
+        asrLang: syncedAsrLang,
         ttsEngine: curTts,
         ttsLang: curTtsLang,
-        ttsModel: ($("ttsModel")?.value || "").trim(),
+        ttsModel: ConfigManager.data.ttsModel,
         niaVoiceReferee: settingsVoiceDraft.nia_tts_ja.referee,
         niaVoiceRival: settingsVoiceDraft.nia_tts_ja.rival,
         niaVoiceRefereeZh: settingsVoiceDraft.nia_tts_zh.referee,
@@ -11708,6 +11840,7 @@
     $("btnSaveConfig").addEventListener("click", () => {
       savedConfigDuringTtsTest = true;
       const prevAsr = ConfigManager.data.asrMode;
+      const prevNiaAsrLang = ConfigManager.data.niaAsrLang;
       const prevAsrLang = ConfigManager.data.asrLang;
       const prevTtsLang = ConfigManager.data.ttsLang;
       const prevNiaAk = ConfigManager.data.niaAk;
@@ -11732,7 +11865,7 @@
         const nextUsesVad = ConfigManager.data.asrMode === "nia_asr" || ConfigManager.data.asrMode === "gemini_audio";
         VoiceEngine.stopCall(true, { keepMicStream: nextUsesVad });
         VoiceEngine.startContinuousAsrCall(true);
-      } else if (VoiceEngine.callActive && prevAsrLang !== ConfigManager.data.asrLang) {
+      } else if (VoiceEngine.callActive && (prevNiaAsrLang !== ConfigManager.data.niaAsrLang || prevAsrLang !== ConfigManager.data.asrLang)) {
         VoiceEngine.restartChromeAsrIfNeeded();
       }
     });
