@@ -459,7 +459,7 @@
     alignToDeckBox() {
       const box = $("guideFloat");
       if (!box) return;
-      if (getComputedStyle(box).position !== "absolute") {
+      if (document.documentElement?.classList.contains("force-landscape") || getComputedStyle(box).position !== "absolute") {
         box.style.left = "";
         box.style.right = "";
         box.style.width = "";
@@ -11222,8 +11222,15 @@
         });
         pop.appendChild(rBtn);
 
-        pop.style.left = `${Math.max(8, Math.min((ev?.clientX || 120) + 10, window.innerWidth - 224))}px`;
-        pop.style.top = `${Math.max(8, Math.min((ev?.clientY || 120) + 10, window.innerHeight - 196))}px`;
+        if (document.documentElement?.classList.contains("force-landscape")) {
+          pop.style.left = "50%";
+          pop.style.top = "50%";
+          pop.style.transform = "translate(-50%, -50%)";
+        } else {
+          pop.style.transform = "";
+          pop.style.left = `${Math.max(8, Math.min((ev?.clientX || 120) + 10, window.innerWidth - 224))}px`;
+          pop.style.top = `${Math.max(8, Math.min((ev?.clientY || 120) + 10, window.innerHeight - 196))}px`;
+        }
         pop.classList.add("open");
       }
     },
@@ -12106,14 +12113,32 @@
       return (window.innerHeight || 0) > (window.innerWidth || 0);
     },
 
-    /** 开关 CSS 强制横屏模式（竖屏设备点击「全屏」且原生方向锁不可用时自动 90° 旋转） */
+    /** 动态计算 1320×740 PC 画布在当前手机视口下的等比缩放比例 */
+    updateForceLandscapeScale() {
+      const root = document.documentElement;
+      if (!root) return;
+      if (!this.forceLandscape) {
+        root.style.removeProperty("--fl-scale");
+        return;
+      }
+      const vw = window.visualViewport?.width || window.innerWidth || 390;
+      const vh = window.visualViewport?.height || window.innerHeight || 844;
+      const portrait = vh > vw;
+      const availW = portrait ? vh : vw;
+      const availH = portrait ? vw : vh;
+      const scale = Math.max(0.25, Math.min(1, Math.min(availW / 1320, availH / 740)));
+      root.style.setProperty("--fl-scale", scale.toFixed(4));
+    },
+
+    /** 开关 PC 等比缩放横屏模式（自动适配竖屏 90° 旋转与物理横屏缩放） */
     setForceLandscape(enabled) {
       this.forceLandscape = Boolean(enabled);
       document.documentElement?.classList.toggle("force-landscape", this.forceLandscape);
       document.body?.classList.toggle("force-landscape", this.forceLandscape);
+      this.updateForceLandscapeScale();
     },
 
-    /** 开关横屏紧凑沉浸模式（物理已横屏但浏览器不支持 Fullscreen API 时的平滑兜底） */
+    /** 开关横屏紧凑沉浸模式（保留兼容接口，现统一走等比缩放横屏） */
     setImmersiveLandscape(enabled) {
       this.immersiveLandscape = Boolean(enabled);
       document.body?.classList.toggle("immersive-landscape", this.immersiveLandscape);
@@ -12178,26 +12203,20 @@
       const stillPortrait = this.isPortraitViewport();
       this._enteredViaNative = fsOk;
 
-      if (stillPortrait) {
-        this.setImmersiveLandscape(false);
-        this.setForceLandscape(true);
-      } else if (!fsOk) {
-        this.setForceLandscape(false);
-        this.setImmersiveLandscape(true);
+      this.setImmersiveLandscape(false);
+      // 手机端进入全屏/横屏时，若仍竖屏或横向物理像素不足 PC 三栏宽，均启用 1320×740 PC 等比缩放
+      const needScaledPc = stillPortrait || (window.innerWidth || 0) < 1100 || (window.innerHeight || 0) < 620;
+      this.setForceLandscape(needScaledPc);
+      if (!fsOk && !stillPortrait) {
         try { window.scrollTo(0, 1); } catch (_) {}
-      } else {
-        this.setForceLandscape(false);
-        this.setImmersiveLandscape(false);
       }
 
       this.syncUi();
       requestAnimationFrame(() => GuideEngine.alignToDeckBox());
       if (fsOk && (lockOk || !stillPortrait)) {
         TableUI.showToast("横画面・全画面モードにしました", "已进入横屏全屏模式");
-      } else if (this.forceLandscape) {
-        TableUI.showToast("横画面モードに切り替えました", "已切换为横屏模式");
       } else {
-        TableUI.showToast("横画面コンパクト表示にしました", "已开启横屏紧凑视图");
+        TableUI.showToast("PC横画面レイアウトに切り替えました", "已切换为 PC 横屏缩放模式");
       }
     },
 
@@ -12238,13 +12257,18 @@
       document.addEventListener("fullscreenchange", onFsChange);
       document.addEventListener("webkitfullscreenchange", onFsChange);
       window.addEventListener("resize", () => {
+        this.updateForceLandscapeScale();
         this.syncUi();
         requestAnimationFrame(() => GuideEngine.alignToDeckBox());
       });
       window.addEventListener("orientationchange", () => {
-        this.syncUi();
-        requestAnimationFrame(() => GuideEngine.alignToDeckBox());
+        setTimeout(() => {
+          this.updateForceLandscapeScale();
+          this.syncUi();
+          GuideEngine.alignToDeckBox();
+        }, 80);
       });
+      window.visualViewport?.addEventListener("resize", () => this.updateForceLandscapeScale());
     }
   };
 
