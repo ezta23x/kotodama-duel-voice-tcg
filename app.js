@@ -12087,9 +12087,54 @@
       return uaMobile || smallTouchScreen;
     },
 
-    /** 检测当前页面是否处于标准或 WebKit 全屏模式 */
-    isFullscreen() {
+    forceLandscape: false,
+    immersiveLandscape: false,
+    _enteredViaNative: false,
+
+    /** 检测当前浏览器是否处于原生 Fullscreen API 全屏态 */
+    isNativeFullscreen() {
       return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+    },
+
+    /** 检测当前页面是否处于全屏或强制横屏模式（兼容不支持 Fullscreen API 的 iOS Safari） */
+    isFullscreen() {
+      return this.isNativeFullscreen() || this.forceLandscape || this.immersiveLandscape;
+    },
+
+    /** 检测当前物理视口是否为竖屏 */
+    isPortraitViewport() {
+      return (window.innerHeight || 0) > (window.innerWidth || 0);
+    },
+
+    /** 开关 CSS 强制横屏模式（竖屏设备点击「全屏」且原生方向锁不可用时自动 90° 旋转） */
+    setForceLandscape(enabled) {
+      this.forceLandscape = Boolean(enabled);
+      document.documentElement?.classList.toggle("force-landscape", this.forceLandscape);
+      document.body?.classList.toggle("force-landscape", this.forceLandscape);
+    },
+
+    /** 开关横屏紧凑沉浸模式（物理已横屏但浏览器不支持 Fullscreen API 时的平滑兜底） */
+    setImmersiveLandscape(enabled) {
+      this.immersiveLandscape = Boolean(enabled);
+      document.body?.classList.toggle("immersive-landscape", this.immersiveLandscape);
+    },
+
+    /** 尝试调用原生 Screen Orientation API 锁定横屏（含 landscape-primary 与全屏过渡后一次重试） */
+    async tryLockLandscape() {
+      const lockFn = window.screen?.orientation?.lock?.bind(window.screen.orientation);
+      if (!lockFn) return false;
+      const attempt = async () => {
+        for (const mode of ["landscape", "landscape-primary"]) {
+          try {
+            await lockFn(mode);
+            return true;
+          } catch (_) {}
+        }
+        return false;
+      };
+      if (await attempt()) return true;
+      await new Promise((r) => setTimeout(r, 140));
+      return attempt();
     },
 
     /** 按当前屏幕方向与全屏状态同步移动端横屏工具条按钮的显示与文案 */
@@ -12110,13 +12155,17 @@
         : `${enterSvg}${escapeHtml(t("全画面", "全屏"))}`;
     },
 
-    /** 在移动端尝试请求全屏并锁定横屏方向，提升窄屏牌桌视野 */
+    /** 在移动端请求全屏并自动横屏（原生 API 不可用或被系统锁屏时自动降级为 CSS 90° 强制横屏） */
     async enterLandscapeFullscreen() {
       const root = document.documentElement;
       let fsOk = false;
       try {
         if (root?.requestFullscreen) {
-          await root.requestFullscreen();
+          try {
+            await root.requestFullscreen({ navigationUI: "hide" });
+          } catch (_) {
+            await root.requestFullscreen();
+          }
           fsOk = true;
         } else if (root?.webkitRequestFullscreen) {
           await Promise.resolve(root.webkitRequestFullscreen());
@@ -12124,31 +12173,50 @@
         }
       } catch (_) {}
 
-      try {
-        if (window.screen?.orientation?.lock) {
-          await window.screen.orientation.lock("landscape");
-        }
-      } catch (_) {}
+      const lockOk = await this.tryLockLandscape();
+      await new Promise((r) => setTimeout(r, 80));
+      const stillPortrait = this.isPortraitViewport();
+      this._enteredViaNative = fsOk;
+
+      if (stillPortrait) {
+        this.setImmersiveLandscape(false);
+        this.setForceLandscape(true);
+      } else if (!fsOk) {
+        this.setForceLandscape(false);
+        this.setImmersiveLandscape(true);
+        try { window.scrollTo(0, 1); } catch (_) {}
+      } else {
+        this.setForceLandscape(false);
+        this.setImmersiveLandscape(false);
+      }
 
       this.syncUi();
-      if (fsOk) {
-        TableUI.showToast("横画面・全画面モードにしました", "已尝试进入横屏全屏模式");
+      requestAnimationFrame(() => GuideEngine.alignToDeckBox());
+      if (fsOk && (lockOk || !stillPortrait)) {
+        TableUI.showToast("横画面・全画面モードにしました", "已进入横屏全屏模式");
+      } else if (this.forceLandscape) {
+        TableUI.showToast("横画面モードに切り替えました", "已切换为横屏模式");
       } else {
-        TableUI.showToast("端末を横向きに回転してください", "请横向旋转手机即可获得与 PC 一致的清晰牌桌体验");
+        TableUI.showToast("横画面コンパクト表示にしました", "已开启横屏紧凑视图");
       }
     },
 
-    /** 切换进入或退出浏览器全屏模式 */
+    /** 切换进入或退出横屏全屏模式（同时清理原生全屏、方向锁与 CSS 强制横屏状态） */
     async toggleFullscreen() {
       if (this.isFullscreen()) {
+        this._enteredViaNative = false;
+        this.setForceLandscape(false);
+        this.setImmersiveLandscape(false);
         try {
-          if (document.exitFullscreen) await document.exitFullscreen();
-          else if (document.webkitExitFullscreen) await Promise.resolve(document.webkitExitFullscreen());
+          if (document.fullscreenElement && document.exitFullscreen) await document.exitFullscreen();
+          else if (document.webkitFullscreenElement && document.webkitExitFullscreen) await Promise.resolve(document.webkitExitFullscreen());
         } catch (_) {}
         try {
           if (window.screen?.orientation?.unlock) window.screen.orientation.unlock();
         } catch (_) {}
         this.syncUi();
+        requestAnimationFrame(() => GuideEngine.alignToDeckBox());
+        TableUI.showToast("全画面・横画面を解除しました", "已退出横屏全屏模式");
       } else {
         await this.enterLandscapeFullscreen();
       }
@@ -12158,8 +12226,17 @@
     init() {
       this.syncUi();
       $("btnFullscreen")?.addEventListener("click", () => this.toggleFullscreen());
-      document.addEventListener("fullscreenchange", () => this.syncUi());
-      document.addEventListener("webkitfullscreenchange", () => this.syncUi());
+      const onFsChange = () => {
+        if (!this.isNativeFullscreen() && this._enteredViaNative) {
+          this._enteredViaNative = false;
+          this.setForceLandscape(false);
+          this.setImmersiveLandscape(false);
+        }
+        this.syncUi();
+        requestAnimationFrame(() => GuideEngine.alignToDeckBox());
+      };
+      document.addEventListener("fullscreenchange", onFsChange);
+      document.addEventListener("webkitfullscreenchange", onFsChange);
       window.addEventListener("resize", () => {
         this.syncUi();
         requestAnimationFrame(() => GuideEngine.alignToDeckBox());

@@ -5183,6 +5183,160 @@
          (max-width: 960px) and (orientation: landscape) {
     .active-band { grid-template-columns: minmax(0, 1fr) var(--slot-w) minmax(0, 1fr); }
   }
+
+  /* ---------- 手机端点击「全屏/全画面」强制横屏兜底（兼容 iOS Safari 及开启系统方向锁的安卓浏览器） ---------- */
+  @media (orientation: portrait) {
+    html.force-landscape {
+      height: 100dvh !important;
+      width: 100dvw !important;
+      overflow: hidden !important;
+      --fs-xl: 16px;
+      --fs-lg: 13px;
+      --fs-md: 12px;
+      --fs-sm: 11px;
+      --fs-xs: 10px;
+      --card-w: 188px;
+      --card-h: 100px;
+      --slot-pad-top: 14px;
+      --slot-pad-x: 4px;
+      --slot-pad-b: 4px;
+      --slot-w: calc(var(--card-w) + 10px);
+      --slot-h: calc(var(--card-h) + 20px);
+      --side-w: calc(var(--card-w) + 34px);
+    }
+    html.force-landscape body {
+      position: fixed !important;
+      top: 50% !important;
+      left: 50% !important;
+      width: 100dvh !important;
+      height: 100dvw !important;
+      min-height: 0 !important;
+      padding: 4px 6px !important;
+      margin: 0 !important;
+      overflow: hidden !important;
+      transform: translate(-50%, -50%) rotate(90deg) !important;
+      transform-origin: center center !important;
+    }
+    html.force-landscape .table-shell,
+    html.force-landscape .app-shell {
+      width: 100% !important;
+      max-width: 100% !important;
+      height: 100% !important;
+      min-height: 0 !important;
+      gap: 4px !important;
+      overflow: hidden !important;
+      padding-bottom: 0 !important;
+    }
+    html.force-landscape .topbar {
+      display: flex !important;
+      flex-direction: row !important;
+      flex-wrap: nowrap !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      padding: 3px 8px !important;
+      gap: 6px !important;
+      flex-shrink: 0 !important;
+    }
+    html.force-landscape .brand-wrap { width: auto !important; gap: 6px !important; }
+    html.force-landscape .brand-logo-svg { width: 20px !important; height: 20px !important; }
+    html.force-landscape .turn-pill { padding: 2px 8px !important; min-width: 0 !important; width: auto !important; }
+    html.force-landscape .top-actions {
+      display: flex !important;
+      flex-wrap: nowrap !important;
+      width: auto !important;
+      gap: 4px !important;
+    }
+    html.force-landscape .top-actions > * { grid-column: auto !important; grid-row: auto !important; }
+    html.force-landscape .lang-switch { width: auto !important; }
+    html.force-landscape .lang-pill { padding: 2px 6px !important; min-width: 0 !important; }
+    html.force-landscape .top-btn { width: auto !important; min-height: 24px !important; padding: 2px 7px !important; }
+    html.force-landscape .arena-grid {
+      display: grid !important;
+      grid-template-columns: var(--side-w) minmax(0, 1fr) var(--side-w) !important;
+      flex: 1 1 auto !important;
+      height: auto !important;
+      min-height: 0 !important;
+      gap: 6px !important;
+      overflow: hidden !important;
+    }
+    html.force-landscape .side-panel {
+      order: 1 !important;
+      height: 100% !important;
+      min-height: 0 !important;
+      overflow: hidden !important;
+      padding: 5px 7px !important;
+      gap: 4px !important;
+    }
+    html.force-landscape .playmat {
+      order: 2 !important;
+      height: 100% !important;
+      min-height: 0 !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      padding: 5px 7px !important;
+      gap: 5px !important;
+      justify-content: flex-start !important;
+    }
+    html.force-landscape .hand-rail {
+      order: 3 !important;
+      height: 100% !important;
+      min-height: 0 !important;
+      overflow: hidden !important;
+      padding: 5px 6px !important;
+      gap: 4px !important;
+    }
+    html.force-landscape .hand-cards {
+      display: flex !important;
+      flex-direction: column !important;
+      flex-wrap: nowrap !important;
+      align-items: center !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      padding: 2px !important;
+      gap: 6px !important;
+    }
+    html.force-landscape .hand-actions {
+      position: static !important;
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 4px !important;
+      padding: 0 !important;
+      background: transparent !important;
+      border-top: 0 !important;
+    }
+    html.force-landscape .voice-dock {
+      position: static !important;
+      padding: 0 !important;
+      background: transparent !important;
+      border-top: 0 !important;
+    }
+    html.force-landscape .voice-controls-grid {
+      display: grid !important;
+      grid-template-columns: 1fr !important;
+      gap: 4px !important;
+    }
+    html.force-landscape #btnLiveCall { width: 100% !important; min-height: 28px !important; padding: 4px 8px !important; }
+    html.force-landscape .active-band { grid-template-columns: minmax(0, 1fr) var(--slot-w) minmax(0, 1fr) !important; }
+    html.force-landscape .active-band > .pile-col { flex-direction: column !important; max-width: none !important; width: auto !important; }
+    html.force-landscape .bench-row { justify-content: flex-start !important; overflow-x: auto !important; overflow-y: hidden !important; }
+    html.force-landscape .debug-log-drawer {
+      left: 6px !important;
+      right: auto !important;
+      width: var(--side-w) !important;
+      transform: translateX(-106%) !important;
+    }
+    html.force-landscape .debug-log-drawer.open { transform: translateX(0) !important; }
+    html.force-landscape .guide-float { position: absolute !important; top: 50% !important; right: 8px !important; width: clamp(190px, 28%, 240px) !important; }
+    html.force-landscape .voice-hud { position: absolute !important; bottom: 10px !important; max-width: calc(100% - 20px) !important; }
+    html.force-landscape .turn-banner,
+    html.force-landscape .prize-toast { position: absolute !important; }
+    html.force-landscape .modal-backdrop { position: fixed !important; inset: 0 !important; padding: 8px !important; }
+    html.force-landscape .modal-box { max-width: calc(100% - 16px) !important; max-height: 92% !important; }
+    html.force-landscape #settingsModal .modal-box { width: min(680px, calc(100% - 16px)) !important; height: 92% !important; max-height: 92% !important; }
+    html.force-landscape .cfg-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  }
+  body.immersive-landscape { padding: 2px 4px !important; }
+  body.immersive-landscape .topbar { padding: 2px 8px !important; }
 </style>
 </head>
 <body data-lang="zh">
