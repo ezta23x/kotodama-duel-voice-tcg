@@ -1231,8 +1231,8 @@
       ["波乗り", "なみのり"], ["大海", "たいかい"], ["大会", "たいかい"],
       ["獅子", "じし"], ["来日", "らいじ"], ["指示", "じし"],
       ["電気", "でんき"], ["天気", "でんき"], ["元気", "でんき"], ["電機", "でんき"],
-      ["撃ち", "うち"], ["打ち", "うち"], ["噛み付く", "かみつく"], ["噛みつく", "かみつく"],
-      ["増え", "ふえ"], ["壁", "かべ"], ["弾", "だん"], ["団", "だん"], ["撃", "う"], ["打", "う"],
+      ["撃ち", "うち"], ["打ち", "うち"], ["水撃", "みずうち"], ["噛み付く", "かみつく"], ["噛みつく", "かみつく"],
+      ["増え", "ふえ"], ["壁", "かべ"], ["弾", "だん"], ["団", "だん"],
       ["玉", "だま"], ["爪", "つめ"], ["牙", "きば"], ["犬", "いぬ"], ["鳥", "どり"], ["笛", "ふえ"],
       ["亀", "がめ"], ["狐", "きつね"], ["鮫", "ざめ"], ["竜", "りゅう"], ["龍", "りゅう"], ["流", "りゅう"],
       ["魚", "うお"], ["炎", "ほのお"], ["火", "ひ"], ["日", "ひ"], ["水", "みず"], ["雷", "かみなり"],
@@ -1241,11 +1241,11 @@
 
     /** L2 复合词双段锚点表（前缀 + 0~2 干扰字/助词 + 后缀，直击「コーラ壁」「コーラの壁」「呼吸バッグ」等部分误识成独立词） */
     COMPOUND_ANCHORS: [
-      { kind: "skill", key: "こうら壁", re: /(?:こうら|こら|甲羅|コーラ|コラ).{0,2}(?:壁|かべ|カベ|へき)/i, activeHalfRe: /(?:こうら|コーラ|甲羅|かべ|壁)/i },
-      { kind: "skill", key: "かえん弾", re: /(?:かえん|火炎|会員|開演|華炎|替えん).{0,2}(?:弾|だん|団|だま|玉)/i, activeHalfRe: /(?:かえん|火炎|会員|開演)/i },
+      { kind: "skill", key: "こうら壁", re: /(?:こうら|こら|甲羅|コーラ|コラ).{0,2}(?:壁|かべ|カベ|へき)/i, activeHalfRe: /(?:こうら|甲羅)/i },
+      { kind: "skill", key: "かえん弾", re: /(?:かえん|火炎|会員|開演|華炎|替えん).{0,2}(?:弾|だん|団|だま|玉)/i },
       { kind: "skill", key: "みず撃ち", re: /(?:みず|水|ミス).{0,2}(?:撃ち|打ち|うち|撃|打|うって)/i, activeHalfRe: /(?:みず撃|水撃|水打|みずう)/i },
-      { kind: "skill", key: "でんき玉", re: /(?:でんき|電気|天気|元気|電機|デンキ).{0,2}(?:玉|だま|たま|タマ|球)/i, activeHalfRe: /(?:でんき|電気|天気|元気)/i },
-      { kind: "skill", key: "フレア爪", re: /(?:フレア|ふれあ|フレヤ|ふれや|フレーア).{0,2}(?:爪|つめ|づめ|ツメ)/i, activeHalfRe: /(?:フレア|ふれあ|フレヤ|爪|つめ)/i },
+      { kind: "skill", key: "でんき玉", re: /(?:でんき|電気|天気|元気|電機|デンキ).{0,2}(?:玉|だま|たま|タマ|球)/i },
+      { kind: "skill", key: "フレア爪", re: /(?:フレア|ふれあ|フレヤ|ふれや|フレーア).{0,2}(?:爪|つめ|づめ|ツメ)/i, activeHalfRe: /(?:フレア|ふれあ|フレヤ)/i },
       { kind: "skill", key: "メテオ炎", re: /(?:メテオ|めてお|メティオ).{0,2}(?:炎|えん|ほのお|円|園|塩|縁|ーン|ン)/i, activeHalfRe: /(?:メテオ|めてお|メティオ)/i },
       { kind: "skill", key: "ほのお牙", re: /(?:ほのお|炎|火).{0,2}(?:牙|きば|が)/i },
       { kind: "skill", key: "ツナミ牙", re: /(?:ツナミ|つなみ|津波).{0,2}(?:牙|きば|が)/i },
@@ -1341,20 +1341,24 @@
       if (!inputNorm || !aliasNorm) return 0;
       if (inputNorm.includes(aliasNorm)) return 1.0;
       const alen = aliasNorm.length;
-      /* 日语深度音拍归一化（含领域汉字→假名、去词中「の」、小假名合并）与清浊音宽容匹配 */
-      const inJa = this.toJaPhonetic(inputNorm);
-      const alJa = this.toJaPhonetic(aliasNorm);
-      if (alJa.length >= 3 && inJa.includes(alJa)) return 0.96;
-      if (alJa.length >= 4) {
+      /* 日语深度音拍归一化（仅对含假名或日语专有汉字词条生效，彻底杜绝「打雷→うかみなり」「雷球→かみなり球」等中文别名跨语种污染） */
+      const isJaAliasSource = /[\u3040-\u30ff]/.test(aliasNorm) || /^(?:甲羅壁|火炎弾|会員団|開演弾|火炎団|電気玉|天気玉|元気玉|傷薬|地図薬|雷鳴|渦潮|津波牙|水亀|水瓶|大海鮫|大会鮫|火炎流|火炎竜|火炎龍|雷獅子|大獅子|来日時|雷指示|水撃)$/.test(aliasNorm);
+      const inJa = isJaAliasSource ? this.toJaPhonetic(inputNorm) : "";
+      const alJa = isJaAliasSource ? this.toJaPhonetic(aliasNorm) : "";
+      const isPureJaAlias = isJaAliasSource && alJa.length >= 3 && !/[\u4e00-\u9fff]/.test(alJa);
+      if (isPureJaAlias && inJa.includes(alJa)) return 0.96;
+      if (isPureJaAlias && alJa.length >= 4) {
         const inBase = this.stripJaVoicing(inJa);
         const alBase = this.stripJaVoicing(alJa);
         if (inBase.includes(alBase)) return 0.93;
       }
       let best = 0;
-      if (alen >= 4) {
+      const hasKanjiInAlias = /[\u4e00-\u9fff]/.test(aliasNorm);
+      /* 含汉字的词只走纯假名音拍编辑距离，防止「かえんり」与「かえん弾」仅差 1 字误判为 0.75 */
+      if (alen >= 4 && !hasKanjiInAlias) {
         best = Math.max(best, this.slidingLevenshteinScore(inputNorm, aliasNorm));
       }
-      if (alJa.length >= 4 && inJa.length >= 3) {
+      if (isPureJaAlias && alJa.length >= 4 && inJa.length >= 3) {
         const phScore = this.slidingLevenshteinScore(inJa, alJa);
         const voicedBaseScore = this.slidingLevenshteinScore(this.stripJaVoicing(inJa), this.stripJaVoicing(alJa)) * 0.96;
         best = Math.max(best, phScore, voicedBaseScore);
@@ -1488,12 +1492,15 @@
       const kind = opts && opts.kind ? opts.kind : "";
       let best = null;
 
-      /* L2 复合词双段锚点快速命中（如 コーラ壁 / コーラの壁 / 呼吸バッグ / 大会ザメ） */
+      /* L2 复合词双段锚点快速命中（如 コーラ壁 / コーラの壁 / 呼吸バッグ / 大会ザメ）；半词通道仅限非其他指令且为简短/攻击语境的高唯一词 */
       if (kind) {
+        const rawStr = String(rawText || "");
+        const hasNonAttackCmd = /(エネルギー|エネ|ベンチ|貼|付|交代|撤退|回復|きずぐすり|補給|回収|笛|バッジ|防御|ターン|終了|エンド|降参)/.test(rawStr);
+        const allowHalfSkill = activeBoost && !hasNonAttackCmd && (norm.length <= 7 || /(攻撃|打|撃|使|発動|やれ|いけ|で|って)/.test(rawStr));
         for (const anchor of this.COMPOUND_ANCHORS) {
           if (anchor.kind !== kind) continue;
-          const hitFull = anchor.re.test(fixed) || anchor.re.test(rawText || "");
-          const hitHalf = !hitFull && activeBoost && anchor.activeHalfRe && (anchor.activeHalfRe.test(fixed) || anchor.activeHalfRe.test(rawText || ""));
+          const hitFull = anchor.re.test(fixed) || anchor.re.test(rawStr);
+          const hitHalf = !hitFull && allowHalfSkill && anchor.activeHalfRe && (anchor.activeHalfRe.test(fixed) || anchor.activeHalfRe.test(rawStr));
           if (!hitFull && !hitHalf) continue;
           const matchedEntry = entries.find((e) => (kind === "skill" ? e.item.name_ja === anchor.key : e.item.id === anchor.key));
           if (matchedEntry) {
@@ -1505,12 +1512,14 @@
         }
       }
 
+      const rawStrAll = String(rawText || "");
+      const hasNonAttackCmdAll = kind === "skill" && /(エネルギー|エネ|ベンチ|貼|付|交代|撤退|回復|きずぐすり|補給|回収|笛|バッジ|防御|ターン|終了|エンド|降参)/.test(rawStrAll);
       for (const entry of entries) {
         const itemId = entry.item?.id || entry.item?.ownerId || "";
         const inActive = Boolean(itemId && activeSet.has(itemId));
-        /* L3 盘面动态阈值：场上/手牌活跃卡允许 4 拍词 1 拍容错（0.75 + 0.06 = 0.81 >= 0.78），非活跃卡保持严格防误触 */
-        const effMin = activeBoost ? Math.min(minScore, 0.68) : (inActive ? Math.min(minScore, 0.74) : minScore);
-        const ctxBonus = activeBoost ? 0.08 : (inActive ? 0.06 : 0);
+        /* L3 盘面动态阈值：非攻击指令子句中禁止放宽技能阈值；活跃卡在攻击/正常语境下允许 4 拍词 1 拍容错 */
+        const effMin = (activeBoost && !hasNonAttackCmdAll) ? Math.min(minScore, 0.72) : (inActive && !hasNonAttackCmdAll ? Math.min(minScore, 0.74) : 0.78);
+        const ctxBonus = (activeBoost && !hasNonAttackCmdAll) ? 0.08 : (inActive ? 0.06 : 0);
         for (const alias of entry.aliases) {
           const score = this.fuzzyScore(norm, alias);
           if (score < effMin) continue;
