@@ -284,7 +284,7 @@
               if (!sn) return false;
               const mon = bench.SpecEngine.getMonster(c.active);
               const sk = mon?.skills?.find((s) => norm(s.name_ja) === sn || norm(s.name_zh) === sn);
-              return sn === d || (sk && (norm(sk.name_ja) === d || norm(sk.name_zh) === d));
+              return sn === d || (sk && (norm(sk.name_ja) === d || norm(sk.name_zh) === d || (sk.aliases || []).some((al) => norm(al) === d)));
             }
             if (c.expected_action === "ATTACH_ENERGY" || c.expected_action === "USE_ITEM" || c.expected_action === "PLAY_BENCH") {
               return a.card_id === c.detail;
