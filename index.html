@@ -4788,37 +4788,33 @@
 
   /* 语音识别浮层（#voiceHud）：与引导卡・暖羊皮纸鎏金棋桌一致的高对比度质感胶囊 */
   .voice-hud {
-    padding: 8px 16px 8px 10px;
+    padding: 7px 16px 7px 8px;
     gap: 10px;
-    border-radius: 14px;
+    border-radius: 999px;
     max-width: min(560px, calc(100% - 24px));
     background: linear-gradient(180deg, rgba(252, 248, 239, 0.97) 0%, rgba(242, 233, 214, 0.96) 100%);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1.5px solid #c6a66a;
-    border-left: 4px solid var(--ok);
     color: var(--ink);
     box-shadow: 0 12px 28px rgba(36, 24, 12, 0.26), 0 2px 6px rgba(36, 24, 12, 0.14), inset 0 1px 0 rgba(255, 254, 249, 0.9);
   }
   .voice-hud.hud-listening {
     border-color: #84be9b;
-    border-left-color: #2f7a53;
     background: linear-gradient(180deg, rgba(250, 253, 250, 0.97) 0%, rgba(236, 245, 238, 0.96) 100%);
   }
   .voice-hud.hud-fast {
     border-color: #d6b16a;
-    border-left-color: #b88224;
     background: linear-gradient(180deg, rgba(253, 250, 241, 0.97) 0%, rgba(246, 236, 212, 0.96) 100%);
   }
   .voice-hud.hud-llm {
     border-color: #8eb3d8;
-    border-left-color: #366da3;
     background: linear-gradient(180deg, rgba(248, 251, 255, 0.97) 0%, rgba(233, 241, 250, 0.96) 100%);
   }
   .voice-hud-icon {
     width: 30px;
     height: 30px;
-    border-radius: 9px;
+    border-radius: 50%;
     border: 1px solid transparent;
     color: #1f6a43;
   }
