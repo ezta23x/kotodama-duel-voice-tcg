@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>言霊デュエル — 真实声学 ASR 压测台（276 重要句 × 4 工况）</title>
+<style>
+  :root {
+    --bg: #0f1419; --card: #19222c; --line: #2a3746; --ink: #e7edf4; --sub: #94a3b8;
+    --ok: #22c55e; --bad: #ef4444; --warn: #f59e0b; --accent: #38bdf8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.5; }
+  .wrap { max-width: 1220px; margin: 0 auto; padding: 20px; }
+  h1 { margin: 0 0 6px; font-size: 20px; }
+  .sub { color: var(--sub); font-size: 13px; margin-bottom: 16px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px; }
+  select, button { background: #233040; color: var(--ink); border: 1px solid var(--line); border-radius: 7px; padding: 7px 12px; font-size: 13px; cursor: pointer; }
+  button.primary { background: #0284c7; border-color: #0ea5e9; font-weight: 600; }
+  button.danger { background: #991b1b; border-color: #dc2626; }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .stat { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+  .stat .k { font-size: 12px; color: var(--sub); }
+  .stat .v { font-size: 22px; font-weight: 700; margin-top: 4px; }
+  .stat .v.ok { color: var(--ok); }
+  .stat .v.bad { color: var(--bad); }
+  .prog { height: 8px; background: #1e293b; border-radius: 99px; overflow: hidden; margin-bottom: 14px; }
+  .prog > div { height: 100%; width: 0%; background: linear-gradient(90deg, #0ea5e9, #22c55e); transition: width 0.2s; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; font-size: 12.5px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: #141c24; color: var(--sub); font-weight: 600; position: sticky; top: 0; }
+  .tag { display: inline-block; padding: 2px 6px; border-radius: 5px; font-size: 11px; font-weight: 600; }
+  .tag.pass { background: rgba(34,197,94,0.16); color: #86efac; }
+  .tag.fail { background: rgba(239,68,68,0.18); color: #fca5a5; }
+  .tag.fe { background: #7f1d1d; color: #fecaca; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; }
+  .status-line { font-size: 12.5px; color: var(--accent); margin-bottom: 10px; min-height: 20px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>言霊デュエル — 真实声学 ASR 压测台</h1>
+  <div class="sub">复用 <code>app.js</code> 内置 Vertex Gemini TTS + SenseTime Nia 流式 ASR + 本地 0ms NLU（零重复造轮子，不触碰游戏主 UI）。TTS 音频自动缓存在浏览器 IndexedDB，二刷零额外 TTS 消耗。</div>
+
+  <div class="bar">
+    <label>分类筛选：
+      <select id="selCat">
+        <option value="ALL">全部重要句（276 句）</option>
+      </select>
+    </label>
+    <label>声学工况：
+      <select id="selMode">
+        <option value="1">1× 安静室 (Clean) — 276 次</option>
+        <option value="2" selected>2× 安静 + 10dB 空调粉噪 — 552 次</option>
+        <option value="4">4× 全工况 (安静/粉噪/咖啡馆键盘/1.2×快语速截头) — 1104 次</option>
+      </select>
+    </label>
+    <label>显示：
+      <select id="selFilter">
+        <option value="ALL">全部结果</option>
+        <option value="FAIL">仅看失败/误触</option>
+      </select>
+    </label>
+    <button id="btnStart" class="primary">开始真实 TTS→ASR 压测</button>
+    <button id="btnPause" disabled>暂停</button>
+    <button id="btnExport" disabled>导出 golden_asr_corpus.json</button>
+    <button id="btnClearCache" class="danger">清空 TTS 缓存</button>
+  </div>
+
+  <div class="status-line" id="statusLine">正在加载 app.js 与 gamedata.json…</div>
+  <div class="prog"><div id="progBar"></div></div>
+
+  <div class="stats">
+    <div class="stat"><div class="k">已完成 / 总计</div><div class="v" id="stDone">0 / 0</div></div>
+    <div class="stat"><div class="k">端到端通过率</div><div class="v ok" id="stAcc">-</div></div>
+    <div class="stat"><div class="k">负样本误执行率</div><div class="v ok" id="stFe">0.00%</div></div>
+    <div class="stat"><div class="k">TTS 缓存命中</div><div class="v" id="stCache">0</div></div>
+    <div class="stat"><div class="k">平均 ASR 耗时</div><div class="v" id="stLat">-</div></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:46px">#</th>
+        <th style="width:120px">分类 / 工况</th>
+        <th>原始口语（TTS 输入）</th>
+        <th>Nia 实际转写</th>
+        <th style="width:180px">期望 vs 实际 NLU</th>
+        <th style="width:74px">结果</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<script>
+  window.__KOTODAMA_BENCH_MODE__ = true;
+</script>
+<script src="./app.js"></script>
+<script>
+(() => {
+  "use strict";
+  const CASES = [{"text":"一番上の技","active":"p_fox","expected_status":"execute","expected_action":"ATTACK","detail":"ひのこ","category":"ja_minimal_colloquial"},{"text":"下で","active":"p_lion","expected_status":"execute","expected_action":"ATTACK","detail":"サンダー","category":"ja_minimal_colloquial"},{"text":"これで殴る","active":"p_fox","expected_status":"execute","expected_action":"ATTACK","detail":"ひのこ","category":"ja_minimal_colloquial"},{"text":"普通に攻撃","active":"p_turtle","expected_status":"execute","expected_action":"ATTACK","detail":"みず撃ち","category":"ja_minimal_colloquial"},{"text":"メテオぶっぱ","active":"p_dragon_ex","expected_status":"execute","expected_action":"ATTACK","detail":"メテオ炎","category":"ja_minimal_colloquial"},{"text":"水貼って","active":"p_turtle","expected_status":"execute","expected_action":"ATTACH_ENERGY","detail":"energy_water","category":"ja_minimal_colloquial"},{"text":"炎つける","active":"p_fox","expected_status":"execute","expected_action":"ATTACH_ENERGY","detail":"energy_fire","category":"ja_minimal_colloquial"},{"text":"前回復","active":"p_dragon_ex","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_potion","category":"ja_minimal_colloquial"},{"text":"2ドロー","active":"p_lion","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_bag","category":"ja_minimal_colloquial"},{"text":"笛で","active":"p_fox","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_flute","category":"ja_minimal_colloquial"},{"text":"ガードで","active":"p_turtle","expected_status":"execute","expected_action":"DEFEND","detail":"DEFEND","category":"ja_minimal_colloquial"},{"text":"パスで","active":"p_lion","expected_status":"execute","expected_action":"END_TURN","detail":"END_TURN","category":"ja_minimal_colloquial"},{"text":"次いこう","active":"p_fox","expected_status":"execute","expected_action":"END_TURN","detail":"END_TURN","category":"ja_minimal_colloquial"},{"text":"後ろと交代","active":"p_fox","expected_status":"execute","expected_action":"RETREAT","detail":"RETREAT","category":"ja_minimal_colloquial"},{"text":"ほなターンエンドや","active":"p_turtle","expected_status":"execute","expected_action":"END_TURN","detail":"END_TURN","category":"ja_kansai_casual"},{"text":"ひのこぶちかましたれ","active":"p_fox","expected_status":"execute","expected_action":"ATTACK","detail":"ひのこ","category":"ja_kansai_casual"},{"text":"きずぐすり使っとこか","active":"p_dragon_ex","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_potion","category":"ja_kansai_casual"},{"text":"炎エネ前につけとくわ","active":"p_dragon_ex","expected_status":"execute","expected_action":"ATTACH_ENERGY","detail":"energy_fire","category":"ja_kansai_casual"},{"text":"これもう耐えるしかないな、防御で","active":"p_turtle","expected_status":"execute","expected_action":"DEFEND","detail":"DEFEND","category":"ja_kansai_casual"},{"text":"ベンチにライジシ出しとくわ","active":"p_fox","expected_status":"execute","expected_action":"PLAY_BENCH","detail":"p_lion","category":"ja_kansai_casual"},{"text":"後ろのカエンリュウに逃げるわ","active":"p_fox","expected_status":"execute","expected_action":"RETREAT","detail":"p_dragon_ex","category":"ja_kansai_casual"},{"text":"とりあえずパワーバッジ切っとく","active":"p_lion","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_power","category":"ja_kansai_casual"},{"text":"補給バッグでドロー頼むわ","active":"p_turtle","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_bag","category":"ja_kansai_casual"},{"text":"トラッシュからエネ回収しとこ","active":"p_lion","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_recycle","category":"ja_kansai_casual"},{"text":"タイカイザメ引きずり出してや、笛で","active":"p_lion","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_flute","category":"ja_kansai_casual"},{"text":"みず撃ちいったれー","active":"p_turtle","expected_status":"execute","expected_action":"ATTACK","detail":"みず撃ち","category":"ja_kansai_casual"},{"text":"いでよ炎の龍、メテオ炎を解き放て！","active":"p_dragon_ex","expected_status":"execute","expected_action":"ATTACK","detail":"メテオ炎","category":"ja_chuuni_anime"},{"text":"焼き尽くせ、かえん弾！","active":"p_fox","expected_status":"execute","expected_action":"ATTACK","detail":"かえん弾","category":"ja_chuuni_anime"},{"text":"我が雷鳴にひれ伏せ、サンダー！","active":"p_lion","expected_status":"execute","expected_action":"ATTACK","detail":"サンダー","category":"ja_chuuni_anime"},{"text":"鉄壁の守りを見せろ、こうら壁！","active":"p_turtle","expected_status":"execute","expected_action":"ATTACK","detail":"こうら壁","category":"ja_chuuni_anime"},{"text":"切り裂け、フレア爪！","active":"p_dragon_ex","expected_status":"execute","expected_action":"ATTACK","detail":"フレア爪","category":"ja_chuuni_anime"},{"text":"電撃の洗礼だ、でんき玉！","active":"p_lion","expected_status":"execute","expected_action":"ATTACK","detail":"でんき玉","category":"ja_chuuni_anime"},{"text":"目覚めよライジシ、ベンチへ降臨せよ！","active":"p_turtle","expected_status":"execute","expected_action":"PLAY_BENCH","detail":"p_lion","category":"ja_chuuni_anime"},{"text":"呼び寄せろ、よびだし笛で敵を引きずり出せ！","active":"p_dragon_ex","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_flute","category":"ja_chuuni_anime"},{"text":"勝利への一撃、パワーバッジ発動！","active":"p_fox","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_power","category":"ja_chuuni_anime"},{"text":"ここは耐え凌ぐ、防御態勢だ！","active":"p_turtle","expected_status":"execute","expected_action":"DEFEND","detail":"DEFEND","category":"ja_chuuni_anime"},{"text":"すみません、ひのこで攻撃お願いします","active":"p_fox","expected_status":"execute","expected_action":"ATTACK","detail":"ひのこ","category":"ja_keigo_polite"},{"text":"ミズガメに水エネルギーを貼らせていただきます","active":"p_turtle","expected_status":"execute","expected_action":"ATTACH_ENERGY","detail":"energy_water","category":"ja_keigo_polite"},{"text":"きずぐすりでバトル場の回復をお願いします","active":"p_dragon_ex","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_potion","category":"ja_keigo_polite"},{"text":"補給バッグを使わせていただきます","active":"p_fox","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_bag","category":"ja_keigo_polite"},{"text":"ここでターンを終了いたします","active":"p_lion","expected_status":"execute","expected_action":"END_TURN","detail":"END_TURN","category":"ja_keigo_polite"},{"text":"防御を選択します","active":"p_turtle","expected_status":"execute","expected_action":"DEFEND","detail":"DEFEND","category":"ja_keigo_polite"},{"text":"後ろのヒノキツネと交代させていただきます","active":"p_turtle","expected_status":"execute","expected_action":"RETREAT","detail":"p_fox","category":"ja_keigo_polite"},{"text":"ベンチにカエンリュウexを出します","active":"p_fox","expected_status":"execute","expected_action":"PLAY_BENCH","detail":"p_dragon_ex","category":"ja_keigo_polite"},{"text":"エネ回収を使いますね","active":"p_lion","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_recycle","category":"ja_keigo_polite"},{"text":"パワーバッジを使用します","active":"p_dragon_ex","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_power","category":"ja_keigo_polite"},{"text":"1番目の技で","active":"p_lion","expected_status":"execute","expected_action":"ATTACK","detail":"でんき玉","category":"ja_ordinal_color"},{"text":"2番目の技撃って","active":"p_fox","expected_status":"execute","expected_action":"ATTACK","detail":"かえん弾","category":"ja_ordinal_color"},{"text":"上のスキル使って","active":"p_dragon_ex","expected_status":"execute","expected_action":"ATTACK","detail":"フレア爪","category":"ja_ordinal_color"},{"text":"下の技でトドメ","active":"p_turtle","expected_status":"execute","expected_action":"ATTACK","detail":"こうら壁","category":"ja_ordinal_color"},{"text":"赤エネを前に","active":"p_fox","expected_status":"execute","expected_action":"ATTACH_ENERGY","detail":"energy_fire","category":"ja_ordinal_color"},{"text":"青いやつ前につけて","active":"p_turtle","expected_status":"execute","expected_action":"ATTACH_ENERGY","detail":"energy_water","category":"ja_ordinal_color"},{"text":"黄色いエネを後ろのライオンに","active":"p_fox","expected_status":"execute","expected_action":"ATTACH_ENERGY","detail":"energy_thunder","category":"ja_ordinal_color"},{"text":"左のベンチのやつと交代","active":"p_fox","expected_status":"execute","expected_action":"RETREAT","detail":"RETREAT","category":"ja_ordinal_color"},{"text":"中央の亀を前に出して","active":"p_lion","expected_status":"execute","expected_action":"RETREAT","detail":"p_turtle","category":"ja_ordinal_color"},{"text":"右のベンチに雷のやつ置いて","active":"p_fox","expected_status":"execute","expected_action":"PLAY_BENCH","detail":"p_lion","category":"ja_ordinal_color"},{"text":"後ろの亀に水貼って","active":"p_dragon_ex","expected_status":"execute","expected_action":"ATTACH_ENERGY","detail":"energy_water","category":"ja_ordinal_color"},{"text":"赤のドラゴンをベンチに出す","active":"p_turtle","expected_status":"execute","expected_action":"PLAY_BENCH","detail":"p_dragon_ex","category":"ja_ordinal_color"},{"text":"青い亀で1つ目の技","active":"p_turtle","expected_status":"execute","expected_action":"ATTACK","detail":"みず撃ち","category":"ja_ordinal_color"},{"text":"黄色のやつで2つ目の技","active":"p_lion","expected_status":"execute","expected_action":"ATTACK","detail":"サンダー","category":"ja_ordinal_color"},{"text":"水貼ってそのままみず撃ち","active":"p_turtle","expected_status":"execute","expected_action":"COMBO","detail":"ATTACH_ENERGY+ATTACK","category":"ja_combo"},{"text":"炎エネ前につけてかえん弾","active":"p_fox","expected_status":"execute","expected_action":"COMBO","detail":"ATTACH_ENERGY+ATTACK","category":"ja_combo"},{"text":"雷貼ってサンダーで","active":"p_lion","expected_status":"execute","expected_action":"COMBO","detail":"ATTACH_ENERGY+ATTACK","category":"ja_combo"},{"text":"赤エネ貼ってフレア爪いこう","active":"p_dragon_ex","expected_status":"execute","expected_action":"COMBO","detail":"ATTACH_ENERGY+ATTACK","category":"ja_combo"},{"text":"パワーバッジ使ってメテオ炎ぶっぱ","active":"p_dragon_ex","expected_status":"execute","expected_action":"COMBO","detail":"USE_ITEM+ATTACK","category":"ja_combo"},{"text":"よびだし笛で後ろ引っ張ってでんき玉","active":"p_lion","expected_status":"execute","expected_action":"COMBO","detail":"USE_ITEM+ATTACK","category":"ja_combo"},{"text":"きずぐすり使ってからひのこ","active":"p_fox","expected_status":"execute","expected_action":"COMBO","detail":"USE_ITEM+ATTACK","category":"ja_combo"},{"text":"ベンチにライジシ出して炎エネ前に貼ってかえん弾","active":"p_fox","expected_status":"execute","expected_action":"COMBO","detail":"PLAY_BENCH+ATTACH_ENERGY+ATTACK","category":"ja_combo"},{"text":"ヒノキツネベンチに置いて水貼ってみず撃ち","active":"p_turtle","expected_status":"execute","expected_action":"COMBO","detail":"PLAY_BENCH+ATTACH_ENERGY+ATTACK","category":"ja_combo"},{"text":"きずぐすりで回復してパワーバッジ使ってフレア爪","active":"p_dragon_ex","expected_status":"execute","expected_action":"COMBO","detail":"USE_ITEM+USE_ITEM+ATTACK","category":"ja_combo"},{"text":"雷エネ貼ってよびだし笛吹いてサンダー","active":"p_lion","expected_status":"execute","expected_action":"COMBO","detail":"ATTACH_ENERGY+USE_ITEM+ATTACK","category":"ja_combo"},{"text":"後ろのミズガメに交代してみず撃ち","active":"p_fox","expected_status":"execute","expected_action":"COMBO","detail":"RETREAT+ATTACK","category":"ja_combo"},{"text":"もう無理降参","active":"p_fox","expected_status":"confirm","expected_action":"SURRENDER","detail":"SURRENDER","category":"ja_surrender"},{"text":"投了します","active":"p_turtle","expected_status":"confirm","expected_action":"SURRENDER","detail":"SURRENDER","category":"ja_surrender"},{"text":"ギブアップで","active":"p_dragon_ex","expected_status":"confirm","expected_action":"SURRENDER","detail":"SURRENDER","category":"ja_surrender"},{"text":"あーどうしようかなー","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"うーんこれ詰んだか？","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"ちょっと待って考えさせて","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"えっやばい手札事故った","active":"p_dragon_ex","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"かえん弾って何ダメージだっけ？","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"相手の水の弱点って雷だよね？","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"あと何枚サイド取れば勝ちだっけ","active":"p_dragon_ex","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"これきずぐすり何回復するんだっけ","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"エネルギーって1ターンに1枚しか貼れないよね","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"タイカイザメexのHPいくつ？","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"まだターン終わらないで","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"やっぱ攻撃やめとく","active":"p_dragon_ex","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"きずぐすり使わなくていいや","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"ベンチに出すのやめた","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"防御はしない","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"降参しないよまだ戦える","active":"p_dragon_ex","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"炎エネ貼るのは今はなし","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"逃げるのはやめよう","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"手札のライジシと前のヒノキツネ入れ替えて","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"うわっ強っ！それ反則だろ！","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"ナイスドロー！神引ききた！","active":"p_dragon_ex","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"うそでしょ今それ引くの！？","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"あー喉乾いたコーラ飲みたい","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"今日の天気やばくない？","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"おーい聞こえてる？マイク入ってる？","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"ja_negative"},{"text":"一技能点它一下","active":"p_fox","expected_status":"execute","expected_action":"ATTACK","detail":"火花","category":"zh_slang"},{"text":"直接二技能火炎弹轰他","active":"p_fox","expected_status":"execute","expected_action":"ATTACK","detail":"火炎弹","category":"zh_slang"},{"text":"给前排奶一口","active":"p_turtle","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_potion","category":"zh_slang"},{"text":"拍个乌龟在后排","active":"p_fox","expected_status":"execute","expected_action":"PLAY_BENCH","detail":"p_turtle","category":"zh_slang"},{"text":"把对面大鲨鱼拉上来宰了","active":"p_lion","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_flute","category":"zh_slang"},{"text":"去墓地捞个火能回来","active":"p_dragon_ex","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_recycle","category":"zh_slang"},{"text":"给狐狸贴个红能","active":"p_fox","expected_status":"execute","expected_action":"ATTACH_ENERGY","detail":"energy_fire","category":"zh_slang"},{"text":"过了过了下回合","active":"p_turtle","expected_status":"execute","expected_action":"END_TURN","detail":"END_TURN","category":"zh_slang"},{"text":"这波怂一下开盾吧","active":"p_lion","expected_status":"execute","expected_action":"DEFEND","detail":"DEFEND","category":"zh_slang"},{"text":"撤了换大龙顶上去","active":"p_fox","expected_status":"execute","expected_action":"RETREAT","detail":"p_dragon_ex","category":"zh_slang"},{"text":"大招陨石炎直接清场","active":"p_dragon_ex","expected_status":"execute","expected_action":"ATTACK","detail":"陨石炎","category":"zh_slang"},{"text":"平A一爪子挠他","active":"p_dragon_ex","expected_status":"execute","expected_action":"ATTACK","detail":"烈焰爪","category":"zh_slang"},{"text":"开个包过两张牌","active":"p_fox","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_bag","category":"zh_slang"},{"text":"拍个加攻徽章增伤","active":"p_lion","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_power","category":"zh_slang"},{"text":"大招雷霆劈死那条鱼","active":"p_lion","expected_status":"execute","expected_action":"ATTACK","detail":"サンダー","category":"zh_slang"},{"text":"开龟壳缩着别挨揍","active":"p_turtle","expected_status":"execute","expected_action":"ATTACK","detail":"甲壳壁","category":"zh_slang"},{"text":"给狮子充个黄能","active":"p_lion","expected_status":"execute","expected_action":"ATTACH_ENERGY","detail":"energy_thunder","category":"zh_slang"},{"text":"后排铺一只雷狮备着","active":"p_turtle","expected_status":"execute","expected_action":"PLAY_BENCH","detail":"p_lion","category":"zh_slang"},{"text":"蓝能拍给水龟","active":"p_turtle","expected_status":"execute","expected_action":"ATTACH_ENERGY","detail":"energy_water","category":"zh_slang"},{"text":"点了点了这把没法打","active":"p_fox","expected_status":"confirm","expected_action":"SURRENDER","detail":"SURRENDER","category":"zh_slang"},{"text":"投了吧投了吧下一把","active":"p_turtle","expected_status":"confirm","expected_action":"SURRENDER","detail":"SURRENDER","category":"zh_slang"},{"text":"认输了打不过","active":"p_dragon_ex","expected_status":"confirm","expected_action":"SURRENDER","detail":"SURRENDER","category":"zh_slang"},{"text":"给后面那个贴个水","active":"p_fox","expected_status":"execute","expected_action":"ATTACH_ENERGY","detail":"energy_water","category":"zh_inversion"},{"text":"把手里那张龙放下去","active":"p_turtle","expected_status":"execute","expected_action":"PLAY_BENCH","detail":"p_dragon_ex","category":"zh_inversion"},{"text":"吹个哨把对面残血拽出来","active":"p_lion","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_flute","category":"zh_inversion"},{"text":"用第二个技能打死它","active":"p_fox","expected_status":"execute","expected_action":"ATTACK","detail":"火炎弹","category":"zh_inversion"},{"text":"打死它用第一个技能","active":"p_lion","expected_status":"execute","expected_action":"ATTACK","detail":"电球","category":"zh_inversion"},{"text":"贴一张火的给场上这个","active":"p_dragon_ex","expected_status":"execute","expected_action":"ATTACH_ENERGY","detail":"energy_fire","category":"zh_inversion"},{"text":"喝一口吧快死了前排","active":"p_fox","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_potion","category":"zh_inversion"},{"text":"换后排左边那个上来扛","active":"p_fox","expected_status":"execute","expected_action":"RETREAT","detail":"p_turtle","category":"zh_inversion"},{"text":"那个加二十伤害的用了","active":"p_dragon_ex","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_power","category":"zh_inversion"},{"text":"抽两张那个支援卡开了","active":"p_lion","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_bag","category":"zh_inversion"},{"text":"弃牌堆里那张雷拿回来","active":"p_lion","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_recycle","category":"zh_inversion"},{"text":"狐狸放备战区中间去","active":"p_turtle","expected_status":"execute","expected_action":"PLAY_BENCH","detail":"p_fox","category":"zh_inversion"},{"text":"水枪滋对面那只狗","active":"p_turtle","expected_status":"execute","expected_action":"ATTACK","detail":"水枪","category":"zh_inversion"},{"text":"不打了防一下算了","active":"p_fox","expected_status":"execute","expected_action":"DEFEND","detail":"DEFEND","category":"zh_inversion"},{"text":"行了到你了","active":"p_lion","expected_status":"execute","expected_action":"END_TURN","detail":"END_TURN","category":"zh_inversion"},{"text":"后排那只电的切上来","active":"p_turtle","expected_status":"execute","expected_action":"RETREAT","detail":"p_lion","category":"zh_inversion"},{"text":"用大招秒了前排这个","active":"p_lion","expected_status":"execute","expected_action":"ATTACK","detail":"サンダー","category":"zh_inversion"},{"text":"抓他一爪子","active":"p_dragon_ex","expected_status":"execute","expected_action":"ATTACK","detail":"烈焰爪","category":"zh_inversion"},{"text":"给ヒノキツネ贴个火","active":"p_fox","expected_status":"execute","expected_action":"ATTACH_ENERGY","detail":"energy_fire","category":"cn_jp_mixed"},{"text":"用ひのこ打对面","active":"p_fox","expected_status":"execute","expected_action":"ATTACK","detail":"火花","category":"cn_jp_mixed"},{"text":"把ミズガメ放ベンチ","active":"p_fox","expected_status":"execute","expected_action":"PLAY_BENCH","detail":"p_turtle","category":"cn_jp_mixed"},{"text":"吹よびだし笛拉タイカイザメ上来","active":"p_lion","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_flute","category":"cn_jp_mixed"},{"text":"给カエンリュウex喝个きずぐすり","active":"p_dragon_ex","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_potion","category":"cn_jp_mixed"},{"text":"开補給バッグ抽两张","active":"p_turtle","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_bag","category":"cn_jp_mixed"},{"text":"贴个パワーバッジ打爆发","active":"p_dragon_ex","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_power","category":"cn_jp_mixed"},{"text":"用エネ回収把雷能捞上来","active":"p_lion","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_recycle","category":"cn_jp_mixed"},{"text":"ライジシ使サンダー秒了他","active":"p_lion","expected_status":"execute","expected_action":"ATTACK","detail":"サンダー","category":"cn_jp_mixed"},{"text":"直接メテオ炎轰过去","active":"p_dragon_ex","expected_status":"execute","expected_action":"ATTACK","detail":"陨石炎","category":"cn_jp_mixed"},{"text":"ミズガメ开こうら壁苟住","active":"p_turtle","expected_status":"execute","expected_action":"ATTACK","detail":"甲壳壁","category":"cn_jp_mixed"},{"text":"撤退换カエンリュウex上场","active":"p_fox","expected_status":"execute","expected_action":"RETREAT","detail":"p_dragon_ex","category":"cn_jp_mixed"},{"text":"用かえん弾烤对面マグマ犬","active":"p_fox","expected_status":"execute","expected_action":"ATTACK","detail":"火炎弹","category":"cn_jp_mixed"},{"text":"给ライジシ贴个thunder energy","active":"p_lion","expected_status":"execute","expected_action":"ATTACH_ENERGY","detail":"energy_thunder","category":"cn_jp_mixed"},{"text":"用フレア爪抓一下アワウオ","active":"p_dragon_ex","expected_status":"execute","expected_action":"ATTACK","detail":"烈焰爪","category":"cn_jp_mixed"},{"text":"ターンエンド过了","active":"p_turtle","expected_status":"execute","expected_action":"END_TURN","detail":"END_TURN","category":"cn_jp_mixed"},{"text":"给炎狐贴个火能然后火花打他","active":"p_fox","expected_status":"execute","expected_action":"COMBO","detail":"ATTACH_ENERGY+ATTACK","category":"zh_combo"},{"text":"先喝口伤药再撤退换水龟顶上去","active":"p_fox","expected_status":"execute","expected_action":"COMBO","detail":"USE_ITEM+RETREAT","category":"zh_combo"},{"text":"开补给包摸牌把炎龙拍后排再给它贴火能","active":"p_turtle","expected_status":"execute","expected_action":"COMBO","detail":"USE_ITEM+PLAY_BENCH+ATTACH_ENERGY","category":"zh_combo"},{"text":"拍个力量徽章直接陨石炎带走","active":"p_dragon_ex","expected_status":"execute","expected_action":"COMBO","detail":"USE_ITEM+ATTACK","category":"zh_combo"},{"text":"贴个雷能开雷霆劈死大鲨鱼","active":"p_lion","expected_status":"execute","expected_action":"COMBO","detail":"ATTACH_ENERGY+ATTACK","category":"zh_combo"},{"text":"吹召唤笛把残血泡沫鱼拉上来然后电球收掉","active":"p_lion","expected_status":"execute","expected_action":"COMBO","detail":"USE_ITEM+ATTACK","category":"zh_combo"},{"text":"能量回收捞火能贴给炎龙然后烈焰爪砍他","active":"p_dragon_ex","expected_status":"execute","expected_action":"COMBO","detail":"USE_ITEM+ATTACH_ENERGY+ATTACK","category":"zh_combo"},{"text":"后排拍个雷狮贴个雷能然后这回合过","active":"p_turtle","expected_status":"execute","expected_action":"COMBO","detail":"PLAY_BENCH+ATTACH_ENERGY+END_TURN","category":"zh_combo"},{"text":"喝个药贴张水能开甲壳壁缩着","active":"p_turtle","expected_status":"execute","expected_action":"COMBO","detail":"USE_ITEM+ATTACH_ENERGY+ATTACK","category":"zh_combo"},{"text":"撤退换雷狮上来贴雷能直接电球点他","active":"p_turtle","expected_status":"execute","expected_action":"COMBO","detail":"RETREAT+ATTACH_ENERGY+ATTACK","category":"zh_combo"},{"text":"开力量徽章再贴个火能火炎弹秒了前排","active":"p_fox","expected_status":"execute","expected_action":"COMBO","detail":"USE_ITEM+ATTACH_ENERGY+ATTACK","category":"zh_combo"},{"text":"把水龟下备战区贴张水能开盾防御","active":"p_fox","expected_status":"execute","expected_action":"COMBO","detail":"PLAY_BENCH+ATTACH_ENERGY+DEFEND","category":"zh_combo"},{"text":"先开补给包再喝口伤药奶前排然后水枪滋他","active":"p_turtle","expected_status":"execute","expected_action":"COMBO","detail":"USE_ITEM+USE_ITEM+ATTACK","category":"zh_combo"},{"text":"撤退换炎龙顶上去开力量徽章陨石炎清场","active":"p_fox","expected_status":"execute","expected_action":"COMBO","detail":"RETREAT+USE_ITEM+ATTACK","category":"zh_combo"},{"text":"对面还有多少血啊","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"我能量够不够开大招","active":"p_dragon_ex","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"先别打先别打","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"等一下我想想这波怎么打","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"刚才对面拍的那张是什么卡","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"不要认输我还能翻","active":"p_dragon_ex","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"等会儿我喝口水","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"这回合我是不是已经贴过能量了","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"支援卡一回合只能用一张对吧","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"哎呀手牌好卡啊全都是能量","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"我要不要把大龙换上来呢","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"如果我用陨石炎能打死那条鲨鱼吗","active":"p_dragon_ex","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"算了别用伤药了留着下回合吧","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"别撤退别撤退刚说错了","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"我弃牌区里还有火能量吗","active":"p_dragon_ex","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"水克火还是雷克水来着","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"能不能把场上这只直接换回手里啊","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"卧槽对面这鲨鱼血怎么这么厚","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"等等别结束回合我还没贴能呢","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"甲壳壁能减多少伤害来着","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"力量徽章是加二十还是加三十","active":"p_dragon_ex","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"喂外卖放门口就行谢谢啊","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"我看看对面后排都蹲着啥","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"嗯先不急着交召唤笛","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"千万别点投降啊手滑就完了","active":"p_dragon_ex","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"这把要是抽不到补给包就寄了","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"我备战区是不是已经满了","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"哈哈这波对面肯定想不到","active":"p_dragon_ex","expected_status":"no_execute","expected_action":null,"detail":null,"category":"zh_negative"},{"text":"给、给前排贴个火能量","active":"p_fox","expected_status":"execute","expected_action":"ATTACH_ENERGY","detail":"energy_fire","category":"rt_stutter_fix"},{"text":"不对，不是火，贴水能量","active":"p_turtle","expected_status":"execute","expected_action":"ATTACH_ENERGY","detail":"energy_water","category":"rt_stutter_fix"},{"text":"あ、やっぱり防御で","active":"p_turtle","expected_status":"execute","expected_action":"DEFEND","detail":"DEFEND","category":"rt_stutter_fix"},{"text":"ひ、ひのこで攻撃","active":"p_fox","expected_status":"execute","expected_action":"ATTACK","detail":"ひのこ","category":"rt_stutter_fix"},{"text":"用烈焰爪，哦不对，用陨石炎打对面","active":"p_dragon_ex","expected_status":"execute","expected_action":"ATTACK","detail":"メテオ炎","category":"rt_stutter_fix"},{"text":"先把炎狐放上场，不对，放水龟到备战区","active":"p_lion","expected_status":"execute","expected_action":"PLAY_BENCH","detail":"p_turtle","category":"rt_stutter_fix"},{"text":"撤退换水龟，啊不，换雷狮上来","active":"p_fox","expected_status":"execute","expected_action":"RETREAT","detail":"p_lion","category":"rt_stutter_fix"},{"text":"贴个雷能量吧，算了先不贴了","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_stutter_fix"},{"text":"でんき玉！あ、間違えた、サンダーで攻撃して","active":"p_lion","expected_status":"execute","expected_action":"ATTACK","detail":"サンダー","category":"rt_stutter_fix"},{"text":"逃げようかな、いや、こうら壁で守る","active":"p_turtle","expected_status":"execute","expected_action":"ATTACK","detail":"こうら壁","category":"rt_stutter_fix"},{"text":"用、用那个召、召唤笛把对面后排拉上来","active":"p_dragon_ex","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_flute","category":"rt_stutter_fix"},{"text":"那、那就结、结束回合吧","active":"p_turtle","expected_status":"execute","expected_action":"END_TURN","detail":"END_TURN","category":"rt_stutter_fix"},{"text":"パ、パワーバッジ使って、それからフレア爪","active":"p_dragon_ex","expected_status":"execute","expected_action":"COMBO","detail":"USE_ITEM+ATTACK","category":"rt_stutter_fix"},{"text":"き、きずぐすりじゃなくて、水エネルギーをミズガメに貼って","active":"p_turtle","expected_status":"execute","expected_action":"ATTACH_ENERGY","detail":"energy_water","category":"rt_stutter_fix"},{"text":"贴火能量火能量贴给前排","active":"p_dragon_ex","expected_status":"execute","expected_action":"ATTACH_ENERGY","detail":"energy_fire","category":"rt_stutter_fix"},{"text":"先别攻击","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_negation"},{"text":"不要结束回合","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_negation"},{"text":"我不认输","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_negation"},{"text":"还没贴能量呢","active":"p_dragon_ex","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_negation"},{"text":"まだ攻撃しないで","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_negation"},{"text":"防御じゃなくていい","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_negation"},{"text":"降参はしない","active":"p_dragon_ex","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_negation"},{"text":"千万别撤退，扛住就行","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_negation"},{"text":"这回合不用伤药，留着下一轮","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_negation"},{"text":"才不要投降呢，还能翻盘","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_negation"},{"text":"ターン終了はしないで、まだ考える","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_negation"},{"text":"炎エネルギーは貼らないでおこう","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_negation"},{"text":"よびだし笛は今は使わなくていいかな","active":"p_dragon_ex","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_negation"},{"text":"我刚才没用补给包啊","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_negation"},{"text":"まだエネ回収してないじゃん","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_negation"},{"text":"如果现在放陨石炎就亏了，所以别放","active":"p_dragon_ex","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_negation"},{"text":"撤退はやめておく、このまま耐える","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_negation"},{"text":"把备战区和手牌换一下","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_invalid"},{"text":"给对面的熔岩犬贴个火能量","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_invalid"},{"text":"用对手的电光鸟技能打一下","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_invalid"},{"text":"同时给前排贴两张火能量","active":"p_dragon_ex","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_invalid"},{"text":"ベンチと手札を入れ替えて","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_invalid"},{"text":"相手のタイカイザメexに雷エネルギー貼って","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_invalid"},{"text":"用雷鸣打对面","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_invalid"},{"text":"メテオ炎を撃って！","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_invalid"},{"text":"炎エネルギーと水エネルギーを一気に2枚貼って","active":"p_dragon_ex","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_invalid"},{"text":"用补给包抽牌然后再用力量徽章","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_invalid"},{"text":"補給バッグとよびだし笛を同時に使って","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_invalid"},{"text":"先用火花攻击然后这回合再防御","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_invalid"},{"text":"用伤药给对面的沧海鲨ex回血","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_invalid"},{"text":"今天真是好火大啊","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_collision_trap"},{"text":"等一下我先喝口水","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_collision_trap"},{"text":"外面好像打雷下雨了","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_collision_trap"},{"text":"你今天吃药了吗","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_collision_trap"},{"text":"待会儿还要去医院呢","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_collision_trap"},{"text":"咱们抽个空聊一下吧","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_collision_trap"},{"text":"别在那里吹牛了","active":"p_dragon_ex","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_collision_trap"},{"text":"大家抓紧时间啊","active":"p_dragon_ex","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_collision_trap"},{"text":"你这桌面壁纸挺好看的","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_collision_trap"},{"text":"このコーラ美味しいね","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_collision_trap"},{"text":"最近元気ですか","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_collision_trap"},{"text":"あ、電車来たよ急ごう","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_collision_trap"},{"text":"次の打ち合わせ火曜日だっけ","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_collision_trap"},{"text":"水筒どこに置いたっけ","active":"p_turtle","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_collision_trap"},{"text":"ちょっと指が傷ついた","active":"p_fox","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_collision_trap"},{"text":"帰りに薬局寄ってくね","active":"p_dragon_ex","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_collision_trap"},{"text":"次の大会いつだっけ","active":"p_lion","expected_status":"no_execute","expected_action":null,"detail":null,"category":"rt_collision_trap"},{"text":"那个啥，嗯，我看一下啊，要不我先给前排贴一个火能量好了，然后用那个火花打一下对面吧","active":"p_fox","expected_status":"execute","expected_action":"COMBO","detail":"ATTACH_ENERGY+ATTACK","category":"rt_verbose"},{"text":"哎呀这把牌序感觉有点卡手啊，算了算了不管了，先给前面这只水龟贴张水能量稳一手吧","active":"p_turtle","expected_status":"execute","expected_action":"ATTACH_ENERGY","detail":"energy_water","category":"rt_verbose"},{"text":"妈呀血量好残啊感觉下一回合就要没了，快快快赶紧给前排吃个伤药回口血","active":"p_lion","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_potion","category":"rt_verbose"},{"text":"哇对面这只沧海鲨ex好烦人啊，行吧既然能量已经攒够了，那就直接用陨石炎轰它丫的","active":"p_dragon_ex","expected_status":"execute","expected_action":"ATTACK","detail":"メテオ炎","category":"rt_verbose"},{"text":"呃这个属性克制太吃亏了完全打不动啊，我看后排还有只满血的，干脆撤退把雷狮换上来顶一下吧","active":"p_fox","expected_status":"execute","expected_action":"RETREAT","detail":"p_lion","category":"rt_verbose"},{"text":"手牌里捏着一只怪兽一直没下也不太安全，嗯，那我就先把水龟放到备战区左边占个位吧","active":"p_fox","expected_status":"execute","expected_action":"PLAY_BENCH","detail":"p_turtle","category":"rt_verbose"},{"text":"这回合感觉打出去也秒不掉对面，还会吃满反击，想了想还是稳妥点直接选择防御算了","active":"p_turtle","expected_status":"execute","expected_action":"DEFEND","detail":"DEFEND","category":"rt_verbose"},{"text":"好了能量也贴完了牌也抽过了，好像也没啥别的操作能做了，那就这样吧结束我的回合","active":"p_lion","expected_status":"execute","expected_action":"END_TURN","detail":"END_TURN","category":"rt_verbose"},{"text":"えーっとね、ちょっと待ってよ、手札これしかないから、まずパワーバッジ使ってから、そのままフレア爪で殴っちゃおうかな","active":"p_dragon_ex","expected_status":"execute","expected_action":"COMBO","detail":"USE_ITEM+ATTACK","category":"rt_verbose"},{"text":"うわー相手けっこう硬いなあ、まあいいや、とりあえずここはライジシのサンダーで一気に攻めちゃって","active":"p_lion","expected_status":"execute","expected_action":"ATTACK","detail":"サンダー","category":"rt_verbose"},{"text":"うーん手札がちょっと心許ないんだよねえ、よし、ここは補給バッグ使って2枚ドローさせてもらおうかな","active":"p_fox","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_bag","category":"rt_verbose"},{"text":"あっ相手の後ろにタイカイザメex控えてるじゃん、今のうちによびだし笛で前に引っ張り出しちゃおうよ","active":"p_lion","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_flute","category":"rt_verbose"},{"text":"トラッシュにエネルギー結構溜まってる気がするんだよね、えーとじゃあエネ回収使って手札に戻しとこうか","active":"p_dragon_ex","expected_status":"execute","expected_action":"USE_ITEM","detail":"item_recycle","category":"rt_verbose"},{"text":"んー次のターン大技撃ちたいからさ、今のうちにミズガメに水エネルギー1枚貼っておきたいんだよね","active":"p_turtle","expected_status":"execute","expected_action":"ATTACH_ENERGY","detail":"energy_water","category":"rt_verbose"},{"text":"前が倒されたら負けちゃうし、保険としてとりあえず手札のヒノキツネをベンチに出しとこうかな","active":"p_turtle","expected_status":"execute","expected_action":"PLAY_BENCH","detail":"p_fox","category":"rt_verbose"},{"text":"ふう、これでだいたいやることやったかな、もう動くことなさそうだし、そろそろターン終了でお願いします","active":"p_fox","expected_status":"execute","expected_action":"END_TURN","detail":"END_TURN","category":"rt_verbose"}];
+  const $ = (id) => document.getElementById(id);
+  const NEG_CATS = new Set(["ja_negative", "zh_negative", "rt_negation", "rt_invalid", "rt_collision_trap"]);
+  const CONDITION_SETS = {
+    "1": ["clean"],
+    "2": ["clean", "pink10"],
+    "4": ["clean", "pink10", "cafe8", "fast_vad"]
+  };
+
+  let bench = null;
+  let running = false;
+  let paused = false;
+  let results = [];
+  let cacheHits = 0;
+
+  /* ---------- IndexedDB TTS Audio Cache ---------- */
+  const DB_NAME = "kotodama_voice_bench_v1";
+  const STORE_NAME = "tts_pcm";
+  let dbPromise = null;
+  function openDb() {
+    if (dbPromise) return dbPromise;
+    dbPromise = new Promise((resolve, reject) => {
+      const req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = () => {
+        if (!req.result.objectStoreNames.contains(STORE_NAME)) req.result.createObjectStore(STORE_NAME);
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    return dbPromise;
+  }
+  async function idbGet(key) {
+    const db = await openDb();
+    return new Promise((res, rej) => {
+      const tx = db.transaction(STORE_NAME, "readonly");
+      const r = tx.objectStore(STORE_NAME).get(key);
+      r.onsuccess = () => res(r.result || null);
+      r.onerror = () => rej(r.error);
+    });
+  }
+  async function idbSet(key, val) {
+    const db = await openDb();
+    return new Promise((res, rej) => {
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      tx.objectStore(STORE_NAME).put(val, key);
+      tx.oncomplete = () => res();
+      tx.onerror = () => rej(tx.error);
+    });
+  }
+  async function idbClear() {
+    const db = await openDb();
+    return new Promise((res, rej) => {
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      tx.objectStore(STORE_NAME).clear();
+      tx.oncomplete = () => res();
+      tx.onerror = () => rej(tx.error);
+    });
+  }
+
+  /* ---------- Local WebAudio DSP Augmentations ---------- */
+  function computeRms(arr) {
+    let s = 0;
+    for (let i = 0; i < arr.length; i++) s += arr[i] * arr[i];
+    return Math.sqrt(s / Math.max(1, arr.length));
+  }
+  function applyDsp(pcm, sr, cond) {
+    if (cond === "clean") return new Float32Array(pcm);
+    const out = new Float32Array(pcm.length);
+    const sigRms = Math.max(0.02, computeRms(pcm));
+    if (cond === "pink10") {
+      // Voss-style filtered pink noise at +10dB SNR
+      let b0 = 0, b1 = 0, b2 = 0;
+      const noise = new Float32Array(pcm.length);
+      for (let i = 0; i < pcm.length; i++) {
+        const w = Math.random() * 2 - 1;
+        b0 = 0.997 * b0 + w * 0.029;
+        b1 = 0.985 * b1 + w * 0.032;
+        b2 = 0.950 * b2 + w * 0.048;
+        noise[i] = b0 + b1 + b2 + w * 0.02;
+      }
+      const nRms = Math.max(1e-4, computeRms(noise));
+      const scale = (sigRms / Math.pow(10, 10 / 20)) / nRms;
+      for (let i = 0; i < pcm.length; i++) out[i] = Math.max(-1, Math.min(1, pcm[i] + noise[i] * scale));
+      return out;
+    }
+    if (cond === "cafe8") {
+      // Low-pass murmur + sparse keyboard clicks at +8dB SNR
+      let lp = 0;
+      const noise = new Float32Array(pcm.length);
+      for (let i = 0; i < pcm.length; i++) {
+        const w = Math.random() * 2 - 1;
+        lp = lp * 0.92 + w * 0.08;
+        let click = 0;
+        if (Math.random() < 0.00025) click = (Math.random() * 2 - 1) * 0.7;
+        noise[i] = lp + click;
+      }
+      const nRms = Math.max(1e-4, computeRms(noise));
+      const scale = (sigRms / Math.pow(10, 8 / 20)) / nRms;
+      for (let i = 0; i < pcm.length; i++) out[i] = Math.max(-1, Math.min(1, pcm[i] + noise[i] * scale));
+      return out;
+    }
+    if (cond === "fast_vad") {
+      // 1.20x speed + trim leading 45ms of active speech
+      const speed = 1.20;
+      const len = Math.max(1, Math.floor(pcm.length / speed));
+      const fast = new Float32Array(len);
+      for (let i = 0; i < len; i++) {
+        const p = i * speed;
+        const i0 = Math.floor(p);
+        const f = p - i0;
+        fast[i] = pcm[i0] * (1 - f) + (pcm[Math.min(pcm.length - 1, i0 + 1)] || 0) * f;
+      }
+      let firstSpeech = 0;
+      for (let i = 0; i < fast.length; i++) {
+        if (Math.abs(fast[i]) > 0.02) { firstSpeech = i; break; }
+      }
+      const clipSamples = Math.min(fast.length - 1, firstSpeech + Math.floor(sr * 0.045));
+      return fast.slice(clipSamples);
+    }
+    return new Float32Array(pcm);
+  }
+
+  /* ---------- Board & Evaluator (Identical to Offline Blind Suite) ---------- */
+  function makeBoard(activeId = "p_fox") {
+    const others = ["p_fox", "p_turtle", "p_lion", "p_dragon_ex"].filter((id) => id !== activeId);
+    const activeMon = bench.SpecEngine.getMonster(activeId);
+    return {
+      turn: 3, phase: "main", currentPlayer: "player",
+      energyUsedThisTurn: false, supporterUsedThisTurn: false, retreatedThisTurn: false,
+      player: {
+        active: { id: activeId, hp: activeMon.hp - 20, maxHp: activeMon.hp, energies: [activeMon.element, activeMon.element, activeMon.element] },
+        bench: [
+          { id: others[0], hp: bench.SpecEngine.getMonster(others[0]).hp, maxHp: bench.SpecEngine.getMonster(others[0]).hp, energies: [] },
+          { id: others[1], hp: bench.SpecEngine.getMonster(others[1]).hp, maxHp: bench.SpecEngine.getMonster(others[1]).hp, energies: [] },
+          null
+        ],
+        hand: ["p_fox", "p_turtle", "p_lion", "p_dragon_ex", "item_potion", "item_flute", "item_bag", "item_power", "item_recycle", "energy_fire", "energy_water", "energy_thunder"]
+      },
+      enemy: {
+        active: { id: "e_shark_ex", hp: 110, maxHp: 130, energies: ["water"] },
+        bench: [
+          { id: "e_dog", hp: 70, maxHp: 80, energies: [] },
+          { id: "e_fish", hp: 60, maxHp: 60, energies: [] },
+          { id: "e_bird", hp: 70, maxHp: 70, energies: [] }
+        ]
+      }
+    };
+  }
+
+  function evaluateCase(c, res) {
+    const acts = res.actions || [];
+    const isNeg = c.expected_status === "ignore_or_chat_or_clarify" || c.expected_status === "reject";
+    const falseExec = isNeg && res.status === "execute";
+    let pass = false;
+    if (c.expected_status === "ignore_or_chat_or_clarify") {
+      pass = res.status !== "execute" && acts.length === 0;
+    } else if (c.expected_status === "reject") {
+      pass = res.status === "reject" || (res.status !== "execute" && acts.length === 0);
+    } else if (c.expected_status === "confirm") {
+      pass = res.status === "confirm" || acts.some((a) => a.type === "SURRENDER");
+    } else if (c.expected_status === "execute") {
+      if (res.status === "execute") {
+        if (c.expected_action === "COMBO") {
+          const wantTypes = String(c.detail || "").split("+").filter(Boolean);
+          const gotTypes = acts.map((a) => a.type);
+          let cursor = 0;
+          for (const wt of wantTypes) {
+            const idx = gotTypes.indexOf(wt, cursor);
+            if (idx === -1) { cursor = -1; break; }
+            cursor = idx + 1;
+          }
+          pass = cursor !== -1;
+        } else {
+          pass = acts.some((a) => {
+            if (a.type !== c.expected_action) return false;
+            if (!c.detail) return true;
+            if (c.expected_action === "ATTACK") {
+              const norm = (s) => bench.SpecEngine.normalizeText(s || "");
+              const d = norm(c.detail);
+              const sn = norm(a.skill_name || "");
+              if (!sn) return false;
+              const mon = bench.SpecEngine.getMonster(c.active);
+              const sk = mon?.skills?.find((s) => norm(s.name_ja) === sn || norm(s.name_zh) === sn);
+              return sn === d || (sk && (norm(sk.name_ja) === d || norm(sk.name_zh) === d));
+            }
+            if (c.expected_action === "ATTACH_ENERGY" || c.expected_action === "USE_ITEM" || c.expected_action === "PLAY_BENCH") {
+              return a.card_id === c.detail;
+            }
+            return true;
+          });
+        }
+      }
+    }
+    return { pass, falseExec };
+  }
+
+  function detectLang(c) {
+    if (c.category.startsWith("ja_")) return "ja";
+    if (c.category.startsWith("zh_") || c.category === "cn_jp_mixed") return "zh";
+    return /[぀-ヿ]/.test(c.text) ? "ja" : "zh";
+  }
+
+  async function getOrSynthesizeTts(text, lang, idx) {
+    const role = idx % 2 === 0 ? "referee" : "rival";
+    const key = `${lang}|${role}|${text}`;
+    const cached = await idbGet(key);
+    if (cached && cached.pcm && cached.sampleRate) {
+      cacheHits += 1;
+      return { pcm: new Float32Array(cached.pcm), sampleRate: cached.sampleRate, fromCache: true };
+    }
+    const buf = await bench.VoiceEngine.fetchTtsAudioBuffer(text, role, lang);
+    const pcm = new Float32Array(buf.getChannelData(0));
+    await idbSet(key, { sampleRate: buf.sampleRate, pcm });
+    return { pcm, sampleRate: buf.sampleRate, fromCache: false };
+  }
+
+  async function runNiaAsrOnPcm(pcm, sampleRate) {
+    const sess = bench.VoiceEngine.createNiaAsrSession({ lang: "" });
+    const chunkLen = Math.floor(sampleRate * 0.1); // 100ms chunks
+    for (let off = 0; off < pcm.length; off += chunkLen) {
+      const slice = pcm.subarray(off, Math.min(pcm.length, off + chunkLen));
+      sess.pushFloat32(slice, sampleRate);
+      await new Promise((r) => setTimeout(r, 15));
+    }
+    return String(await sess.finish() || "").trim();
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[m]));
+  }
+
+  function renderStats(totalJobs) {
+    const done = results.length;
+    const passed = results.filter((r) => r.pass).length;
+    const negRuns = results.filter((r) => r.is_negative);
+    const feCount = negRuns.filter((r) => r.false_exec).length;
+    const avgLat = done ? Math.round(results.reduce((a, r) => a + r.latency_ms, 0) / done) : 0;
+    $("stDone").textContent = `${done} / ${totalJobs}`;
+    $("stAcc").textContent = done ? `${((passed / done) * 100).toFixed(1)}% (${passed}/${done})` : "-";
+    $("stAcc").className = "v " + (done && passed / done >= 0.9 ? "ok" : "bad");
+    $("stFe").textContent = negRuns.length ? `${((feCount / negRuns.length) * 100).toFixed(2)}% (${feCount}/${negRuns.length})` : "0.00%";
+    $("stFe").className = "v " + (feCount === 0 ? "ok" : "bad");
+    $("stCache").textContent = String(cacheHits);
+    $("stLat").textContent = done ? `${avgLat} ms` : "-";
+    $("progBar").style.width = totalJobs ? `${Math.min(100, (done / totalJobs) * 100)}%` : "0%";
+  }
+
+  function renderTable() {
+    const mode = $("selFilter").value;
+    const rows = mode === "FAIL" ? results.filter((r) => !r.pass || r.false_exec) : results;
+    $("tbody").innerHTML = rows.slice(-200).reverse().map((r) => {
+      const tag = r.false_exec ? '<span class="tag fe">误触</span>' : (r.pass ? '<span class="tag pass">PASS</span>' : '<span class="tag fail">FAIL</span>');
+      return `<tr>
+        <td class="mono">${r.idx}</td>
+        <td><div class="mono">${esc(r.category)}</div><div style="color:var(--sub);font-size:11px">${esc(r.condition)} (${r.lang})</div></td>
+        <td>${esc(r.text)}</td>
+        <td>${esc(r.asr_transcript || "(空)")}</td>
+        <td class="mono"><div>want: ${esc(r.expected_status)}:${esc(r.expected_action)}${r.detail ? "(" + esc(r.detail) + ")" : ""}</div><div style="color:var(--sub)">got: ${esc(r.got_status)} [${esc(r.got_actions)}]</div></td>
+        <td>${tag}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  async function initBench() {
+    bench = window.__KOTODAMA_BENCH__;
+    if (!bench) {
+      $("statusLine").textContent = "错误：未能加载 app.js 的压测钩子。";
+      return;
+    }
+    bench.ConfigManager.load();
+    const ok = await bench.SpecEngine.loadThreeTier();
+    if (!ok) {
+      $("statusLine").textContent = "错误：未能加载 ./gamedata.json，请通过本地 HTTP 服务打开（例如 python3 -m http.server 8000）。";
+      return;
+    }
+    const cats = Array.from(new Set(CASES.map((c) => c.category)));
+    for (const cat of cats) {
+      const cnt = CASES.filter((c) => c.category === cat).length;
+      const opt = document.createElement("option");
+      opt.value = cat;
+      opt.textContent = `${cat} (${cnt} 句)`;
+      $("selCat").appendChild(opt);
+    }
+    $("statusLine").textContent = `就绪：已加载 ${CASES.length} 条独立口语盲测句 + gamedata.json，点击「开始真实 TTS→ASR 压测」启动。`;
+  }
+
+  $("selFilter").addEventListener("change", renderTable);
+  $("btnPause").addEventListener("click", () => {
+    paused = !paused;
+    $("btnPause").textContent = paused ? "继续" : "暂停";
+    $("statusLine").textContent = paused ? "已暂停（当前结果已保留，可随时继续或导出）。" : "继续执行中…";
+  });
+  $("btnClearCache").addEventListener("click", async () => {
+    await idbClear();
+    cacheHits = 0;
+    $("stCache").textContent = "0";
+    $("statusLine").textContent = "已清空浏览器 IndexedDB 中的 TTS 音频缓存。";
+  });
+  $("btnExport").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), total: results.length, results }, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "golden_asr_corpus.json";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
+
+  $("btnStart").addEventListener("click", async () => {
+    if (running || !bench) return;
+    running = true;
+    paused = false;
+    results = [];
+    cacheHits = 0;
+    $("btnStart").disabled = true;
+    $("btnPause").disabled = false;
+    $("btnPause").textContent = "暂停";
+    $("btnExport").disabled = false;
+
+    const cat = $("selCat").value;
+    const conds = CONDITION_SETS[$("selMode").value] || ["clean"];
+    const selected = cat === "ALL" ? CASES : CASES.filter((c) => c.category === cat);
+    const totalJobs = selected.length * conds.length;
+    renderStats(totalJobs);
+    renderTable();
+
+    let jobIdx = 0;
+    for (let i = 0; i < selected.length; i++) {
+      const c = selected[i];
+      const lang = detectLang(c);
+      let master = null;
+      while (paused) await new Promise((r) => setTimeout(r, 200));
+      $("statusLine").textContent = `[${jobIdx + 1}/${totalJobs}] 正在获取 TTS：${c.text}`;
+      try {
+        master = await getOrSynthesizeTts(c.text, lang, i);
+      } catch (err) {
+        for (const cond of conds) {
+          jobIdx += 1;
+          results.push({
+            idx: jobIdx, category: c.category, text: c.text, lang, condition: cond,
+            asr_transcript: `[TTS_ERR: ${err?.message || err}]`,
+            expected_status: c.expected_status, expected_action: c.expected_action, detail: c.detail || "",
+            got_status: "error", got_actions: "", pass: false, false_exec: false,
+            is_negative: NEG_CATS.has(c.category), latency_ms: 0
+          });
+        }
+        renderStats(totalJobs);
+        renderTable();
+        continue;
+      }
+
+      for (const cond of conds) {
+        while (paused) await new Promise((r) => setTimeout(r, 200));
+        jobIdx += 1;
+        $("statusLine").textContent = `[${jobIdx}/${totalJobs}] Nia 流式识别 (${cond})：${c.text}`;
+        const t0 = performance.now();
+        let asrText = "";
+        let nlu = { status: "error", actions: [] };
+        try {
+          const aug = applyDsp(master.pcm, master.sampleRate, cond);
+          asrText = await runNiaAsrOnPcm(aug, master.sampleRate);
+          nlu = bench.NLUEngine.localParse(asrText, makeBoard(c.active), null, { isVoice: true });
+        } catch (err) {
+          asrText = `[ASR_ERR: ${err?.message || err}]`;
+        }
+        const latencyMs = Math.round(performance.now() - t0);
+        const { pass, falseExec } = evaluateCase(c, nlu);
+        results.push({
+          idx: jobIdx, category: c.category, text: c.text, lang, condition: cond,
+          asr_transcript: asrText,
+          expected_status: c.expected_status, expected_action: c.expected_action, detail: c.detail || "",
+          got_status: nlu.status,
+          got_actions: (nlu.actions || []).map((a) => `${a.type}:${a.skill_name || a.card_id || ""}`).join("+"),
+          pass, false_exec: falseExec, is_negative: NEG_CATS.has(c.category), latency_ms: latencyMs
+        });
+        renderStats(totalJobs);
+        renderTable();
+      }
+    }
+
+    running = false;
+    $("btnStart").disabled = false;
+    $("btnPause").disabled = true;
+    $("statusLine").textContent = `压测完成！共执行 ${results.length} 次真实 TTS→Nia ASR→NLU 评测，可点击「导出 golden_asr_corpus.json」。`;
+  });
+
+  window.addEventListener("DOMContentLoaded", initBench);
+})();
+</script>
+</body>
+</html>
