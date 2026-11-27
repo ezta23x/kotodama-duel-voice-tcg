@@ -479,8 +479,8 @@
       box.style.width = `${Math.max(160, Math.min(280, availRight))}px`;
     },
 
-    /** 渲染并展示指定教学引导卡片，必要时同步播报可随时打断的低优引导语音 */
-    _showCard(msg, speakVoice, key = "") {
+    /** 渲染并展示指定教学引导卡片（仅视觉提示，不触发额外语音播报） */
+    _showCard(msg, _speakVoice, _key = "") {
       const box = $("guideFloat");
       if (box) {
         box.classList.remove("show");
@@ -490,10 +490,6 @@
         this.alignToDeckBox();
         void box.offsetWidth;
         box.classList.add("show");
-      }
-      if (speakVoice && !VoiceEngine.isSpeaking) {
-        const prio = key === "setup_starter" ? "high" : "low";
-        VoiceEngine.speak({ ja: msg.ja, zh: msg.zh }, "referee", { priority: prio, interruptible: true });
       }
     },
 
@@ -6626,30 +6622,16 @@
 
       TableUI.setRival(ja, zh);
       TableUI.appendLog(`【レン】${ja}`, `【莲】${zh}`);
-      await VoiceEngine.speak({ ja, zh }, "rival", { priority: "low", interruptible: true });
       this.resetIdleTimer(false);
     },
 
     openingRivalLine: null,
     openingChallengeSpoken: false,
 
-    /** 在开局引导第一句播完后，无缝衔接到对手莲的开局邀战台词 */
+    /** 标记开局对手邀战状态（仅保留文字气泡，不触发对手语音播报） */
     speakOpeningChallenge() {
       if (this.openingChallengeSpoken) return;
-      const line = this.openingRivalLine || SpecEngine.getRivalLine("start");
-      if (!line || (!line.ja && !line.zh)) return;
       this.openingChallengeSpoken = true;
-      const lang = getTtsLang();
-      const spokenText = lang === "zh" ? (line.zh || line.ja) : (line.ja || line.zh);
-      const firstChunk = VoiceEngine.splitIntoClauses(spokenText, lang)[0] || spokenText;
-      VoiceEngine.bargeInGuardUntil = 0;
-      VoiceEngine.speak({ ja: line.ja, zh: line.zh }, "rival", { priority: "high", interruptible: true, lang, deferPrefetch: true });
-      const seq = this.matchSeq;
-      const expectedToken = VoiceEngine.speakToken;
-      setTimeout(() => {
-        if (seq !== this.matchSeq || VoiceEngine.speakToken !== expectedToken) return;
-        VoiceEngine.prefetch(firstChunk, "rival", lang);
-      }, 350);
     },
 
     /** 开启一局新对战：递增对局版本号、中止飞行中请求、重洗双方 24 张卡组并回到选首发阶段 */
@@ -7647,7 +7629,6 @@
           VoiceEngine.clearQueuedOnly(false);
           if (VoiceEngine.isSpeaking) VoiceEngine.unduckPlayback(180);
           VoiceEngine.speak({ ja, zh }, "referee", { priority: "low", interruptible: true });
-          if (result.rival_ja || result.rival_zh) VoiceEngine.speak({ ja: result.rival_ja, zh: result.rival_zh }, "rival", { priority: "low", interruptible: true });
           return;
         }
 
@@ -7659,7 +7640,6 @@
           if (VoiceEngine.isSpeaking) VoiceEngine.fadeOutAndStopPlayback(100);
           VoiceEngine.clearQueuedOnly(false);
           VoiceEngine.speak({ ja: result.reply_ja, zh: result.reply_zh }, "referee", { priority: "high" });
-          if (result.rival_ja || result.rival_zh) VoiceEngine.speak({ ja: result.rival_ja, zh: result.rival_zh }, "rival", { priority: "normal" });
           return;
         }
 
@@ -7952,7 +7932,6 @@
           this.clearPending();
           const r = SpecEngine.getRivalLine("surrender");
           TableUI.setRival(r.ja, r.zh);
-          VoiceEngine.speak({ ja: r.ja, zh: r.zh }, "rival", { priority: "critical" });
           this.endGame("enemy", "降参しました。相手の勝利です。", "你选择了认输，对手获胜。");
           return true;
         }
@@ -8108,7 +8087,7 @@
       return false;
     },
 
-    /** 非阻塞双语播报：支持字幕/口播分离（speakJa/speakZh）与静默更新对手气泡（silentRival），降低高频操作口播滞后感 */
+    /** 非阻塞指令反馈播报：仅播报裁判指令反馈语音，对手台词仅静默更新文字气泡 */
     announceAndReact(ja, zh, rivalEvent, customRival = null, opts = {}) {
       const priority = opts.priority || "normal";
       const lang = getTtsLang();
@@ -8117,9 +8096,7 @@
       const spokenReferee = lang === "zh" ? (refZh || refJa) : (refJa || refZh);
       const rJa = (customRival && customRival.ja) || (rivalEvent ? SpecEngine.getRivalLine(rivalEvent).ja : "");
       const rZh = (customRival && customRival.zh) || (rivalEvent ? SpecEngine.getRivalLine(rivalEvent).zh : "");
-      const spokenRival = lang === "zh" ? (rZh || rJa) : (rJa || rZh);
-      const speakRivalAllowed = Boolean(spokenRival && !opts.silentRival);
-      if (priority !== "low") VoiceEngine.clearQueuedOnly(true, !speakRivalAllowed);
+      if (priority !== "low") VoiceEngine.clearQueuedOnly(true, true);
       TableUI.setReferee(ja, zh);
       TableUI.appendLog(ja, zh);
       this.pushHistory("referee", ja);
@@ -8127,23 +8104,7 @@
       if (rJa || rZh) {
         TableUI.setRival(rJa, rZh);
       }
-      if (priority === "high" && spokenReferee && speakRivalAllowed && !opts.interruptible) {
-        /* 仅保留 700ms 启动防爆音窗口，之后允许玩家随时开口灵敏打断 */
-        VoiceEngine.bargeInGuardUntil = Math.max(VoiceEngine.bargeInGuardUntil || 0, Date.now() + 700);
-      }
       if (spokenReferee) VoiceEngine.speak({ ja: refJa, zh: refZh }, "referee", { priority, interruptible: Boolean(opts.interruptible), lang });
-      if (speakRivalAllowed) {
-        const rivalPriority = priority === "high" ? "high" : "normal";
-        const firstRivalChunk = VoiceEngine.splitIntoClauses(spokenRival, lang)[0] || spokenRival;
-        VoiceEngine.speak({ ja: rJa, zh: rZh }, "rival", { priority: rivalPriority, interruptible: Boolean(opts.interruptible), lang, deferPrefetch: true });
-        const expectedToken = VoiceEngine.speakToken;
-        /* 错峰 350ms 预取对手语音首句，避免 0ms 并发两条 Nia TTS WS 互相争抢带宽 */
-        setTimeout(() => {
-          if (VoiceEngine.speakToken === expectedToken) {
-            VoiceEngine.prefetch(firstRivalChunk, "rival", lang);
-          }
-        }, 350);
-      }
       return Promise.resolve();
     },
 
@@ -8985,7 +8946,6 @@
             const rZh = (customRival && customRival.zh) || SpecEngine.getRivalLine(rivalEv).zh || SpecEngine.getRivalLine("attack_hit").zh;
             if (rJa || rZh) {
               TableUI.setRival(rJa, rZh);
-              VoiceEngine.speak({ ja: rJa, zh: rZh }, "rival");
             }
           }
           if (s.gameOver) return false;
@@ -9021,7 +8981,6 @@
         if (s.player.prizesLeft === 0) {
           const r = SpecEngine.getRivalLine("player_win");
           TableUI.setRival(r.ja, r.zh);
-          VoiceEngine.speak({ ja: r.ja, zh: r.zh }, "rival", { priority: "critical" });
           this.endGame("player", `サイドを${TOTAL_PRIZES}枚取り切りました！あなたの勝利です！`, `你拿完 ${TOTAL_PRIZES} 张奖赏卡，赢得胜利！`);
           return true;
         }
@@ -9031,7 +8990,6 @@
         const prizeJa = prizeCards.length ? `サイドから「${prizeCards.map((c) => c.ja).join("・")}」を手札に加えました！` : "";
         const prizeZh = prizeCards.length ? `从奖赏卡抽到「${prizeCards.map((c) => c.zh).join("、")}」加入手牌！` : "";
         TableUI.appendLog(`相手の${e.def.name_ja}を撃破！${prizeJa}`, `击倒对手的${e.def.name_zh}，${prizeZh}`);
-        VoiceEngine.speak({ ja: koLine.ja, zh: koLine.zh }, "rival", { priority: "high" });
       }
       if (deadEnemies.length > 0 && !s.enemy.active) {
         const bench = this.getBenchEntries("enemy").filter((b) => b.unit.hp > 0);
@@ -9065,7 +9023,6 @@
         if (s.enemy.prizesLeft === 0) {
           const r = SpecEngine.getRivalLine("enemy_win");
           TableUI.setRival(r.ja, r.zh);
-          VoiceEngine.speak({ ja: r.ja, zh: r.zh }, "rival", { priority: "critical" });
           this.endGame("enemy", `相手にサイドを${TOTAL_PRIZES}枚取られました。`, `对手拿完 ${TOTAL_PRIZES} 张奖赏卡，本局败北。`);
           return true;
         }
@@ -9073,7 +9030,6 @@
         const r = SpecEngine.getRivalLine(prizeVal === 2 ? "player_ex_ko" : "player_ko");
         TableUI.setRival(r.ja, r.zh);
         TableUI.appendLog(`自分の${p.def.name_ja}がきぜつ…相手がサイドを${prizeVal}枚手札に加えた。`, `己方${p.def.name_zh}倒下，对手拿走 ${prizeVal} 张奖赏卡加入手牌。`);
-        VoiceEngine.speak({ ja: r.ja, zh: r.zh }, "rival", { priority: "high" });
       }
       if (deadPlayers.length > 0 && !s.player.active) {
         const cand = this.buildPromotePendingState();
@@ -9806,8 +9762,6 @@
       TableUI.setRival(rivalCallJa, rivalCallZh);
       TableUI.setReferee(ja, zh);
       TableUI.appendLog(ja, zh);
-      VoiceEngine.speak({ ja: rivalCallJa, zh: rivalCallZh }, "rival");
-      VoiceEngine.speak({ ja, zh }, "referee");
       if (!(await this.matchDelay(480, seq))) return false;
       await this.checkKnockOuts();
       return seq === this.matchSeq && !s.gameOver;
@@ -10063,7 +10017,6 @@
               TableUI.setRival(guardCallJa, guardCallZh);
               TableUI.setReferee(ja, zh);
               TableUI.appendLog(ja, zh);
-              VoiceEngine.speak({ ja: guardCallJa, zh: guardCallZh }, "rival");
             } else {
               const ja = "レンはそのままターンを終了した。";
               const zh = "对手莲直接结束了回合。";
@@ -10096,7 +10049,6 @@
             TableUI.showTurnBanner(`ターン ${s.turn} · あなたのターン`, `第 ${s.turn} 回合 · 你的回合`, false);
             if (!this.applyTurnStartPendingPrompt(fatigueJa, fatigueZh)) {
               TableUI.setReferee(fatigueJa, fatigueZh);
-              VoiceEngine.speak({ ja: fatigueJa, zh: fatigueZh }, "referee", { priority: "low" });
             }
           } else {
             const drawn = this.drawCard("player", 1);
@@ -10109,7 +10061,6 @@
             TableUI.appendLog(`ターン ${s.turn} 開始：${dJa}`, `第 ${s.turn} 回合开始：${dZh}`);
             if (!this.applyTurnStartPendingPrompt(turnJa, turnZh)) {
               TableUI.setReferee(turnJa, turnZh);
-              VoiceEngine.speak({ ja: turnJa, zh: turnZh }, "referee", { priority: "low" });
             }
           }
           TableUI.renderAll();
@@ -10235,7 +10186,6 @@
             TableUI.setRival(guardCallJa, "这回合先稳住防守。");
             TableUI.setReferee(ja, zh);
             TableUI.appendLog(ja, zh);
-            VoiceEngine.speak({ ja: guardCallJa, zh: "这回合先稳住防守。" }, "rival");
           } else {
             const ja = "レンはそのままターンを終了した。";
             const zh = "对手莲直接结束了回合。";
