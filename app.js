@@ -4793,7 +4793,7 @@
 
         if (!quiet) {
           TableUI.setReferee("通話を開始しました。そのまま話しかけてください。", "已开启持续语音通话，请直接说出指令。");
-          await this.speak({ ja: "通話を開始しました。そのまま話しかけてください。", zh: "已开启持续语音通话，请直接说出指令。" }, "referee");
+          await this.speak({ ja: "通話開始。", zh: "语音通话已开启。" }, "referee");
         }
         BattleEngine.resetIdleTimer();
       } finally {
@@ -6963,10 +6963,12 @@
       const benchNoteZh = deployedBenchDefs.length
         ? `、备战区同步展开${deployedBenchDefs.map((x) => x.def.name_zh).join("、")}`
         : "";
-      const startVoiceJa = `バトル開始！自分は${def.name_ja}${benchNoteJa}、相手は${eStarterDef ? eStarterDef.name_ja : "モンスター"}でスタート！`;
-      const ja = `${startVoiceJa}${drawJa}`;
-      const startVoiceZh = `对战正式开始！己方首发${def.name_zh}${benchNoteZh}，对手派出${eStarterDef ? eStarterDef.name_zh : "怪兽"}！`;
-      const zh = `${startVoiceZh}${drawZh}`;
+      const startFullJa = `バトル開始！自分は${def.name_ja}${benchNoteJa}、相手は${eStarterDef ? eStarterDef.name_ja : "モンスター"}でスタート！`;
+      const ja = `${startFullJa}${drawJa}`;
+      const startFullZh = `对战正式开始！己方首发${def.name_zh}${benchNoteZh}，对手派出${eStarterDef ? eStarterDef.name_zh : "怪兽"}！`;
+      const zh = `${startFullZh}${drawZh}`;
+      const startVoiceJa = `バトル開始！${def.name_ja}、対、${eStarterDef ? eStarterDef.name_ja : "相手"}！`;
+      const startVoiceZh = `对战开始！${def.name_zh}对阵${eStarterDef ? eStarterDef.name_zh : "对手"}！`;
       TableUI.renderAll();
       SoundFX.play("tap");
       TableUI.flashAnim("player_active", "anim-enter");
@@ -7401,7 +7403,7 @@
           TableUI.setReferee(fallbackJa, fallbackZh);
           TableUI.appendLog(setupText ? `聞き取り「${setupText}」→ ${fallbackJa}` : fallbackJa, setupText ? `识别到「${setupText}」→ ${fallbackZh}` : fallbackZh);
           VoiceEngine.clearQueuedOnly(false);
-          VoiceEngine.speak({ ja: fallbackJa, zh: fallbackZh }, "referee", { priority: "low", interruptible: true });
+          VoiceEngine.speak({ ja: guidance?.ja ? guidance.ja : "先発を選んでください。", zh: guidance?.zh ? guidance.zh : "请先选首发怪兽。" }, "referee", { priority: "low", interruptible: true });
           return;
         }
       }
@@ -7595,7 +7597,7 @@
             if (s.pending && !cloudResolvedPending) {
               TableUI.setReferee(s.pending.promptJa, s.pending.promptZh);
               VoiceEngine.clearQueuedOnly(false);
-              VoiceEngine.speak({ ja: s.pending.promptJa, zh: s.pending.promptZh }, "referee", { priority: "high" });
+              VoiceEngine.speak({ ja: s.pending.speakJa || s.pending.promptJa, zh: s.pending.speakZh || s.pending.promptZh }, "referee", { priority: "high" });
               return;
             }
           }
@@ -7652,6 +7654,8 @@
             type: "confirm_surrender",
             promptJa: ja,
             promptZh: zh,
+            speakJa: "降参しますか？",
+            speakZh: "确认认输吗？",
             originalUtterance: this.lastPlayerUtterance,
             options: [
               { labelJa: "はい（降参）", labelZh: "确认认输", reply: "はい" },
@@ -7660,7 +7664,7 @@
           });
           if (VoiceEngine.isSpeaking) VoiceEngine.fadeOutAndStopPlayback(100);
           VoiceEngine.clearQueuedOnly(false);
-          VoiceEngine.speak({ ja, zh }, "referee", { priority: "high" });
+          VoiceEngine.speak({ ja: "降参しますか？", zh: "确认认输吗？" }, "referee", { priority: "high" });
           return;
         }
 
@@ -7800,7 +7804,7 @@
           this.pushHistory("referee", rej.reply_ja);
           if (VoiceEngine.isSpeaking) VoiceEngine.fadeOutAndStopPlayback(100);
           VoiceEngine.clearQueuedOnly(false);
-          VoiceEngine.speak({ ja: rej.reply_ja, zh: rej.reply_zh }, "referee", { priority: "high" });
+          VoiceEngine.speak({ ja: "手札とは交代できません。", zh: "手牌不能直接交换。" }, "referee", { priority: "high" });
           return;
         }
 
@@ -7833,6 +7837,8 @@
             type: "confirm_end_turn",
             promptJa: ja,
             promptZh: zh,
+            speakJa: "ターンを終了しますか？",
+            speakZh: "确认结束回合吗？",
             originalUtterance: rawUtter,
             context: { actionType: "END_TURN", opportunities: opps },
             options: [
@@ -7843,7 +7849,7 @@
           TableUI.openEndTurnConfirmModal(opps, true);
           if (VoiceEngine.isSpeaking) VoiceEngine.fadeOutAndStopPlayback(100);
           VoiceEngine.clearQueuedOnly(false);
-          VoiceEngine.speak({ ja, zh }, "referee", { priority: "high" });
+          VoiceEngine.speak({ ja: "ターンを終了しますか？", zh: "确认结束回合吗？" }, "referee", { priority: "high" });
           return;
         }
 
@@ -7897,7 +7903,7 @@
         TableUI.setReferee(ja, zh);
         TableUI.appendLog(ja, zh);
         VoiceEngine.clearQueuedOnly(false);
-        VoiceEngine.speak({ ja, zh }, "referee", { priority: "normal" });
+        VoiceEngine.speak({ ja: "キャンセル。", zh: "已取消。" }, "referee", { priority: "normal" });
         return true;
       }
 
@@ -8119,7 +8125,7 @@
       switch (act.type) {
         case "CANCEL": {
           this.clearPending();
-          await this.announceAndReact("キャンセルしました。", "已取消当前操作。", null);
+          await this.announceAndReact("キャンセルしました。", "已取消当前操作。", null, null, { speakJa: "キャンセル。", speakZh: "已取消。" });
           return true;
         }
 
@@ -8134,20 +8140,23 @@
           const eZh = ed ? `${ed.name_zh}（HP ${ea.hp}/${ed.hp}）` : "空位";
           const ja = `自分バトル場は${pJa}、相手は${eJa}。残りサイドは自分${s.player.prizesLeft}枚、相手${s.enemy.prizesLeft}枚です。`;
           const zh = `己方战斗区为${pZh}，对手为${eZh}；剩余奖赏卡：己方 ${s.player.prizesLeft} 张，对手 ${s.enemy.prizesLeft} 张。`;
-          await this.announceAndReact(ja, zh, null);
+          await this.announceAndReact(ja, zh, null, null, {
+            speakJa: `自分${pd ? `${pd.name_ja}、HP${pa.hp}` : "なし"}。相手${ed ? `${ed.name_ja}、HP${ea.hp}` : "なし"}。`,
+            speakZh: `己方${pd ? `${pd.name_zh}，HP${pa.hp}` : "空位"}，对手${ed ? `${ed.name_zh}，HP${ea.hp}` : "空位"}。`
+          });
           return true;
         }
 
         case "ATTACH_ENERGY": {
           if (s.energyUsedThisTurn) {
             TableUI.flashDeny("player_active", "エネ添付済", "本回合已贴能");
-            await this.announceAndReact("エネルギー添付は1ターンに1回までです。", "能量每回合只能附着 1 次，本回合已使用。", null);
+            await this.announceAndReact("エネルギー添付は1ターンに1回までです。", "能量每回合只能附着 1 次，本回合已使用。", null, null, { speakJa: "エネ添付済み。", speakZh: "本回合已附能。" });
             return false;
           }
           /* 1. 确认能量卡：手牌有 2 种及以上不同能量且未指定时必须追问 */
           const energyTypes = Array.from(new Set(s.player.hand.filter((id) => id.startsWith("energy_"))));
           if (energyTypes.length === 0) {
-            await this.announceAndReact("手札にエネルギーカードがありません。", "手牌中没有能量卡。", null);
+            await this.announceAndReact("手札にエネルギーカードがありません。", "手牌中没有能量卡。", null, null, { speakJa: "エネルギーがありません。", speakZh: "手牌无能量。" });
             return false;
           }
           let handIdx = act.card_id ? s.player.hand.indexOf(act.card_id) : -1;
@@ -8161,7 +8170,9 @@
             await this.announceAndReact(
               `手札に${reqJa}がありません（手札にあるのは${availJa}です）。`,
               `手牌中没有${reqZh}（当前手牌只有${availZh}）。`,
-              null
+              null,
+              null,
+              { speakJa: `${reqJa}がありません。`, speakZh: `没有${reqZh}。` }
             );
             return false;
           }
@@ -8173,13 +8184,14 @@
               const zh = "手牌中有多种能量卡，要附着哪一种？";
               this.setPending({
                 type: "choose_card", promptJa: ja, promptZh: zh,
+                speakJa: "どのエネルギーにしますか？", speakZh: "选哪种能量？",
                 context: { action: act, candidates: energyTypes },
                 options: energyTypes.map((cid) => {
                   const it = SpecEngine.getItem(cid);
                   return { labelJa: it ? it.name_ja : cid, labelZh: it ? it.name_zh : cid, reply: it ? it.name_ja : cid };
                 })
               });
-              await this.announceAndReact(ja, zh, null);
+              await this.announceAndReact(ja, zh, null, null, { speakJa: "どのエネルギーにしますか？", speakZh: "选哪种能量？" });
               return false;
             }
           }
@@ -8189,7 +8201,7 @@
           /* 2. 确认附着对象：场上仅有 1 只己方怪兽时直接附着；有 2 只及以上且未指定时必须追问确认 */
           const allAllies = this.getAllEntries("player");
           if (allAllies.length === 0) {
-            await this.announceAndReact("エネルギーをつける対象が見つかりません。", "未找到可附着能量的目标怪兽。", null);
+            await this.announceAndReact("エネルギーをつける対象が見つかりません。", "未找到可附着能量的目标怪兽。", null, null, { speakJa: "対象がいません。", speakZh: "没有目标。" });
             return false;
           }
           let targetSlot = act.target || (act._clause ? NLUEngine.resolveSlotFromText(act._clause, "player", this.getSnapshot()) : null);
@@ -8221,6 +8233,7 @@
               const zh = `己方场上有 ${allAllies.length} 只怪兽，要把${itemDef.name_zh}贴给哪一只？`;
               this.setPending({
                 type: "choose_target", promptJa: ja, promptZh: zh,
+                speakJa: `${itemDef.name_ja}、誰につけますか？`, speakZh: `${itemDef.name_zh}给哪只？`,
                 context: { side: "player", action: { ...act, card_id: cardId } },
                 options: allAllies.map((e) => ({
                   labelJa: `${e.slot === "player_active" ? "前" : POS_JA[e.idx]}・${e.def.name_ja}`,
@@ -8229,7 +8242,7 @@
                   slot: e.slot
                 }))
               });
-              await this.announceAndReact(ja, zh, null);
+              await this.announceAndReact(ja, zh, null, null, { speakJa: `${itemDef.name_ja}、誰につけますか？`, speakZh: `${itemDef.name_zh}给哪只？` });
               return false;
             }
           }
@@ -8281,9 +8294,10 @@
             "attach_energy",
             customRival,
             {
-              priority: newlyUnlocked.length ? "normal" : "low",
-              speakJa: newlyUnlocked.length ? `${tDef.name_ja}に${itemDef.name_ja}！${newlyUnlocked[0].name_ja}解放！` : `${tDef.name_ja}に${itemDef.name_ja}！`,
-              speakZh: newlyUnlocked.length ? `${tDef.name_zh}贴${itemDef.name_zh}！解锁${newlyUnlocked[0].name_zh}！` : `${tDef.name_zh}贴${itemDef.name_zh}！`,
+              priority: "normal",
+              interruptible: true,
+              speakJa: newlyUnlocked.length ? `${tDef.name_ja}に${itemDef.name_ja}！${newlyUnlocked[0].name_ja}解放！` : `${tDef.name_ja}に${itemDef.name_ja}。`,
+              speakZh: newlyUnlocked.length ? `${tDef.name_zh}，${itemDef.name_zh}！解锁${newlyUnlocked[0].name_zh}！` : `${tDef.name_zh}，${itemDef.name_zh}。`,
               silentRival: newlyUnlocked.length === 0
             }
           );
@@ -8295,12 +8309,12 @@
           const emptyIdx = s.player.bench.findIndex((b) => b === null);
           if (emptyIdx === -1) {
             TableUI.flashDeny("player_bench_1", "ベンチ満員", "备战区已满");
-            await this.announceAndReact("ベンチは満員（3体）です。", "备战区已满（3只），无法继续下怪。", null);
+            await this.announceAndReact("ベンチは満員（3体）です。", "备战区已满（3只），无法继续下怪。", null, null, { speakJa: "ベンチ満員。", speakZh: "备战区已满。" });
             return false;
           }
           const monTypes = Array.from(new Set(s.player.hand.filter((id) => Boolean(SpecEngine.getMonster(id)))));
           if (monTypes.length === 0) {
-            await this.announceAndReact("手札にベンチへ出せるモンスターがありません。", "手牌中没有可放入备战区的怪兽。", null);
+            await this.announceAndReact("手札にベンチへ出せるモンスターがありません。", "手牌中没有可放入备战区的怪兽。", null, null, { speakJa: "出せるモンスターがありません。", speakZh: "手牌无怪兽。" });
             return false;
           }
           let handIdx = act.card_id ? s.player.hand.indexOf(act.card_id) : -1;
@@ -8314,7 +8328,9 @@
               await this.announceAndReact(
                 `${reqJa}はすでにベンチにいます。バトル場と交代する場合は「交代」または「入れ替え」と伝えてください。`,
                 `${reqZh}已经在备战区了。如果想让它和主战交换上场，请说“撤退”或“和主战交换”。`,
-                null
+                null,
+                null,
+                { speakJa: `${reqJa}はベンチにいます。`, speakZh: `${reqZh}已在备战区。` }
               );
               return false;
             }
@@ -8323,7 +8339,9 @@
               await this.announceAndReact(
                 `${reqJa}はすでにバトル場に出ています。`,
                 `${reqZh}已经在主战区出战了。`,
-                null
+                null,
+                null,
+                { speakJa: `${reqJa}はバトル場にいます。`, speakZh: `${reqZh}已在战斗区。` }
               );
               return false;
             }
@@ -8333,7 +8351,9 @@
             await this.announceAndReact(
               `手札に${reqJa}がありません（手札にあるのは${availJa}です）。`,
               `手牌中没有${reqZh}（当前手牌只有${availZh}）。`,
-              null
+              null,
+              null,
+              { speakJa: `${reqJa}がありません。`, speakZh: `手牌没有${reqZh}。` }
             );
             return false;
           }
@@ -8345,13 +8365,14 @@
               const zh = "手牌中有多只怪兽，要把哪一只放入备战区？";
               this.setPending({
                 type: "choose_card", promptJa: ja, promptZh: zh,
+                speakJa: "どのモンスターを出しますか？", speakZh: "放哪只怪兽上备战区？",
                 context: { action: act, candidates: monTypes },
                 options: monTypes.map((cid) => {
                   const m = SpecEngine.getMonster(cid);
                   return { labelJa: `${m.name_ja} (HP${m.hp})`, labelZh: `${m.name_zh} (HP${m.hp})`, reply: m.name_ja };
                 })
               });
-              await this.announceAndReact(ja, zh, null);
+              await this.announceAndReact(ja, zh, null, null, { speakJa: "どのモンスターを出しますか？", speakZh: "放哪只怪兽上备战区？" });
               return false;
             }
           }
@@ -8368,9 +8389,10 @@
             def.is_ex ? "play_ex" : "play_bench",
             customRival,
             {
-              priority: def.is_ex ? "normal" : "low",
-              speakJa: `${def.name_ja}、ベンチへ！`,
-              speakZh: `${def.name_zh}放入备战区！`,
+              priority: "normal",
+              interruptible: true,
+              speakJa: `${def.name_ja}、ベンチへ。`,
+              speakZh: `${def.name_zh}上备战区。`,
               silentRival: !def.is_ex
             }
           );
@@ -8382,13 +8404,19 @@
           const handIdx = s.player.hand.indexOf(act.card_id);
           if (handIdx === -1) {
             const it = SpecEngine.getItem(act.card_id);
-            await this.announceAndReact(`手札に「${it ? it.name_ja : "カード"}」がありません。`, `手牌中没有“${it ? it.name_zh : "该道具"}”。`, null);
+            await this.announceAndReact(
+              `手札に「${it ? it.name_ja : "カード"}」がありません。`,
+              `手牌中没有“${it ? it.name_zh : "该道具"}”。`,
+              null,
+              null,
+              { speakJa: `${it ? it.name_ja : "カード"}がありません。`, speakZh: `没有${it ? it.name_zh : "该道具"}。` }
+            );
             return false;
           }
           const it = SpecEngine.getItem(act.card_id);
           if (it.category === "supporter" && s.supporterUsedThisTurn) {
             TableUI.flashDeny("player_active", "サポート済", "本回合已用支援卡");
-            await this.announceAndReact("サポートカードは1ターンに1枚までです。", "支援卡每回合只能使用 1 张，本回合已使用。", null);
+            await this.announceAndReact("サポートカードは1ターンに1枚までです。", "支援卡每回合只能使用 1 张，本回合已使用。", null, null, { speakJa: "サポート使用済み。", speakZh: "本回合已用支援卡。" });
             return false;
           }
           if (it.category === "supporter") GuideEngine.trigger("first_supporter", false);
@@ -8408,6 +8436,7 @@
                 const zh = "要对哪只己方怪兽使用伤药？";
                 this.setPending({
                   type: "choose_target", promptJa: ja, promptZh: zh,
+                  speakJa: `${it.name_ja}、誰に使いますか？`, speakZh: `${it.name_zh}给哪只？`,
                   context: { side: "player", action: act },
                   options: wounded.map((e) => ({
                     labelJa: `${e.slot === "player_active" ? "前" : POS_JA[e.idx]}・${e.def.name_ja}`,
@@ -8416,17 +8445,17 @@
                     slot: e.slot
                   }))
                 });
-                await this.announceAndReact(ja, zh, null);
+                await this.announceAndReact(ja, zh, null, null, { speakJa: `${it.name_ja}、誰に使いますか？`, speakZh: `${it.name_zh}给哪只？` });
                 return false;
               } else {
-                await this.announceAndReact("味方は全員HP満タンのため、きずぐすりは使えません。", "己方怪兽均为满血状态，无法使用伤药。", null);
+                await this.announceAndReact("味方は全員HP満タンのため、きずぐすりは使えません。", "己方怪兽均为满血状态，无法使用伤药。", null, null, { speakJa: "全員HP満タンです。", speakZh: "全员满血。" });
                 return false;
               }
             }
             const tDef = SpecEngine.getMonster(targetUnit.id);
             if (targetUnit.hp >= tDef.hp) {
               TableUI.flashDeny(targetSlot, "HP満タン", "已满血");
-              await this.announceAndReact(`${tDef.name_ja}はすでにHP満タンです。`, `${tDef.name_zh}已经是满血，无法使用伤药。`, null);
+              await this.announceAndReact(`${tDef.name_ja}はすでにHP満タンです。`, `${tDef.name_zh}已经是满血，无法使用伤药。`, null, null, { speakJa: `${tDef.name_ja}はHP満タンです。`, speakZh: `${tDef.name_zh}已满血。` });
               return false;
             }
             s.player.hand.splice(handIdx, 1);
@@ -8444,8 +8473,8 @@
               "heal",
               customRival,
               {
-                speakJa: `${tDef.name_ja}のHP${healed}回復！`,
-                speakZh: `${tDef.name_zh}回复${healed}点血！`,
+                speakJa: `${it.name_ja}！${tDef.name_ja}、${healed}回復。`,
+                speakZh: `${it.name_zh}，${tDef.name_zh}回复${healed}。`,
                 silentRival: true
               }
             );
@@ -8455,7 +8484,7 @@
           if (it.effect_type === "switch_enemy_bench") {
             const eBench = this.getBenchEntries("enemy");
             if (eBench.length === 0) {
-              await this.announceAndReact("相手のベンチにモンスターがいないため、よびだし笛は使えません。", "对手备战区没有怪兽，无法使用召唤笛。", null);
+              await this.announceAndReact("相手のベンチにモンスターがいないため、よびだし笛は使えません。", "对手备战区没有怪兽，无法使用召唤笛。", null, null, { speakJa: "相手ベンチがいません。", speakZh: "对手无备战怪。" });
               return false;
             }
             let targetSlot = act.target || (act._clause ? NLUEngine.resolveSlotFromText(act._clause, "enemy", this.getSnapshot(), { benchOnly: true }) : null);
@@ -8477,6 +8506,7 @@
                 const zh = `要强拉对手备战区的哪只上场？（${eBench.map((e) => `${POS_ZH[e.idx]}：${e.def.name_zh}`).join("、")}）`;
                 this.setPending({
                   type: "choose_target", promptJa: ja, promptZh: zh,
+                  speakJa: `${it.name_ja}、誰を呼びますか？`, speakZh: `${it.name_zh}拉哪只？`,
                   context: { side: "enemy", action: act },
                   options: eBench.map((e) => ({
                     labelJa: `${POS_JA[e.idx]}・${e.def.name_ja}`,
@@ -8485,7 +8515,7 @@
                     slot: e.slot
                   }))
                 });
-                await this.announceAndReact(ja, zh, null);
+                await this.announceAndReact(ja, zh, null, null, { speakJa: `${it.name_ja}、誰を呼びますか？`, speakZh: `${it.name_zh}拉哪只？` });
                 return false;
               }
             }
@@ -8504,7 +8534,11 @@
               `よびだし笛！相手の${picked.def.name_ja}をバトル場へ引きずり出しました！`,
               `发动召唤笛！强行将对手的${picked.def.name_zh}拉上战斗区！`,
               "flute",
-              customRival
+              customRival,
+              {
+                speakJa: `${it.name_ja}！${picked.def.name_ja}を呼び出し！`,
+                speakZh: `${it.name_zh}，拉出${picked.def.name_zh}！`
+              }
             );
             return true;
           }
@@ -8513,7 +8547,7 @@
           if (drawMatch) {
             const drawCount = Number(drawMatch[1]) || 2;
             if (s.player.deck.length === 0) {
-              await this.announceAndReact("山札が空のため、補給バッグは使えません。", "牌库已空，无法使用补给包。", null);
+              await this.announceAndReact("山札が空のため、補給バッグは使えません。", "牌库已空，无法使用补给包。", null, null, { speakJa: "山札が空です。", speakZh: "牌库已空。" });
               return false;
             }
             s.player.hand.splice(handIdx, 1);
@@ -8528,8 +8562,8 @@
               "draw",
               customRival,
               {
-                speakJa: `補給バッグで${drawn.length}枚ドロー！`,
-                speakZh: `补给包抽 ${drawn.length} 张！`,
+                speakJa: `${it.name_ja}、${drawn.length}枚ドロー。`,
+                speakZh: `${it.name_zh}，抽${drawn.length}张。`,
                 silentRival: true
               }
             );
@@ -8541,7 +8575,7 @@
             const boostVal = Number(boostMatch[1]) || 20;
             if (s.turn === 1) {
               TableUI.flashDeny("player_active", "先攻1T不可", "先手T1不可用");
-              await this.announceAndReact("先攻1ターン目はパワーバッジを使えません。", "先手第 1 回合禁止使用力量徽章（防止开局秒杀）。", null);
+              await this.announceAndReact("先攻1ターン目はパワーバッジを使えません。", "先手第 1 回合禁止使用力量徽章（防止开局秒杀）。", null, null, { speakJa: "先攻1ターン目は不可。", speakZh: "先手首回合不可用。" });
               return false;
             }
             s.player.hand.splice(handIdx, 1);
@@ -8557,7 +8591,11 @@
               `パワーバッジ使用！このターンの攻撃ダメージが+${boostVal}されます！`,
               `使用力量徽章！本回合攻击伤害 +${boostVal}！`,
               "power",
-              customRival
+              customRival,
+              {
+                speakJa: `${it.name_ja}、攻撃プラス${boostVal}！`,
+                speakZh: `${it.name_zh}，攻击加${boostVal}！`
+              }
             );
             return true;
           }
@@ -8579,7 +8617,7 @@
                 `使用能量回收！从弃牌区取回了${rDef ? rDef.name_zh : "1 张能量"}。`,
                 "recycle",
                 customRival,
-                { speakJa: "エネ回収！", speakZh: "能量回收！", silentRival: true }
+                { speakJa: `${it.name_ja}、${rDef ? rDef.name_ja : "エネ"}回収。`, speakZh: `${it.name_zh}，取回${rDef ? rDef.name_zh : "能量"}。`, silentRival: true }
               );
               return true;
             }
@@ -8589,7 +8627,7 @@
             let deckEIdx = wantId ? s.player.deck.indexOf(wantId) : -1;
             if (deckEIdx === -1) deckEIdx = s.player.deck.findIndex((id) => id.startsWith("energy_"));
             if (deckEIdx === -1) {
-              await this.announceAndReact("トラッシュにも山札にもエネルギーがないため、エネ回収は使えません。", "弃牌区和牌库中都没有能量卡，无法使用能量回收。", null);
+              await this.announceAndReact("トラッシュにも山札にもエネルギーがないため、エネ回収は使えません。", "弃牌区和牌库中都没有能量卡，无法使用能量回收。", null, null, { speakJa: "回収できるエネがありません。", speakZh: "无可回收能量。" });
               return false;
             }
             s.player.hand.splice(handIdx, 1);
@@ -8606,7 +8644,7 @@
               `使用能量回收！从牌库检索了${rDef ? rDef.name_zh : "1 张能量"}加入手牌。`,
               "recycle",
               customRival,
-              { speakJa: "エネ探索！", speakZh: "检索能量！", silentRival: true }
+              { speakJa: `${it.name_ja}、${rDef ? rDef.name_ja : "エネ"}探索。`, speakZh: `${it.name_zh}，检索${rDef ? rDef.name_zh : "能量"}。`, silentRival: true }
             );
             return true;
           }
@@ -8616,7 +8654,7 @@
         case "RETREAT": {
           if (s.retreatedThisTurn) {
             TableUI.flashDeny("player_active", "交代済", "本回合已撤退");
-            await this.announceAndReact("交代は1ターンに1回までです。", "撤退换人每回合只能执行 1 次。", null);
+            await this.announceAndReact("交代は1ターンに1回までです。", "撤退换人每回合只能执行 1 次。", null, null, { speakJa: "交代済み。", speakZh: "本回合已撤退。" });
             return false;
           }
           const actUnit = s.player.active;
@@ -8633,13 +8671,13 @@
             const zh = curCnt === 0
               ? `${monZh}身上还没有附着任何能量，无法撤退（需要 ${retreatCost} 点能量）。`
               : `${monZh}当前只有 ${curCnt} 点能量，撤退还差 ${retreatCost - curCnt} 点。`;
-            await this.announceAndReact(ja, zh, null);
+            await this.announceAndReact(ja, zh, null, null, { speakJa: "交代エネ不足。", speakZh: "撤退能量不足。" });
             return false;
           }
           const myBench = this.getBenchEntries("player");
           if (myBench.length === 0) {
             TableUI.flashDeny("player_active", "控えなし", "备战区无怪");
-            await this.announceAndReact("交代できるベンチのモンスターがいません。", "备战区没有可替换上场的怪兽。", null);
+            await this.announceAndReact("交代できるベンチのモンスターがいません。", "备战区没有可替换上场的怪兽。", null, null, { speakJa: "ベンチがいません。", speakZh: "备战区无怪。" });
             return false;
           }
           let targetSlot = act.target || (act._clause ? NLUEngine.resolveSlotFromText(act._clause, "player", this.getSnapshot(), { benchOnly: true }) : null);
@@ -8660,6 +8698,7 @@
               const zh = "要换备战区的哪只怪兽上场？";
               this.setPending({
                 type: "choose_target", promptJa: ja, promptZh: zh,
+                speakJa: "誰と交代しますか？", speakZh: "换哪只上场？",
                 context: { side: "player", action: act },
                 options: myBench.map((e) => ({
                   labelJa: `${POS_JA[e.idx]}・${e.def.name_ja}`,
@@ -8668,7 +8707,7 @@
                   slot: e.slot
                 }))
               });
-              await this.announceAndReact(ja, zh, null);
+              await this.announceAndReact(ja, zh, null, null, { speakJa: "誰と交代しますか？", speakZh: "换哪只上场？" });
               return false;
             }
           }
@@ -8689,7 +8728,7 @@
             `弃置 ${retreatCost} 点能量，换${picked.def.name_zh}进入战斗区。`,
             "retreat",
             customRival,
-            { speakJa: `${picked.def.name_ja}に交代！`, speakZh: `换${picked.def.name_zh}上场！` }
+            { speakJa: `${picked.def.name_ja}に交代。`, speakZh: `换${picked.def.name_zh}上场。` }
           );
           return true;
         }
@@ -8697,11 +8736,14 @@
         case "DEFEND": {
           const actUnit = s.player.active;
           if (!actUnit) return false;
+          const actDef = SpecEngine.getMonster(actUnit.id);
           if (actUnit.lastDefendedTurn === s.turn - 1) {
             await this.announceAndReact(
               "同じモンスターは2ターン連続で防御態勢を取れません。攻撃・交代・ターン終了を選んでください。",
               "同一只怪兽不能连续两回合进入防御姿态，请选择攻击、撤退或结束回合。",
-              null
+              null,
+              null,
+              { speakJa: "連続防御はできません。", speakZh: "不能连续防御。" }
             );
             return false;
           }
@@ -8717,7 +8759,7 @@
             "进入防御姿态（下回合受击 -30），回合结束。",
             "defend",
             customRival,
-            { speakJa: "防御態勢！ターン終了。", speakZh: "进入防御姿态，回合结束。" }
+            { speakJa: `${actDef ? `${actDef.name_ja}、` : ""}防御態勢。`, speakZh: `${actDef ? `${actDef.name_zh}，` : ""}防御姿态。` }
           );
           if (!(await this.matchDelay(650, seq))) return false;
           await this.finishPlayerTurn(seq);
@@ -8731,7 +8773,7 @@
             "回合结束，轮到对手莲。",
             "end_turn",
             customRival,
-            { speakJa: "ターン終了！相手レンの番。", speakZh: "回合结束，对手莲的回合。" }
+            { speakJa: "ターン終了。", speakZh: "回合结束。" }
           );
           if (!(await this.matchDelay(600, seq))) return false;
           await this.finishPlayerTurn(seq);
@@ -8755,7 +8797,7 @@
             if (benchOwner) {
               const ja = `『${act.skill_name}』はベンチの${benchOwner.def.name_ja}の技です。まず交代してから使ってください。`;
               const zh = `“${act.skill_name}”是备战区${benchOwner.def.name_zh}的技能，请先撤退换人上场再发动。`;
-              await this.announceAndReact(ja, zh, null);
+              await this.announceAndReact(ja, zh, null, null, { speakJa: `${benchOwner.def.name_ja}はベンチです。`, speakZh: `${benchOwner.def.name_zh}在备战区。` });
               return false;
             }
           }
@@ -8766,7 +8808,7 @@
               const firstSk = actDef.skills[0];
               const diag = this.buildEnergyShortageReply(actDef, firstSk, actUnit.energies);
               TableUI.flashDeny("player_active", diag.badgeJa, diag.badgeZh);
-              await this.announceAndReact(diag.ja, diag.zh, null);
+              await this.announceAndReact(diag.ja, diag.zh, null, null, { speakJa: `${firstSk.name_ja}、エネ不足。`, speakZh: `${firstSk.name_zh}，能量不足。` });
               return false;
             }
             if (usable.length === 1) {
@@ -8776,13 +8818,14 @@
               const zh = `${actDef.name_zh}可用“${usable[0].name_zh}（${usable[0].damage}）”和“${usable[1].name_zh}（${usable[1].damage}）”，要使用哪个技能攻击？`;
               this.setPending({
                 type: "choose_skill", promptJa: ja, promptZh: zh,
+                speakJa: `${usable[0].name_ja}か${usable[1].name_ja}、どちら？`, speakZh: `用${usable[0].name_zh}还是${usable[1].name_zh}？`,
                 context: { usable, target: act.target },
                 options: [
                   ...usable.map((sk) => ({ labelJa: `${sk.name_ja} (${sk.damage})`, labelZh: `${sk.name_zh} (${sk.damage})`, reply: sk.name_ja })),
                   { labelJa: "キャンセル", labelZh: "取消", reply: "キャンセル" }
                 ]
               });
-              await this.announceAndReact(ja, zh, null);
+              await this.announceAndReact(ja, zh, null, null, { speakJa: `${usable[0].name_ja}か${usable[1].name_ja}、どちら？`, speakZh: `用${usable[0].name_zh}还是${usable[1].name_zh}？` });
               return false;
             }
           }
@@ -8790,7 +8833,7 @@
           if (!this.canPayCost(actUnit.energies, chosenSkill.cost)) {
             const diag = this.buildEnergyShortageReply(actDef, chosenSkill, actUnit.energies);
             TableUI.flashDeny("player_active", diag.badgeJa, diag.badgeZh);
-            await this.announceAndReact(diag.ja, diag.zh, null);
+            await this.announceAndReact(diag.ja, diag.zh, null, null, { speakJa: `${chosenSkill.name_ja}、エネ不足。`, speakZh: `${chosenSkill.name_zh}，能量不足。` });
             return false;
           }
 
@@ -8810,6 +8853,7 @@
               const zh = `「${chosenSkill.name_zh}」可攻击对手任意怪兽，要指定哪一只为目标？`;
               this.setPending({
                 type: "choose_target", promptJa: ja, promptZh: zh,
+                speakJa: `${chosenSkill.name_ja}、誰を狙いますか？`, speakZh: `${chosenSkill.name_zh}打哪只？`,
                 context: { side: "enemy", action: { type: "ATTACK", skill_name: chosenSkill.name_ja, target: null } },
                 options: eUnits.map((e) => ({
                   labelJa: `${e.slot === "enemy_active" ? "前" : POS_JA[e.idx]}・${e.def.name_ja} (HP${e.unit.hp})`,
@@ -8818,7 +8862,7 @@
                   slot: e.slot
                 }))
               });
-              await this.announceAndReact(ja, zh, null);
+              await this.announceAndReact(ja, zh, null, null, { speakJa: `${chosenSkill.name_ja}、誰を狙いますか？`, speakZh: `${chosenSkill.name_zh}打哪只？` });
               return false;
             }
             targetSlot = eUnits[0] ? eUnits[0].slot : "enemy_active";
@@ -8828,7 +8872,9 @@
             await this.announceAndReact(
               `『${chosenSkill.name_ja}』は相手のバトル場にしか攻撃できません。ベンチを狙うには『よびだし笛』で呼び出すか、ベンチ狙撃技を使ってください。`,
               `“${chosenSkill.name_zh}”只能攻击对手战斗区怪兽。按规则想集火备战区，请先用「召唤笛」把它拉上战斗区，或使用备战狙击技能。`,
-              null
+              null,
+              null,
+              { speakJa: `${chosenSkill.name_ja}はバトル場のみです。`, speakZh: `${chosenSkill.name_zh}只能打战斗区。` }
             );
             return false;
           }
@@ -8929,8 +8975,13 @@
           const ja = `${actDef.name_ja}の『${chosenSkill.name_ja}』！${targetDef.name_ja}に${dmg}ダメージ！${noteJaStr}`;
           const zh = `${actDef.name_zh}发动“${chosenSkill.name_zh}”，对${targetDef.name_zh}造成 ${dmg} 点伤害！${noteZhStr}`;
 
+          const spkNoteJa = [weakBonus ? "弱点" : "", splashedSlots.length > 0 ? `ベンチ${splashVal}` : ""].filter(Boolean).join("、");
+          const spkNoteZh = [weakBonus ? "弱点" : "", splashedSlots.length > 0 ? `溅射${splashVal}` : ""].filter(Boolean).join("，");
+          const speakAtkJa = `${actDef.name_ja}、${chosenSkill.name_ja}！${dmg}ダメージ${spkNoteJa ? `、${spkNoteJa}` : ""}！`;
+          const speakAtkZh = `${actDef.name_zh}，${chosenSkill.name_zh}！${dmg}伤害${spkNoteZh ? `，${spkNoteZh}` : ""}！`;
+
           /* 先播报本次攻击伤害（高优先级不截断），留足 420ms 受击飘字与特效展示，再结算击倒与对手台词 */
-          this.announceAndReact(ja, zh, null, null, { priority: "high" });
+          this.announceAndReact(ja, zh, null, null, { priority: "high", speakJa: speakAtkJa, speakZh: speakAtkZh });
           if (!(await this.matchDelay(420, seq))) return false;
           const ko = await this.checkKnockOuts();
           if (seq !== this.matchSeq) return false;
@@ -8990,6 +9041,7 @@
         const prizeJa = prizeCards.length ? `サイドから「${prizeCards.map((c) => c.ja).join("・")}」を手札に加えました！` : "";
         const prizeZh = prizeCards.length ? `从奖赏卡抽到「${prizeCards.map((c) => c.zh).join("、")}」加入手牌！` : "";
         TableUI.appendLog(`相手の${e.def.name_ja}を撃破！${prizeJa}`, `击倒对手的${e.def.name_zh}，${prizeZh}`);
+        VoiceEngine.speak({ ja: `${e.def.name_ja}撃破！サイド${prizeVal}枚。`, zh: `击倒${e.def.name_zh}！拿${prizeVal}张奖赏。` }, "referee", { priority: "high" });
       }
       if (deadEnemies.length > 0 && !s.enemy.active) {
         const bench = this.getBenchEntries("enemy").filter((b) => b.unit.hp > 0);
@@ -9003,6 +9055,7 @@
         TableUI.appendLog(`レンはベンチから${next.def.name_ja}をバトル場に出した。`, `对手莲派出${next.def.name_zh}进入战斗区。`);
         TableUI.renderAll();
         TableUI.flashAnim("enemy_active", "anim-enter");
+        VoiceEngine.speak({ ja: `相手、${next.def.name_ja}が出場。`, zh: `对手派出${next.def.name_zh}。` }, "referee", { priority: "normal" });
       }
 
       const deadPlayers = this.getAllEntries("player").filter((p) => p.unit.hp <= 0);
@@ -9032,24 +9085,35 @@
         TableUI.appendLog(`自分の${p.def.name_ja}がきぜつ…相手がサイドを${prizeVal}枚手札に加えた。`, `己方${p.def.name_zh}倒下，对手拿走 ${prizeVal} 张奖赏卡加入手牌。`);
       }
       if (deadPlayers.length > 0 && !s.player.active) {
+        const koMonJa = deadPlayers[0].def.name_ja;
+        const koMonZh = deadPlayers[0].def.name_zh;
         const cand = this.buildPromotePendingState();
         if (cand.myBench.length === 0 && cand.uniqueHandMons.length === 0) {
           this.endGame("enemy", "自分の場・手札にモンスターがいなくなりました。", "己方场上与手牌均已无怪兽，本局败北。");
           return true;
         }
         if (cand.myBench.length === 1 && cand.uniqueHandMons.length === 0) {
+          VoiceEngine.speak({ ja: `${koMonJa}きぜつ！`, zh: `${koMonZh}倒下！` }, "referee", { priority: "high" });
           await this.promotePlayerBench(cand.myBench[0].idx);
         } else if (cand.myBench.length === 0 && cand.uniqueHandMons.length === 1) {
+          VoiceEngine.speak({ ja: `${koMonJa}きぜつ！`, zh: `${koMonZh}倒下！` }, "referee", { priority: "high" });
           await this.promotePlayerHandMonster(cand.uniqueHandMons[0].idx);
         } else {
           this.setPending({
             type: "promote_bench",
             promptJa: cand.promptJa,
             promptZh: cand.promptZh,
+            speakJa: "交代を選んでください。",
+            speakZh: "请选择替补怪兽。",
             options: cand.options
           });
           TableUI.setReferee(cand.promptJa, cand.promptZh);
+          VoiceEngine.speak({ ja: `${koMonJa}きぜつ！交代を選んでください。`, zh: `${koMonZh}倒下！请选替补。` }, "referee", { priority: "high" });
         }
+      } else if (deadPlayers.length > 0) {
+        const koMonJa = deadPlayers[0].def.name_ja;
+        const koMonZh = deadPlayers[0].def.name_zh;
+        VoiceEngine.speak({ ja: `${koMonJa}きぜつ！`, zh: `${koMonZh}倒下！` }, "referee", { priority: "high" });
       }
       return anyKo;
     },
@@ -9106,6 +9170,8 @@
         type: "promote_bench",
         promptJa: cand.promptJa,
         promptZh: cand.promptZh,
+        speakJa: "交代を選んでください。",
+        speakZh: "请选择替补怪兽。",
         options: cand.options
       });
       TableUI.setReferee(`${cand.promptJa}（${turnJa}）`, `${cand.promptZh}（${turnZh}）`);
@@ -9121,6 +9187,7 @@
       this.state.player.bench[idx] = null;
       TableUI.appendLog(`ベンチから${def.name_ja}をバトル場に出しました。`, `已将备战区的${def.name_zh}派上战斗区。`);
       TableUI.renderAll();
+      VoiceEngine.speak({ ja: `${def.name_ja}、出場。`, zh: `${def.name_zh}补位上场。` }, "referee", { priority: "normal" });
     },
 
     /** 将玩家指定手牌下标的怪兽卡直接推上主战区补位（用于主战阵亡后的替补登场） */
@@ -9136,9 +9203,10 @@
       TableUI.appendLog(`手札から${def.name_ja}をバトル場に出しました。`, `已从手牌派出${def.name_zh}进入战斗区。`);
       TableUI.renderAll();
       TableUI.flashAnim("player_active", "anim-enter");
+      VoiceEngine.speak({ ja: `${def.name_ja}、出場。`, zh: `${def.name_zh}补位上场。` }, "referee", { priority: "normal" });
     },
 
-    /** 终结当前对局：锁定状态、展示胜负结算弹窗并高优播报裁判与对手终局台词 */
+    /** 终结当前对局：锁定状态、展示胜负结算弹窗并高优播报裁判终局裁决 */
     endGame(winner, descJa, descZh) {
       this.clearIdleTimer();
       this.state.gameOver = true;
@@ -9151,6 +9219,14 @@
       $("gameOverDescZh").textContent = descZh;
       $("gameOverModal").classList.add("open");
       TableUI.renderAll();
+      VoiceEngine.speak(
+        {
+          ja: winner === "player" ? "勝負あり！あなたの勝利！" : "勝負あり！相手の勝利。",
+          zh: winner === "player" ? "比赛结束！你赢了！" : "比赛结束！对手获胜。"
+        },
+        "referee",
+        { priority: "critical" }
+      );
     },
 
     /** 结束玩家回合：清理本回合状态标记、推进回合数并移交至对手 AI「莲」执行回合 */
@@ -9762,6 +9838,16 @@
       TableUI.setRival(rivalCallJa, rivalCallZh);
       TableUI.setReferee(ja, zh);
       TableUI.appendLog(ja, zh);
+      const eSpkNoteJa = [weakBonus ? "弱点" : "", splashedSlotsE.length > 0 ? `ベンチ${splashValE}` : ""].filter(Boolean).join("、");
+      const eSpkNoteZh = [weakBonus ? "弱点" : "", splashedSlotsE.length > 0 ? `溅射${splashValE}` : ""].filter(Boolean).join("，");
+      VoiceEngine.speak(
+        {
+          ja: `相手の${actDef.name_ja}、${sk.name_ja}！${dmg}ダメージ${eSpkNoteJa ? `、${eSpkNoteJa}` : ""}！`,
+          zh: `对手${actDef.name_zh}，${sk.name_zh}！${dmg}伤害${eSpkNoteZh ? `，${eSpkNoteZh}` : ""}！`
+        },
+        "referee",
+        { priority: "normal" }
+      );
       if (!(await this.matchDelay(480, seq))) return false;
       await this.checkKnockOuts();
       return seq === this.matchSeq && !s.gameOver;
@@ -9990,6 +10076,7 @@
               TableUI.flashAnim("player_active", "anim-enter");
               TableUI.spawnFloatText("player_active", t("強制交代！", "强制换人！"), "guard", "swapChip");
               TableUI.appendLog(`レンはサポート『よびだし笛』で${pulledDef.name_ja}を引きずり出した！`, `对手莲发动支援卡「召唤笛」，强行将你的${pulledDef.name_zh}拉上战斗区！`);
+              VoiceEngine.speak({ ja: `相手のよびだし笛！${pulledDef.name_ja}が出場。`, zh: `对手召唤笛！${pulledDef.name_zh}被拉上场。` }, "referee", { priority: "normal" });
               if (!(await this.matchDelay(480, seq))) return;
             }
 
@@ -10017,6 +10104,7 @@
               TableUI.setRival(guardCallJa, guardCallZh);
               TableUI.setReferee(ja, zh);
               TableUI.appendLog(ja, zh);
+              VoiceEngine.speak({ ja: "相手、防御態勢。", zh: "对手防御姿态。" }, "referee", { priority: "normal" });
             } else {
               const ja = "レンはそのままターンを終了した。";
               const zh = "对手莲直接结束了回合。";
@@ -10049,6 +10137,7 @@
             TableUI.showTurnBanner(`ターン ${s.turn} · あなたのターン`, `第 ${s.turn} 回合 · 你的回合`, false);
             if (!this.applyTurnStartPendingPrompt(fatigueJa, fatigueZh)) {
               TableUI.setReferee(fatigueJa, fatigueZh);
+              VoiceEngine.speak({ ja: "あなたのターン。", zh: "你的回合。" }, "referee", { priority: "normal", interruptible: true });
             }
           } else {
             const drawn = this.drawCard("player", 1);
@@ -10061,6 +10150,7 @@
             TableUI.appendLog(`ターン ${s.turn} 開始：${dJa}`, `第 ${s.turn} 回合开始：${dZh}`);
             if (!this.applyTurnStartPendingPrompt(turnJa, turnZh)) {
               TableUI.setReferee(turnJa, turnZh);
+              VoiceEngine.speak({ ja: "あなたのターン。", zh: "你的回合。" }, "referee", { priority: "normal", interruptible: true });
             }
           }
           TableUI.renderAll();
@@ -10186,6 +10276,7 @@
             TableUI.setRival(guardCallJa, "这回合先稳住防守。");
             TableUI.setReferee(ja, zh);
             TableUI.appendLog(ja, zh);
+            VoiceEngine.speak({ ja: "相手、防御態勢。", zh: "对手防御姿态。" }, "referee", { priority: "normal" });
           } else {
             const ja = "レンはそのままターンを終了した。";
             const zh = "对手莲直接结束了回合。";
@@ -10222,6 +10313,7 @@
         TableUI.appendLog(ja, zh);
         if (!this.applyTurnStartPendingPrompt(ja, zh)) {
           TableUI.setReferee(ja, zh);
+          VoiceEngine.speak({ ja: "あなたのターン。", zh: "你的回合。" }, "referee", { priority: "normal", interruptible: true });
         }
         TableUI.showTurnBanner(`ターン ${s.turn}：あなたの番`, `第 ${s.turn} 回合：你的回合`, false);
       } finally {
